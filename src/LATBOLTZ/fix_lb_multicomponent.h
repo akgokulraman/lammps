@@ -1,0 +1,145 @@
+/* -*- c++ -*- ----------------------------------------------------------
+   LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
+   http://lammps.sandia.gov, Sandia National Laboratories
+   Steve Plimpton, sjplimp@sandia.gov
+
+   Copyright (2003) Sandia Corporation.  Under the terms of Contract
+   DE-AC04-94AL85000 with Sandia Corporation, the U.S. Government retains
+   certain rights in this software.  This software is distributed under
+   the GNU General Public License.
+
+   See the README file in the top-level LAMMPS directory.
+------------------------------------------------------------------------- */
+
+/* ----------------------------------------------------------------------
+   Ternary Lattice Boltzmann Implementation
+
+   Copyright (2018) Ulf D. Schiller <uschill@clemson.edu>
+                    Colin Denniston
+                    Mikko Karttunen
+------------------------------------------------------------------------ */
+
+#ifdef FIX_CLASS
+FixStyle(lb/multicomponent,FixLbMulticomponent)
+#else
+
+#ifndef LMP_FIX_LB_MULTICOMPONENT_H
+#define LMP_FIX_LB_MULTICOMPONENT_H
+
+#include "fix.h"
+#include "fix_lb_fluid.h"
+
+namespace LAMMPS_NS {
+
+  class FixLbMulticomponent : public FixLbFluid {
+    friend class FixLbFluid;
+
+  public:
+    FixLbMulticomponent(class LAMMPS *, int, char **);
+    ~FixLbMulticomponent();
+
+    int setmask();
+    void end_of_step();
+    void initial_integrate(int);
+
+  protected:
+
+  private:
+    //double tau_r;
+    //double tau_p;
+    //double tau_s;
+    //double gamma_p;
+    //double gamma_s;
+    //double kappa1;
+    //double kappa2;
+    //double kappa3;
+    double kappa_rr;
+    double kappa_pp;
+    double kappa_ss;
+    double kappa_rp;
+    double kappa_ps;
+    double kappa_rs;
+    double alpha;
+
+    //double C1;
+    //double C2;
+    //double C3;
+    int radius;
+
+    double cs2;
+    double ***wg;
+
+    double ****g_lb;                                
+    double ****gnew;                              
+    double ****geq;    
+    double ****k_lb;                                
+    double ****knew;                              
+    double ****keq;
+    
+    double ***pressure_lb;
+    double ***phi_lb;     
+    double ***psi_lb; 
+    
+    double ****density_gradient;
+    double ****phi_gradient;
+    double ****psi_gradient;
+    double ***laplace_rho;
+    double ***laplace_phi;
+    double ***laplace_psi;
+
+    double ***mu_rho;
+    double ***mu_phi;
+    double ***mu_psi;
+    double ***sum_mu;
+    
+    int numrequests;
+    MPI_Request requests[12];
+    MPI_Datatype passxg,passyg,passzg;
+    MPI_Datatype passxk,passyk,passzk;
+    MPI_Datatype fluid_phi_2_mpitype;
+    MPI_Datatype fluid_psi_2_mpitype;
+    MPI_Datatype fluid_pressure_2_mpitype;
+
+    void SetupBuffers(void);
+    void Initialize(void);
+
+    void init_parameters(int, char **);
+    void init_lattice();
+    void init_mixture();
+    void init_droplet(int radius);
+    void init_liquid_lens(int radius);
+    void init_double_emulsion(int radius);
+
+    void lb_update();
+    void update_cube(int xmin, int xmax, int ymin, int ymax, int zmin, int zmax);
+    void update_slab(int x, int ymin, int ymax, int zmin, int zmax);
+    void update_column(int x, int y, int zmin, int zmax);
+    void read_slab(int x, int ymin, int ymax, int zmin, int zmax);
+    void read_column(int x,int y, int zmin, int zmax);
+    void read_site(int x, int y, int z);
+    void write_site(int x, int y, int z);
+    void collide_stream(int x, int y, int z);
+    void calc_moments(int x, int y, int z);
+    void calc_chemical_potentials(int x, int y, int z);
+    void calc_equilibrium(int x, int y, int z);
+    void calc_feq(int x, int y, int z);
+    void calc_geq(int x, int y, int z);
+    void calc_keq(int x, int y, int z);
+    void calc_gradient_laplacian(int x, int y, int z, double ***field, double ****gradient, double ***laplacian);
+    void calc_rho_gradients(int x, int y, int z);
+    void calc_phi_gradients(int x, int y, int z);
+    void calc_psi_gradients(int x, int y, int z);
+    double pressure(double rho, double phi, double psi);
+
+    void halo_init();
+    void halo_wait();
+    void halo_comm();
+    void halo_comm(int dir);
+
+    void dump_all(int);
+
+  };
+
+}
+#endif
+#endif

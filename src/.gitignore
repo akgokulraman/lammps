@@ -774,6 +774,8 @@
 /fix_lb_rigid_pc_sphere.h
 /fix_lb_viscous.cpp
 /fix_lb_viscous.h
+/fix_lb_multicomponent.h
+/fix_lb_multicomponent.cpp
 /fix_load_report.cpp
 /fix_load_report.h
 /fix_meso.cpp
