@@ -28,6 +28,12 @@ FixStyle(lb/fluid,FixLbFluid);
 
 namespace LAMMPS_NS {
 
+class Site {
+ public:
+  int type;
+  int orientation;
+};
+
 class FixLbFluid : public Fix {
   friend class FixLbMomentum;
   friend class FixLbViscous;

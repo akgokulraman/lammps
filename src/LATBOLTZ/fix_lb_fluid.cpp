@@ -57,16 +57,6 @@ static const char cite_fix_lbfluid[] =
 
 /* ------------------------------------------------------------------------ */
 
-namespace LAMMPS_NS {
-class Site {
- public:
-  int type;
-  int orientation;
-};
-}    // namespace LAMMPS_NS
-
-/* ------------------------------------------------------------------------ */
-
 FixLbFluid::FixLbFluid(LAMMPS *lmp, int narg, char **arg) :
     Fix(lmp, narg, arg), Gamma(nullptr), hydroF(nullptr), massp(nullptr), density_lb(nullptr),
     u_lb(nullptr), f_lb(nullptr), fnew(nullptr), feq(nullptr), Ff(nullptr), Wf(nullptr),
