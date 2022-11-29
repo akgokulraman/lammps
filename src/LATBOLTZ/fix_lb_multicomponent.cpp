@@ -14,19 +14,19 @@
 /* ----------------------------------------------------------------------
    Ternary Lattice Boltzmann Implementation
 
-   Copyright (2020) Fang Wang <fwang8@clemson.edu>
-                    Ulf D. Schiller <uschill@clemson.edu>
+   Contributing authors: Ulf D. Schiller <uschiller@mailaps.org>,
+                         Fang Wang <fwang8@clemson.edu>
 
    References:
-   [1] Swift et al., Phys. Rev. E 54, 5041 (1996)
-       https://doi.org/10.1103/PhysRevE.54.5041
+   [1] Semprebon et al., Phys. Rev. E 93, 033305 (2016)
+       https://doi.org/10.1103/PhysRevE.93.033305
    [2] Pooley and Furtado, Phys. Rev. E 77, 046702 (2008)
        https://doi.org/10.1103/PhysRevE.77.046702
    [3] Boyer and Lapuerta, ESAIM Math. Model. Numer. Anal. 40, 653-687 (2006)
        https://doi.org/10.1051/m2an:2006028
-   [4] Semprebon et al., Phys. Rev. E 93, 033305 (2016)
-       https://doi.org/10.1103/PhysRevE.93.033305
------------------------------------------------------------------------- */
+   [4] Swift et al., Phys. Rev. E 54, 5041 (1996)
+       https://doi.org/10.1103/PhysRevE.54.5041
+------------------------------------------------------------------------- */
 
 #include <stdlib.h>
 #include <string.h>
@@ -34,13 +34,13 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
-#include "fix_lb_multicomponent.h"
 #include "memory.h"
 #include "domain.h"
 #include "update.h"
 #include "comm.h"
 #include "error.h"
 #include "random_mars.h"
+#include "fix_lb_multicomponent.h"
 
 using namespace LAMMPS_NS;
 
@@ -66,20 +66,6 @@ void FixLbMulticomponent::end_of_step() {
     }
   }
   dump_all(update->ntimestep);
-
-  // Write restart file
-  if(printrestart>0){
-    if((update->ntimestep)%printrestart == 0){
-      write_restartfile();
-    }
-  }
-
-  // Perform print/dump output
-  if(printfluid > 0 && update->ntimestep > 0 && (update->ntimestep % printfluid == 0)) {
-    streamout();
-  }
-
-  //FixLbFluid::end_of_step();
 
 }
 
@@ -1314,14 +1300,6 @@ void FixLbMulticomponent::init_lattice() {
   memory->create(sum_mu,subNbx,subNby,subNbz,"FixLbMulticomponent:sum_mu");
   memory->create(wg,numvel,3,3,"FixLbMulticomponent:wg");
 
-  if(printfluid > 0){
-    memory->destroy(buf);
-    memory->create(buf,subNbx,subNby,subNbz,4,"FixLbFluid:buf");
-    if(me==0)
-      memory->destroy(altogether);
-      memory->create(altogether,Nbx,Nby,Nbz,4,"FixLbFluid:altogether");
-  }
-
   cs2 = 1./3.;
   
   wg[1][0][0] = wg[3][0][0] = 5./36.;
@@ -1397,10 +1375,6 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
    }
     else if(strcmp(argv[argi],"dm")==0){
       dm_lb = atof(argv[argi+1]);
-      argi += 2;
-    }
-    else if(strcmp(argv[argi],"printfluid")==0){
-      printfluid = atoi(argv[argi+1]);
       argi += 2;
     }
     else if(strcmp(argv[argi],"read_restart")==0){
@@ -1601,8 +1575,7 @@ void FixLbMulticomponent::Initialize(void) {
   //--------------------------------------------------------------------------
   //calc_fluidforceweight(); // Gives us info about where the particles are
 
-  (*this.*initializeLB)();
-  initialize_feq();
+  initializeLB();
   parametercalc_full();
 
   //init_fluid();
@@ -1636,11 +1609,6 @@ FixLbMulticomponent::~FixLbMulticomponent() {
   memory->destroy(keq);
   memory->destroy(phi_lb);
   memory->destroy(psi_lb);
-  if(printfluid>0){
-	memory->destroy(buf);
-    if(me==0)
-      memory->destroy(altogether);
-  }
   memory->destroy(laplace_rho);
   memory->destroy(density_gradient);
   memory->destroy(laplace_phi);
@@ -1690,8 +1658,6 @@ FixLbMulticomponent::FixLbMulticomponent(LAMMPS *lmp, int argc, char **argv)
   mu_psi = NULL;
   sum_mu = NULL;
   pressure_lb = NULL;
-  altogether = NULL;
-  buf = NULL;
 
   SetupBuffers();
 

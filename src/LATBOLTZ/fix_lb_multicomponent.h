@@ -14,10 +14,9 @@
 /* ----------------------------------------------------------------------
    Ternary Lattice Boltzmann Implementation
 
-   Copyright (2018) Ulf D. Schiller <uschill@clemson.edu>
-                    Colin Denniston
-                    Mikko Karttunen
------------------------------------------------------------------------- */
+   Contributing authors: Ulf D. Schiller <uschiller@mailaps.org>,
+                         Fang Wang <fwang8@clemson.edu>
+------------------------------------------------------------------------- */
 
 #ifdef FIX_CLASS
 FixStyle(lb/multicomponent,FixLbMulticomponent)
@@ -45,25 +44,13 @@ namespace LAMMPS_NS {
   protected:
 
   private:
-    //double tau_r;
-    //double tau_p;
-    //double tau_s;
-    //double gamma_p;
-    //double gamma_s;
-    //double kappa1;
-    //double kappa2;
-    //double kappa3;
-    double kappa_rr;
-    double kappa_pp;
-    double kappa_ss;
-    double kappa_rp;
-    double kappa_ps;
-    double kappa_rs;
+    double tau_r, tau_p, tau_s;
+    double gamma_p, gamma_s;
+    double kappa1, kappa2, kappa3;
+    double kappa_rr, kappa_pp, kappa_ss, kappa_rp, kappa_ps, kappa_rs;
     double alpha;
 
-    //double C1;
-    //double C2;
-    //double C3;
+    double C1, C2, C3;
     int radius;
 
     double cs2;
