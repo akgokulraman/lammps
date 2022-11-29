@@ -53,16 +53,21 @@ class FixLbFluid : public Fix {
 
   void dump(const bigint);
 
- private:
+ protected:
   double viscosity, densityinit_real, a_0_real, T;
   int setdx, seta0, setdof;
   int numvel;
+
+  int **e;
+  double *w_lb;
 
   double dm_lb, dx_lb, dt_lb;    // Lattice units for mass, distance, time.
 
   int Nbx, Nby, Nbz;             // Total # of x,y,z grid points.
   int subNbx, subNby, subNbz;    // # of x,y,z, grid points (including buffer)
                                  //   on local processor.
+  int halo_extent[3];            // extent of halo in x,y,z
+
   int fluid_local_n0[3];         // Size of local including both lower and upper end points
   int fluid_global_o0[3];        // Offset of local in global from lower end point
   int fluid_global_n0[3];        // Size of global including both lower and upper end points
@@ -81,9 +86,6 @@ class FixLbFluid : public Fix {
 
   double kB, densityinit, a_0;    // Boltzmann constant, initial density,
                                   //   and a_0 all in lattice units.
-  double *Gamma;
-  double **hydroF;
-  double *massp;
 
   int dump_interval, dump_time_index;
   std::string dump_file_name_xdmf;
@@ -92,14 +94,33 @@ class FixLbFluid : public Fix {
   MPI_File dump_file_handle_raw;
   MPI_Datatype dump_file_mpitype;
 
-  int groupbit_viscouslb;
-
   double ***density_lb;    // fluid density
   double ****u_lb;         // fluid velocity
   double ****f_lb;         // distributions
   double ****fnew;         // used in the calculation of the new
                            //   distributions.
   double ****feq;          // equilibrium distributions
+
+  class Site ***sublattice, ***wholelattice;    // lattice geometry
+
+  int readrestart;    // 1 to read in data from a restart file.
+  MPI_File pFileRead;
+
+  int printrestart;    // 1 to write data to a restart file.
+  MPI_File pFileWrite;
+
+  void initializeGeometry(void);
+  void initializeGlobalGeometry(void);
+  void initializeLB(void);
+  void initialize_feq(void);
+  void parametercalc_full(void);
+
+ private:
+  double *Gamma;
+  double **hydroF;
+  double *massp;
+
+  int groupbit_viscouslb;
 
   double ****Ff, ***Wf;    // Force, total weight, from the MD particles on the fluid.
   double ****Fftempx, ***Wftempx;
@@ -133,12 +154,6 @@ class FixLbFluid : public Fix {
   int seed;
   class RanMars *random;
 
-  int readrestart;    // 1 to read in data from a restart file.
-  MPI_File pFileRead;
-
-  int printrestart;    // 1 to write data to a restart file.
-  MPI_File pFileWrite;
-
   double timeEqb, timeUpdate, timePCalc, timefluidForce, timeCorrectU;
 
   double dof_lb;
@@ -148,14 +163,11 @@ class FixLbFluid : public Fix {
   void rescale(void);
   void SetupBuffers(void);
   void InitializeFirstRun(void);
-  void initializeLB(void);
-  void initialize_feq(void);
   void (FixLbFluid::*equilibriumdist)(int, int, int, int, int, int);
   void equilibriumdist15(int, int, int, int, int, int);
   void equilibriumdist19(int, int, int, int, int, int);
   void parametercalc_part(int, int, int, int, int, int);
   void correctu_part(int, int, int, int, int, int);
-  void parametercalc_full(void);
   void update_periodic(int, int, int, int, int, int);
   void correctu_full(void);
 
@@ -196,13 +208,9 @@ class FixLbFluid : public Fix {
   int sw;              // side walls on/off
   int openingsites;    // Number of active fluid sites at x=0
 
-  class Site ***sublattice, ***wholelattice;    // lattice geometry
-
   /* nanopit routines */
   void addslit(int &, int, int, int, int);
   void addpit(int &, int, int, int, int, int);
-  void initializeGeometry(void);
-  void initializeGlobalGeometry(void);
 };
 }    // namespace LAMMPS_NS
 #endif
