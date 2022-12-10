@@ -102,6 +102,9 @@ namespace LAMMPS_NS {
     void init_lattice();
     void destroy_lattice();
 
+    enum init_type { INIT_MIXTURE, INIT_DROPLET, INIT_LIQUID_LENS, INIT_DOUBLE_EMULSION };
+    init_type init_method = INIT_MIXTURE;
+
     void init_fluid();
     void init_mixture();
     void init_droplet(int radius);

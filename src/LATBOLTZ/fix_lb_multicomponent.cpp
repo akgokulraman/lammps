@@ -738,7 +738,20 @@ void FixLbMulticomponent::init_liquid_lens(int radius) {
 
 void FixLbMulticomponent::init_fluid() {
 
-  init_mixture();
+  switch(init_method) {
+    case INIT_MIXTURE:
+      init_mixture();
+      break;
+    case INIT_DROPLET:
+      init_droplet(radius*dx_lb);
+      break;
+    case INIT_LIQUID_LENS:
+      init_liquid_lens(radius*dx_lb);
+      break;
+    case INIT_DOUBLE_EMULSION:
+      init_double_emulsion(radius*dx_lb);
+      break;
+  }
 
 }
 
@@ -1480,109 +1493,115 @@ void FixLbMulticomponent::destroy_lattice() {
 
 void FixLbMulticomponent::init_parameters(int argc, char **argv) {
 
-  //if(argc < 6) error->all(FLERR,"Illegal fix lb/multicomponent command");
+  if(argc < 9) error->all(FLERR,"Illegal fix lb/multicomponent command: must start with `fix * * lb/multicomponent * * $rho D3Q19 dx 1`");
 
+  // default parameter values
   alpha = 1.0;
+  C1 = 0.333333; C2 = 0.333333; C3 = 0.333334; // concentrations
+  kappa1 = 0.01; kappa2 = 0.02, kappa3 = 0.05; // surface tensions
+  tau_r = 1.0; tau_p = 1.0; tau_s = 0.666667;  // relaxation times
+  gamma_p = 1.0; gamma_s = 1.0;                // mobility coefficients
+  init_method = INIT_MIXTURE;                  // initialization
 
-  int argi = 6;
+  // parse optional parameters
+  int argi = 9;
   while (argi < argc){
-    if(strcmp(argv[argi],"D3Q19")==0){
-      numvel = 19;
-      argi += 1;
-    }
-    else if(strcmp(argv[argi],"dx")==0){
-      dx_lb = atof(argv[argi+1]);
-      setdx = 0;
-      argi += 2;
-   }
-    else if(strcmp(argv[argi],"dm")==0){
-      dm_lb = atof(argv[argi+1]);
-      argi += 2;
-    }
-    else if(strcmp(argv[argi],"read_restart")==0){
-      readrestart = 1;
-      int nlength = strlen(argv[argi+1]) + 16;
-      char *filename = new char[nlength];
-      strcpy(filename,argv[argi+1]);
-      MPI_File_open(world,filename,MPI_MODE_RDONLY,MPI_INFO_NULL,&pFileRead);
-      delete [] filename;
-      argi += 2;
-    }
-    else if(strcmp(argv[argi],"write_restart")==0){
-      printrestart = atoi(argv[argi+1]);
-      argi += 2;
-    }
-    else if (strcmp(argv[argi],"kappa1")==0) {
-      kappa1 = atof(argv[argi+1]);
-      argi += 2;
-    }
-    else if (strcmp(argv[argi],"kappa2")==0) {
-      kappa2 = atof(argv[argi+1]);
-      argi += 2;
-    }
-    else if (strcmp(argv[argi],"kappa3")==0) {
-      kappa3 = atof(argv[argi+1]);
-      argi += 2;
-    }
-    else if (strcmp(argv[argi],"C1")==0) {
-      C1 = atof(argv[argi+1]);
-      argi += 2;
-    }
-    else if (strcmp(argv[argi],"C2")==0) {
-      C2 = atof(argv[argi+1]);
-      argi += 2;
-    }
-    else if (strcmp(argv[argi],"C3")==0) {
-      C3 = atof(argv[argi+1]);
-      argi += 2;
-    }
-    else if (strcmp(argv[argi],"tau_r")==0) {
-      tau_r = atof(argv[argi+1]);
+    if (strcmp(argv[argi],"tau_r")==0) {
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      tau_r = utils::numeric(FLERR, argv[argi+1], false, lmp);
       argi += 2;
     }
     else if (strcmp(argv[argi],"tau_p")==0) {
-      tau_p = atof(argv[argi+1]);
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      tau_p = utils::numeric(FLERR, argv[argi+1], false, lmp);
       argi += 2;
     }
     else if (strcmp(argv[argi],"tau_s")==0) {
-      tau_s = atof(argv[argi+1]);
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      tau_s = utils::numeric(FLERR, argv[argi+1], false, lmp);
+      argi += 2;
+    }
+    else if (strcmp(argv[argi],"kappa1")==0) {
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      kappa1 = utils::numeric(FLERR, argv[argi+1], false, lmp);
+      argi += 2;
+    }
+    else if (strcmp(argv[argi],"kappa2")==0) {
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      kappa2 = utils::numeric(FLERR, argv[argi+1], false, lmp);
+      argi += 2;
+    }
+    else if (strcmp(argv[argi],"kappa3")==0) {
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      kappa3 = utils::numeric(FLERR, argv[argi+1], false, lmp);
       argi += 2;
     }
     else if (strcmp(argv[argi],"gamma_p")==0) {
-      gamma_p = atof(argv[argi+1]);
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      gamma_p = utils::numeric(FLERR, argv[argi+1], false, lmp);
       argi += 2;
     }
     else if (strcmp(argv[argi],"gamma_s")==0) {
-      gamma_s = atof(argv[argi+1]);
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      gamma_s = utils::numeric(FLERR, argv[argi+1], false, lmp);
+      argi += 2;
+    }
+    else if (strcmp(argv[argi],"C1")==0) {
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      C1 = utils::numeric(FLERR, argv[argi+1], false, lmp);
+      argi += 2;
+    }
+    else if (strcmp(argv[argi],"C2")==0) {
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      C2 = utils::numeric(FLERR, argv[argi+1], false, lmp);
+      argi += 2;
+    }
+    else if (strcmp(argv[argi],"C3")==0) {
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      C3 = utils::numeric(FLERR, argv[argi+1], false, lmp);
       argi += 2;
     }
     else if (strcmp(argv[argi],"radius")==0) {
-      radius = atol(argv[argi+1]);
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      radius = utils::numeric(FLERR, argv[argi+1], false, lmp);
       argi += 2;
     }
     else if(strcmp(argv[argi],"dumpxdmf")==0){
-      dump_interval = atoi(argv[argi+1]);
+      if (argi+3 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      dump_interval = utils::inumeric(FLERR, argv[argi+1], false, lmp);
       dump_file_name_xdmf = std::string(argv[argi+2]) + std::string(".xdmf");
       dump_file_name_raw = std::string(argv[argi+2]) + std::string(".raw");
       argi += 3;
     }
-    else if(strcmp(argv[argi],"mixture")==0) {
-      init_mixture();
+    else if(strcmp(argv[argi],"init")==0){
+      if (argi+1 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
       argi += 1;
+      if(strcmp(argv[argi],"mixture")==0) {
+        if (argi+1 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
+        init_method = INIT_MIXTURE;
+        argi += 1;
+      }
+      else if(strcmp(argv[argi],"droplet")==0) {
+        if (argi+1 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
+        radius = utils::numeric(FLERR,argv[argi+1], false, lmp);
+        init_method = INIT_DROPLET;
+        argi += 1;
+      }
+      else if(strcmp(argv[argi],"liquid_lens")==0) {
+        if (argi+1 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
+        radius = utils::numeric(FLERR,argv[argi+1], false, lmp);
+        init_method = INIT_LIQUID_LENS;
+        argi += 1;
+      }
+      else if(strcmp(argv[argi],"double_emulsion")==0) {
+        if (argi+1 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
+        radius = utils::numeric(FLERR,argv[argi+1], false, lmp);
+        init_method = INIT_DOUBLE_EMULSION;
+        argi += 1;
+      }
+      else error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
     }
-    else if(strcmp(argv[argi],"droplet")==0) {
-      init_droplet(radius*dx_lb);
-      argi += 1;
-    }
-    else if(strcmp(argv[argi],"liquid_lens")==0) {
-      init_liquid_lens(radius*dx_lb);
-      argi += 1;
-    }
-    else if(strcmp(argv[argi],"double_emulsion")==0) {
-      init_double_emulsion(radius*dx_lb);
-      argi += 1;
-    }
-    else error->all(FLERR,"Illegal fix lb/multicomponent command: {}", argv[argi]);
+    else error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
   }
 
   kappa_rr = kappa_pp = (kappa1+kappa2)/4.;
