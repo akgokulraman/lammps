@@ -40,10 +40,22 @@
 #include "comm.h"
 #include "error.h"
 #include "random_mars.h"
+#include "citeme.h"
 #include "fix_lb_multicomponent.h"
 #include "latboltz_const.h"
 
 using namespace LAMMPS_NS;
+
+static const char cite_fix_lbmulticomponent[] =
+    "fix lb/multicomponent command: doi:\n\n"
+    "@Article{Raman2023,\n"
+    "  author = {G. Raman, J.P. Andrews, U.D. Schiller},\n"
+    "  title = {Implementation of a Ternary Lattice Boltzmann Model in LAMMPS},\n"
+    "  journal = {Comp.~Phys.~Comm.},\n"
+    "  year =    2023,\n"
+    "  volume = ,\n"
+    "  pages = {}\n"
+    "}\n\n";
 
 int FixLbMulticomponent::setmask() {
   return FixConst::INITIAL_INTEGRATE | FixConst::END_OF_STEP;
@@ -1612,6 +1624,8 @@ FixLbMulticomponent::FixLbMulticomponent(LAMMPS *lmp, int argc, char **argv)
   density_gradient(nullptr), phi_gradient(nullptr), psi_gradient(nullptr),
   laplace_rho(nullptr), laplace_phi(nullptr), laplace_psi(nullptr)
 {
+  if (lmp->citeme) lmp->citeme->add(cite_fix_lbmulticomponent);
+
   // Set halo extent to 2 for gradient calculations
   halo_extent[0] = halo_extent[1] = halo_extent[2] = 2;
 
