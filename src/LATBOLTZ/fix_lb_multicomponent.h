@@ -50,7 +50,7 @@ namespace LAMMPS_NS {
     double C1, C2, C3;
     int radius;
 
-    double cs2;
+    static constexpr double cs2 =1./3.; // D3Q19 lattice speed of sound
     double ***wg;
 
     double ****g_lb;                                

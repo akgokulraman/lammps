@@ -41,6 +41,7 @@
 #include "error.h"
 #include "random_mars.h"
 #include "fix_lb_multicomponent.h"
+#include "latboltz_const.h"
 
 using namespace LAMMPS_NS;
 
@@ -176,9 +177,9 @@ void FixLbMulticomponent::collide_stream(int x, int y, int z) {
   int i, xnew, ynew, znew;
   calc_equilibrium(x,y,z);
   for (i=0; i<numvel; ++i) {
-    xnew = x + e[i][0];
-    ynew = y + e[i][1];
-    znew = z + e[i][2];
+    xnew = x + e19[i][0];
+    ynew = y + e19[i][1];
+    znew = z + e19[i][2];
     fnew[xnew][ynew][znew][i] = f_lb[x][y][z][i] - (f_lb[x][y][z][i] - feq[x][y][z][i])/tau_r;
     gnew[xnew][ynew][znew][i] = g_lb[x][y][z][i] - (g_lb[x][y][z][i] - geq[x][y][z][i])/tau_p;
     knew[xnew][ynew][znew][i] = k_lb[x][y][z][i] - (k_lb[x][y][z][i] - keq[x][y][z][i])/tau_s;
@@ -196,9 +197,9 @@ void FixLbMulticomponent::calc_moments(int x, int y, int z) {
     rho  += fi;
     phi  += gi;
     psi  += ki;
-    j[0] += fi*e[i][0];
-    j[1] += fi*e[i][1];
-    j[2] += fi*e[i][2];
+    j[0] += fi*e19[i][0];
+    j[1] += fi*e19[i][1];
+    j[2] += fi*e19[i][2];
   }
   density_lb[x][y][z] = rho;
   phi_lb[x][y][z] = phi;
@@ -226,13 +227,13 @@ void FixLbMulticomponent::calc_gradient_laplacian(int x, int y, int z, double **
   laplacian[x][y][z] = 0.0;
   for (dir=0; dir<3; dir++) gradient[x][y][z][dir] = 0.0;
   for (i=0; i<numvel; i++) {
-    xp = x + e[i][0];
-    yp = y + e[i][1];
-    zp = z + e[i][2];
+    xp = x + e19[i][0];
+    yp = y + e19[i][1];
+    zp = z + e19[i][2];
     for (dir=0; dir<3; dir++) {
-      gradient[x][y][z][dir] += 3.*w_lb[i]*field[xp][yp][zp]*e[i][dir];
+      gradient[x][y][z][dir] += 3.*w_lb19[i]*field[xp][yp][zp]*e19[i][dir];
     }
-    laplacian[x][y][z] += 6.*w_lb[i]*(field[xp][yp][zp]-field[x][y][z]);
+    laplacian[x][y][z] += 6.*w_lb19[i]*(field[xp][yp][zp]-field[x][y][z]);
   }
 #else
   const double A = 1./6.;  /* 2A+8B=1 */
@@ -496,14 +497,14 @@ void FixLbMulticomponent::calc_feq(int x, int y, int z) {
 
   double sumf = 0.0;
   for (i=1; i<numvel; ++i) { // Eq. (52) Semprebon et al.
-    fi  = 3.*w_lb[i]*p0;
-    fi += 3.*w_lb[i]*rho*(u[0]*e[i][0]+u[1]*e[i][1]+u[2]*e[i][2]);
-    fi += 9./2.*w_lb[i]*((ruu[0][0]*e[i][0]+2.*ruu[0][1]*e[i][1])*e[i][0]
-			 +(ruu[1][1]*e[i][1]+2.*ruu[1][2]*e[i][2])*e[i][1]
-			 +(ruu[2][2]*e[i][2]+2.*ruu[2][0]*e[i][0])*e[i][2]);
-    fi -= 3./2.*w_lb[i]*(ruu[0][0]+ruu[1][1]+ruu[2][2]);
-    fi -= 3.*w_lb[i]*(kappa_rr*rho*D2rho+kappa_pp*phi*D2phi+kappa_ss*psi*D2psi);
-    fi -= 3.*w_lb[i]*(kappa_rp*(rho*D2phi+phi*D2rho)
+    fi  = 3.*w_lb19[i]*p0;
+    fi += 3.*w_lb19[i]*rho*(u[0]*e19[i][0]+u[1]*e19[i][1]+u[2]*e19[i][2]);
+    fi += 9./2.*w_lb19[i]*((ruu[0][0]*e19[i][0]+2.*ruu[0][1]*e19[i][1])*e19[i][0]
+			 +(ruu[1][1]*e19[i][1]+2.*ruu[1][2]*e19[i][2])*e19[i][1]
+			 +(ruu[2][2]*e19[i][2]+2.*ruu[2][0]*e19[i][0])*e19[i][2]);
+    fi -= 3./2.*w_lb19[i]*(ruu[0][0]+ruu[1][1]+ruu[2][2]);
+    fi -= 3.*w_lb19[i]*(kappa_rr*rho*D2rho+kappa_pp*phi*D2phi+kappa_ss*psi*D2psi);
+    fi -= 3.*w_lb19[i]*(kappa_rp*(rho*D2phi+phi*D2rho)
 		      +kappa_rs*(rho*D2psi+psi*D2rho)
 		      +kappa_ps*(phi*D2psi+psi*D2phi));
     fi += 3.*(wg[i][0][0]*G[0][0]+wg[i][1][1]*G[1][1]+wg[i][2][2]*G[2][2]
@@ -548,12 +549,12 @@ void FixLbMulticomponent::calc_geq(int x, int y, int z) {
   
   double sumg = 0.0;
   for (i=1; i<numvel; ++i) { // Eq. (53) Semprebon et al.
-    gi  = 3.*w_lb[i]*gamma_p*mu_p;
-    gi += 3.*w_lb[i]*phi*(u[0]*e[i][0]+u[1]*e[i][1]+u[2]*e[i][2]);
-    gi += 9./2.*w_lb[i]*((puu[0][0]*e[i][0]+2.*puu[0][1]*e[i][1])*e[i][0]
-			 +(puu[1][1]*e[i][1]+2.*puu[1][2]*e[i][2])*e[i][1]
-			 +(puu[2][2]*e[i][2]+2.*puu[2][0]*e[i][0])*e[i][2]);
-    gi -= 3./2.*w_lb[i]*(puu[0][0]+puu[1][1]+puu[2][2]);
+    gi  = 3.*w_lb19[i]*gamma_p*mu_p;
+    gi += 3.*w_lb19[i]*phi*(u[0]*e19[i][0]+u[1]*e19[i][1]+u[2]*e19[i][2]);
+    gi += 9./2.*w_lb19[i]*((puu[0][0]*e19[i][0]+2.*puu[0][1]*e19[i][1])*e19[i][0]
+			 +(puu[1][1]*e19[i][1]+2.*puu[1][2]*e19[i][2])*e19[i][1]
+			 +(puu[2][2]*e19[i][2]+2.*puu[2][0]*e19[i][0])*e19[i][2]);
+    gi -= 3./2.*w_lb19[i]*(puu[0][0]+puu[1][1]+puu[2][2]);
     geq[x][y][z][i] = gi;
     sumg += gi;
   }
@@ -576,12 +577,12 @@ void FixLbMulticomponent::calc_keq(int x, int y, int z) {
   
   double sumk = 0.0;
   for (i=1; i<numvel; ++i) { // Eq. (54) Semprebon et al.
-    ki  = 3.*w_lb[i]*gamma_s*mu_s;
-    ki += 3.*w_lb[i]*psi*(u[0]*e[i][0]+u[1]*e[i][1]+u[2]*e[i][2]);
-    ki += 9./2.*w_lb[i]*((puu[0][0]*e[i][0]+2.*puu[0][1]*e[i][1])*e[i][0]
-			 +(puu[1][1]*e[i][1]+2.*puu[1][2]*e[i][2])*e[i][1]
-			 +(puu[2][2]*e[i][2]+2.*puu[2][0]*e[i][0])*e[i][2]);
-    ki -= 3./2.*w_lb[i]*(puu[0][0]+puu[1][1]+puu[2][2]);
+    ki  = 3.*w_lb19[i]*gamma_s*mu_s;
+    ki += 3.*w_lb19[i]*psi*(u[0]*e19[i][0]+u[1]*e19[i][1]+u[2]*e19[i][2]);
+    ki += 9./2.*w_lb19[i]*((puu[0][0]*e19[i][0]+2.*puu[0][1]*e19[i][1])*e19[i][0]
+			 +(puu[1][1]*e19[i][1]+2.*puu[1][2]*e19[i][2])*e19[i][1]
+			 +(puu[2][2]*e19[i][2]+2.*puu[2][0]*e19[i][0])*e19[i][2]);
+    ki -= 3./2.*w_lb19[i]*(puu[0][0]+puu[1][1]+puu[2][2]);
     keq[x][y][z][i] = ki;
     sumk += ki;
   }
@@ -612,9 +613,9 @@ void FixLbMulticomponent::init_mixture() {
 	psi = densityinit*C3_init;
 
 	for (i=0; i<numvel; i++) {
-	  f_lb[x][y][z][i] = w_lb[i]*rho;
-	  g_lb[x][y][z][i] = w_lb[i]*phi;
-	  k_lb[x][y][z][i] = w_lb[i]*psi;
+	  f_lb[x][y][z][i] = w_lb19[i]*rho;
+	  g_lb[x][y][z][i] = w_lb19[i]*phi;
+	  k_lb[x][y][z][i] = w_lb19[i]*psi;
 	}
 
 	C1tot += C1_init;
@@ -692,9 +693,9 @@ void FixLbMulticomponent::init_droplet(int radius) {
 	r2 = pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2];
 	phi = r2 < radius*radius ? 1.0 : -1.0;
 	for (i=0; i<numvel; i++) {
-	  f_lb[x][y][z][i] = w_lb[i]*rho*densityinit;
-	  g_lb[x][y][z][i] = w_lb[i]*phi*densityinit;
-	  k_lb[x][y][z][i] = w_lb[i]*psi*densityinit;
+	  f_lb[x][y][z][i] = w_lb19[i]*rho*densityinit;
+	  g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
+	  k_lb[x][y][z][i] = w_lb19[i]*psi*densityinit;
 	}
 	calc_moments(x,y,z);
       }
@@ -728,9 +729,9 @@ void FixLbMulticomponent::init_liquid_lens(int radius) {
 	  psi = 0.0;
 	}
 	for (i=0; i<numvel; i++) {
-	  f_lb[x][y][z][i] = w_lb[i]*rho*densityinit;
-	  g_lb[x][y][z][i] = w_lb[i]*phi*densityinit;
-	  k_lb[x][y][z][i] = w_lb[i]*psi*densityinit;
+	  f_lb[x][y][z][i] = w_lb19[i]*rho*densityinit;
+	  g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
+	  k_lb[x][y][z][i] = w_lb19[i]*psi*densityinit;
 	}
 	calc_moments(x,y,z);
       }
@@ -772,9 +773,9 @@ void FixLbMulticomponent::init_double_emulsion(int radius) {
 	  psi = 0.0;
 	}
 	for (i=0; i<numvel; i++) {
-	  f_lb[x][y][z][i] = w_lb[i]*rho*densityinit;
-	  g_lb[x][y][z][i] = w_lb[i]*phi*densityinit;
-	  k_lb[x][y][z][i] = w_lb[i]*psi*densityinit;
+	  f_lb[x][y][z][i] = w_lb19[i]*rho*densityinit;
+	  g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
+	  k_lb[x][y][z][i] = w_lb19[i]*psi*densityinit;
 	}
 	calc_moments(x,y,z);
       }
@@ -1341,8 +1342,6 @@ void FixLbMulticomponent::destroy_output() {
 
 
 void FixLbMulticomponent::init_lattice() {
-
-  cs2 = 1./3.; // lattice speed of sound
   
   // weights for gradient terms in equilibrium distribution
   memory->create(wg,numvel,3,3,"FixLbMulticomponent:wg");
