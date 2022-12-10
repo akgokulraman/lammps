@@ -953,15 +953,15 @@ void FixLbMulticomponent::halo_comm(int dir) {
       MPI_Isend(&f_lb[2][2][subNbz-4][0],2,passzf,comm->procneigh[2][1],tag_high,world,&requests[2]);
       MPI_Irecv(&f_lb[2][2][subNbz-2][0],2,passzf,comm->procneigh[2][1],tag_low,world,&requests[3]);
 
-      MPI_Isend(&g_lb[2][2][2][0],2,passzg,comm->procneigh[2][0],tag_low,world,&requests[4]);
-      MPI_Irecv(&g_lb[2][2][0][0],2,passzg,comm->procneigh[2][0],tag_high,world,&requests[5]);
-      MPI_Isend(&g_lb[2][2][subNbz-4][0],2,passzg,comm->procneigh[2][1],tag_high,world,&requests[6]);
-      MPI_Irecv(&g_lb[2][2][subNbz-2][0],2,passzg,comm->procneigh[2][1],tag_low,world,&requests[7]);
+      MPI_Isend(&g_lb[2][2][2][0],2,passzf,comm->procneigh[2][0],tag_low,world,&requests[4]);
+      MPI_Irecv(&g_lb[2][2][0][0],2,passzf,comm->procneigh[2][0],tag_high,world,&requests[5]);
+      MPI_Isend(&g_lb[2][2][subNbz-4][0],2,passzf,comm->procneigh[2][1],tag_high,world,&requests[6]);
+      MPI_Irecv(&g_lb[2][2][subNbz-2][0],2,passzf,comm->procneigh[2][1],tag_low,world,&requests[7]);
 
-      MPI_Isend(&k_lb[2][2][2][0],2,passzk,comm->procneigh[2][0],tag_low,world,&requests[8]);
-      MPI_Irecv(&k_lb[2][2][0][0],2,passzk,comm->procneigh[2][0],tag_high,world,&requests[9]);
-      MPI_Isend(&k_lb[2][2][subNbz-4][0],2,passzk,comm->procneigh[2][1],tag_high,world,&requests[10]);
-      MPI_Irecv(&k_lb[2][2][subNbz-2][0],2,passzk,comm->procneigh[2][1],tag_low,world,&requests[11]);
+      MPI_Isend(&k_lb[2][2][2][0],2,passzf,comm->procneigh[2][0],tag_low,world,&requests[8]);
+      MPI_Irecv(&k_lb[2][2][0][0],2,passzf,comm->procneigh[2][0],tag_high,world,&requests[9]);
+      MPI_Isend(&k_lb[2][2][subNbz-4][0],2,passzf,comm->procneigh[2][1],tag_high,world,&requests[10]);
+      MPI_Irecv(&k_lb[2][2][subNbz-2][0],2,passzf,comm->procneigh[2][1],tag_low,world,&requests[11]);
       break;
     case 1:
       MPI_Isend(&f_lb[2][2][0][0],2,passyf,comm->procneigh[1][0],tag_low,world,&requests[0]);
@@ -969,15 +969,15 @@ void FixLbMulticomponent::halo_comm(int dir) {
       MPI_Isend(&f_lb[2][subNby-4][0][0],2,passyf,comm->procneigh[1][1],tag_high,world,&requests[2]);
       MPI_Irecv(&f_lb[2][subNby-2][0][0],2,passyf,comm->procneigh[1][1],tag_low,world,&requests[3]);
 
-      MPI_Isend(&g_lb[2][2][0][0],2,passyg,comm->procneigh[1][0],tag_low,world,&requests[4]);
-      MPI_Irecv(&g_lb[2][0][0][0],2,passyg,comm->procneigh[1][0],tag_high,world,&requests[5]);
-      MPI_Isend(&g_lb[2][subNby-4][0][0],2,passyg,comm->procneigh[1][1],tag_high,world,&requests[6]);
-      MPI_Irecv(&g_lb[2][subNby-2][0][0],2,passyg,comm->procneigh[1][1],tag_low,world,&requests[7]);
+      MPI_Isend(&g_lb[2][2][0][0],2,passyf,comm->procneigh[1][0],tag_low,world,&requests[4]);
+      MPI_Irecv(&g_lb[2][0][0][0],2,passyf,comm->procneigh[1][0],tag_high,world,&requests[5]);
+      MPI_Isend(&g_lb[2][subNby-4][0][0],2,passyf,comm->procneigh[1][1],tag_high,world,&requests[6]);
+      MPI_Irecv(&g_lb[2][subNby-2][0][0],2,passyf,comm->procneigh[1][1],tag_low,world,&requests[7]);
 
-      MPI_Isend(&k_lb[2][2][0][0],2,passyk,comm->procneigh[1][0],tag_low,world,&requests[8]);
-      MPI_Irecv(&k_lb[2][0][0][0],2,passyk,comm->procneigh[1][0],tag_high,world,&requests[9]);
-      MPI_Isend(&k_lb[2][subNby-4][0][0],2,passyk,comm->procneigh[1][1],tag_high,world,&requests[10]);
-      MPI_Irecv(&k_lb[2][subNby-2][0][0],2,passyk,comm->procneigh[1][1],tag_low,world,&requests[11]);
+      MPI_Isend(&k_lb[2][2][0][0],2,passyf,comm->procneigh[1][0],tag_low,world,&requests[8]);
+      MPI_Irecv(&k_lb[2][0][0][0],2,passyf,comm->procneigh[1][0],tag_high,world,&requests[9]);
+      MPI_Isend(&k_lb[2][subNby-4][0][0],2,passyf,comm->procneigh[1][1],tag_high,world,&requests[10]);
+      MPI_Irecv(&k_lb[2][subNby-2][0][0],2,passyf,comm->procneigh[1][1],tag_low,world,&requests[11]);
       break;
     case 0:
       MPI_Isend(&f_lb[2][0][0][0],2,passxf,comm->procneigh[0][0],tag_low,world,&requests[0]);
@@ -985,15 +985,15 @@ void FixLbMulticomponent::halo_comm(int dir) {
       MPI_Isend(&f_lb[subNbx-4][0][0][0],2,passxf,comm->procneigh[0][1],tag_high,world,&requests[2]);
       MPI_Irecv(&f_lb[subNbx-2][0][0][0],2,passxf,comm->procneigh[0][1],tag_low,world,&requests[3]);
 
-      MPI_Isend(&g_lb[2][0][0][0],2,passxg,comm->procneigh[0][0],tag_low,world,&requests[4]);
-      MPI_Irecv(&g_lb[0][0][0][0],2,passxg,comm->procneigh[0][0],tag_high,world,&requests[5]);
-      MPI_Isend(&g_lb[subNbx-4][0][0][0],2,passxg,comm->procneigh[0][1],tag_high,world,&requests[6]);
-      MPI_Irecv(&g_lb[subNbx-2][0][0][0],2,passxg,comm->procneigh[0][1],tag_low,world,&requests[7]);
+      MPI_Isend(&g_lb[2][0][0][0],2,passxf,comm->procneigh[0][0],tag_low,world,&requests[4]);
+      MPI_Irecv(&g_lb[0][0][0][0],2,passxf,comm->procneigh[0][0],tag_high,world,&requests[5]);
+      MPI_Isend(&g_lb[subNbx-4][0][0][0],2,passxf,comm->procneigh[0][1],tag_high,world,&requests[6]);
+      MPI_Irecv(&g_lb[subNbx-2][0][0][0],2,passxf,comm->procneigh[0][1],tag_low,world,&requests[7]);
 
-      MPI_Isend(&k_lb[2][0][0][0],2,passxk,comm->procneigh[0][0],tag_low,world,&requests[8]);
-      MPI_Irecv(&k_lb[0][0][0][0],2,passxk,comm->procneigh[0][0],tag_high,world,&requests[9]);
-      MPI_Isend(&k_lb[subNbx-4][0][0][0],2,passxk,comm->procneigh[0][1],tag_high,world,&requests[10]);
-      MPI_Irecv(&k_lb[subNbx-2][0][0][0],2,passxk,comm->procneigh[0][1],tag_low,world,&requests[11]);
+      MPI_Isend(&k_lb[2][0][0][0],2,passxf,comm->procneigh[0][0],tag_low,world,&requests[8]);
+      MPI_Irecv(&k_lb[0][0][0][0],2,passxf,comm->procneigh[0][0],tag_high,world,&requests[9]);
+      MPI_Isend(&k_lb[subNbx-4][0][0][0],2,passxf,comm->procneigh[0][1],tag_high,world,&requests[10]);
+      MPI_Irecv(&k_lb[subNbx-2][0][0][0],2,passxf,comm->procneigh[0][1],tag_low,world,&requests[11]);
       break;
     }
 }
@@ -1013,117 +1013,118 @@ void FixLbMulticomponent::halo_comm() {
 
 void FixLbMulticomponent::init_halo() {
 
-  //--------------------------------------------------------------------------
-  // Create the MPI datatypes used to pass portions of arrays:
-  //--------------------------------------------------------------------------
+  //----------------------------------------------------
+  // Create the MPI datatypes used to pass halo layers:
+  //----------------------------------------------------
 
-  // Datatypes to pass the f and feq arrays
+  // Datatypes to pass the f,g,j and feq,geq,keq arrays
   int size;
-  MPI_Aint lb,sizeofdouble,extent;
+  MPI_Aint lb, extent;
   MPI_Datatype slice[3];
 
-  MPI_Type_get_extent(MPI_DOUBLE,&lb,&sizeofdouble);
+  MPI_Type_get_extent(MPI_DOUBLE,&lb,&extent);
 
   MPI_Type_free(&passxf);
   MPI_Type_free(&passyf);
   MPI_Type_free(&passzf);
 
   MPI_Type_vector(subNbz,numvel,numvel,MPI_DOUBLE,&oneslice);
-  MPI_Type_create_hvector(subNby,1,numvel*subNbz*sizeofdouble,oneslice,&slice[0]);
-  MPI_Type_create_resized(slice[0],0,subNby*subNbz*numvel*sizeofdouble,&passxf);
-  MPI_Type_commit(&passxf);
+  MPI_Type_create_hvector(subNby,1,numvel*subNbz*extent,oneslice,&slice[0]);
+  MPI_Type_create_resized(slice[0],0,subNby*subNbz*numvel*extent,&passxf);
 
-  MPI_Type_create_hvector(subNbx-4,1,numvel*subNby*subNbz*sizeofdouble,oneslice,&slice[1]);
-  MPI_Type_create_resized(slice[1],0,subNbz*numvel*sizeofdouble,&passyf);
-  MPI_Type_commit(&passyf);
+  MPI_Type_create_hvector(subNbx-4,1,numvel*subNby*subNbz*extent,oneslice,&slice[1]);
+  MPI_Type_create_resized(slice[1],0,subNbz*numvel*extent,&passyf);
 
   MPI_Type_vector(subNby-4,numvel,numvel*subNbz,MPI_DOUBLE,&oneslice);
-  MPI_Type_create_hvector(subNbx-4,1,numvel*subNby*subNbz*sizeofdouble,oneslice,&slice[2]);
-  MPI_Type_create_resized(slice[2],0,numvel*sizeofdouble,&passzf);
+  MPI_Type_create_hvector(subNbx-4,1,numvel*subNby*subNbz*extent,oneslice,&slice[2]);
+  MPI_Type_create_resized(slice[2],0,numvel*extent,&passzf);
+
+  MPI_Type_commit(&passxf);
   MPI_Type_commit(&passzf);
-  MPI_Type_free(&oneslice);
+  MPI_Type_commit(&passyf);
+  //MPI_Type_free(&oneslice);
 
-  MPI_Type_get_extent(passzf,&lb,&extent);
-  MPI_Type_size(passzf,&size);
-  //fprintf(stderr,"size=%d extent=%d stride=%d\n",size,extent,subNbx*numvel*subNbz*subNby*sizeofdouble);
+  //MPI_Type_get_extent(passzf,&lb,&extent);
+  //MPI_Type_size(passzf,&size);
+  //fprintf(stderr,"size=%d extent=%d stride=%d\n",size,extent,subNbx*numvel*subNbz*subNby*extent);
 
-  // Datatypes to pass the g and geq arrays
-  MPI_Type_vector(subNbz,numvel,numvel,MPI_DOUBLE,&oneslice);
-  //MPI_Type_commit(&oneslice);
-  MPI_Type_create_hvector(subNby,1,numvel*subNbz*sizeofdouble,oneslice,&slice[0]);
-  //MPI_Type_vector(1,subNby,subNby,oneslice,&passxf);
-  //MPI_Type_vector(1,subNby*subNbz*numvel,subNby*subNbz*numvel,MPI_DOUBLE,&passxf);
-  MPI_Type_create_resized(slice[0],0,subNby*subNbz*numvel*sizeofdouble,&passxg);
-  //MPI_Type_create_hvector(2,1,subNby*subNbz*numvel*sizeofdouble,slice[0],&passxf);
-  MPI_Type_commit(&passxg);
+  // // Datatypes to pass the g and geq arrays
+  // MPI_Type_vector(subNbz,numvel,numvel,MPI_DOUBLE,&oneslice);
+  // //MPI_Type_commit(&oneslice);
+  // MPI_Type_create_hvector(subNby,1,numvel*subNbz*extent,oneslice,&slice[0]);
+  // //MPI_Type_vector(1,subNby,subNby,oneslice,&passxf);
+  // //MPI_Type_vector(1,subNby*subNbz*numvel,subNby*subNbz*numvel,MPI_DOUBLE,&passxf);
+  // MPI_Type_create_resized(slice[0],0,subNby*subNbz*numvel*extent,&passxg);
+  // //MPI_Type_create_hvector(2,1,subNby*subNbz*numvel*extent,slice[0],&passxf);
+  // MPI_Type_commit(&passxg);
 
-  MPI_Type_get_extent(passxg,&lb,&extent);
-  MPI_Type_size(passxg,&size);
-  //fprintf(stderr,"size=%d extent=%d stride=%d\n",size,extent,subNby*numvel*subNbz*sizeofdouble);
+  // //MPI_Type_get_extent(passxg,&lb,&extent);
+  // //MPI_Type_size(passxg,&size);
+  // //fprintf(stderr,"size=%d extent=%d stride=%d\n",size,extent,subNby*numvel*subNbz*extent);
 
-  MPI_Type_create_hvector(subNbx-4,1,numvel*subNby*subNbz*sizeofdouble,oneslice,&slice[1]);
-  //MPI_Type_vector(subNbx,1,subNby,oneslice,&passyf);
-  //MPI_Type_vector(subNbx,subNbz*numvel,subNby*subNbz*numvel,MPI_DOUBLE,&passyf);
-  MPI_Type_create_resized(slice[1],0,subNbz*numvel*sizeofdouble,&passyg);
-  //MPI_Type_create_hvector(2,1,subNbz*numvel*sizeofdouble,slice[1],&passyf);
-  MPI_Type_commit(&passyg);
-  MPI_Type_free(&oneslice);
+  // MPI_Type_create_hvector(subNbx-4,1,numvel*subNby*subNbz*extent,oneslice,&slice[1]);
+  // //MPI_Type_vector(subNbx,1,subNby,oneslice,&passyf);
+  // //MPI_Type_vector(subNbx,subNbz*numvel,subNby*subNbz*numvel,MPI_DOUBLE,&passyf);
+  // MPI_Type_create_resized(slice[1],0,subNbz*numvel*extent,&passyg);
+  // //MPI_Type_create_hvector(2,1,subNbz*numvel*extent,slice[1],&passyf);
+  // MPI_Type_commit(&passyg);
+  // MPI_Type_free(&oneslice);
 
-  MPI_Type_get_extent(passyg,&lb,&extent);
-  MPI_Type_size(passyg,&size);
-  //fprintf(stderr,"size=%d extent=%d stride=%d\n",size,extent,subNbx*numvel*subNbz*subNby*sizeofdouble);
+  // //MPI_Type_get_extent(passyg,&lb,&extent);
+  // //MPI_Type_size(passyg,&size);
+  // //fprintf(stderr,"size=%d extent=%d stride=%d\n",size,extent,subNbx*numvel*subNbz*subNby*extent);
 
-  MPI_Type_vector((subNby-4),numvel,numvel*subNbz,MPI_DOUBLE,&oneslice);
-  //MPI_Type_commit(&oneslice);
-  MPI_Type_create_hvector((subNbx-4),1,numvel*subNby*subNbz*sizeofdouble,oneslice,&slice[2]);
-  //MPI_Type_vector(subNbx,1,1,oneslice,&passzf);
-  //MPI_Type_vector(subNbx*subNby,numvel,subNbz*numvel,MPI_DOUBLE,&passzf);
-  MPI_Type_create_resized(slice[2],0,numvel*sizeofdouble,&passzg);
-  //MPI_Type_create_hvector(2,1,numvel*sizeofdouble,slice[2],&passzf);
-  MPI_Type_commit(&passzg);
-  MPI_Type_free(&oneslice);
+  // MPI_Type_vector((subNby-4),numvel,numvel*subNbz,MPI_DOUBLE,&oneslice);
+  // //MPI_Type_commit(&oneslice);
+  // MPI_Type_create_hvector((subNbx-4),1,numvel*subNby*subNbz*extent,oneslice,&slice[2]);
+  // //MPI_Type_vector(subNbx,1,1,oneslice,&passzf);
+  // //MPI_Type_vector(subNbx*subNby,numvel,subNbz*numvel,MPI_DOUBLE,&passzf);
+  // MPI_Type_create_resized(slice[2],0,numvel*extent,&passzg);
+  // //MPI_Type_create_hvector(2,1,numvel*extent,slice[2],&passzf);
+  // MPI_Type_commit(&passzg);
+  // MPI_Type_free(&oneslice);
 
-  MPI_Type_get_extent(passzg,&lb,&extent);
-  MPI_Type_size(passzg,&size);
+  // //MPI_Type_get_extent(passzg,&lb,&extent);
+  // //MPI_Type_size(passzg,&size);
 
-  // Datatypes to pass the k and keq arrays
-  MPI_Type_vector(subNbz,numvel,numvel,MPI_DOUBLE,&oneslice);
-  //MPI_Type_commit(&oneslice);
-  MPI_Type_create_hvector(subNby,1,numvel*subNbz*sizeofdouble,oneslice,&slice[0]);
-  //MPI_Type_vector(1,subNby,subNby,oneslice,&passxf);
-  //MPI_Type_vector(1,subNby*subNbz*numvel,subNby*subNbz*numvel,MPI_DOUBLE,&passxf);
-  MPI_Type_create_resized(slice[0],0,subNby*subNbz*numvel*sizeofdouble,&passxk);
-  //MPI_Type_create_hvector(2,1,subNby*subNbz*numvel*sizeofdouble,slice[0],&passxf);
-  MPI_Type_commit(&passxk);
+  // // Datatypes to pass the k and keq arrays
+  // MPI_Type_vector(subNbz,numvel,numvel,MPI_DOUBLE,&oneslice);
+  // //MPI_Type_commit(&oneslice);
+  // MPI_Type_create_hvector(subNby,1,numvel*subNbz*extent,oneslice,&slice[0]);
+  // //MPI_Type_vector(1,subNby,subNby,oneslice,&passxf);
+  // //MPI_Type_vector(1,subNby*subNbz*numvel,subNby*subNbz*numvel,MPI_DOUBLE,&passxf);
+  // MPI_Type_create_resized(slice[0],0,subNby*subNbz*numvel*extent,&passxk);
+  // //MPI_Type_create_hvector(2,1,subNby*subNbz*numvel*extent,slice[0],&passxf);
+  // MPI_Type_commit(&passxk);
 
-  MPI_Type_get_extent(passxk,&lb,&extent);
-  MPI_Type_size(passxk,&size);
-  //fprintf(stderr,"size=%d extent=%d stride=%d\n",size,extent,subNby*numvel*subNbz*sizeofdouble);
+  // //MPI_Type_get_extent(passxk,&lb,&extent);
+  // //MPI_Type_size(passxk,&size);
+  // //fprintf(stderr,"size=%d extent=%d stride=%d\n",size,extent,subNby*numvel*subNbz*extent);
 
-  MPI_Type_create_hvector(subNbx-4,1,numvel*subNby*subNbz*sizeofdouble,oneslice,&slice[1]);
-  //MPI_Type_vector(subNbx,1,subNby,oneslice,&passyf);
-  //MPI_Type_vector(subNbx,subNbz*numvel,subNby*subNbz*numvel,MPI_DOUBLE,&passyf);
-  MPI_Type_create_resized(slice[1],0,subNbz*numvel*sizeofdouble,&passyk);
-  //MPI_Type_create_hvector(2,1,subNbz*numvel*sizeofdouble,slice[1],&passyf);
-  MPI_Type_commit(&passyk);
-  MPI_Type_free(&oneslice);
+  // MPI_Type_create_hvector(subNbx-4,1,numvel*subNby*subNbz*extent,oneslice,&slice[1]);
+  // //MPI_Type_vector(subNbx,1,subNby,oneslice,&passyf);
+  // //MPI_Type_vector(subNbx,subNbz*numvel,subNby*subNbz*numvel,MPI_DOUBLE,&passyf);
+  // MPI_Type_create_resized(slice[1],0,subNbz*numvel*extent,&passyk);
+  // //MPI_Type_create_hvector(2,1,subNbz*numvel*extent,slice[1],&passyf);
+  // MPI_Type_commit(&passyk);
+  // MPI_Type_free(&oneslice);
 
-  MPI_Type_get_extent(passyk,&lb,&extent);
-  MPI_Type_size(passyk,&size);
-  //fprintf(stderr,"size=%d extent=%d stride=%d\n",size,extent,subNbx*numvel*subNbz*subNby*sizeofdouble);
+  // //MPI_Type_get_extent(passyk,&lb,&extent);
+  // //MPI_Type_size(passyk,&size);
+  // //fprintf(stderr,"size=%d extent=%d stride=%d\n",size,extent,subNbx*numvel*subNbz*subNby*extent);
 
-  MPI_Type_vector((subNby-4),numvel,numvel*subNbz,MPI_DOUBLE,&oneslice);
-  //MPI_Type_commit(&oneslice);
-  MPI_Type_create_hvector((subNbx-4),1,numvel*subNby*subNbz*sizeofdouble,oneslice,&slice[2]);
-  //MPI_Type_vector(subNbx,1,1,oneslice,&passzf);
-  //MPI_Type_vector(subNbx*subNby,numvel,subNbz*numvel,MPI_DOUBLE,&passzf);
-  MPI_Type_create_resized(slice[2],0,numvel*sizeofdouble,&passzk);
-  //MPI_Type_create_hvector(2,1,numvel*sizeofdouble,slice[2],&passzf);
-  MPI_Type_commit(&passzk);
-  MPI_Type_free(&oneslice);
+  // MPI_Type_vector((subNby-4),numvel,numvel*subNbz,MPI_DOUBLE,&oneslice);
+  // //MPI_Type_commit(&oneslice);
+  // MPI_Type_create_hvector((subNbx-4),1,numvel*subNby*subNbz*extent,oneslice,&slice[2]);
+  // //MPI_Type_vector(subNbx,1,1,oneslice,&passzf);
+  // //MPI_Type_vector(subNbx*subNby,numvel,subNbz*numvel,MPI_DOUBLE,&passzf);
+  // MPI_Type_create_resized(slice[2],0,numvel*extent,&passzk);
+  // //MPI_Type_create_hvector(2,1,numvel*extent,slice[2],&passzf);
+  // MPI_Type_commit(&passzk);
+  // MPI_Type_free(&oneslice);
 
-  MPI_Type_get_extent(passzk,&lb,&extent);
-  MPI_Type_size(passzk,&size);
+  // //MPI_Type_get_extent(passzk,&lb,&extent);
+  // //MPI_Type_size(passzk,&size);
 
 #if 0
   int sizes[] = { subNbx+3-2*(halo_extent[0]-1),
@@ -1166,12 +1167,12 @@ void FixLbMulticomponent::init_halo() {
 
 void FixLbMulticomponent::destroy_halo() {
 
-  MPI_Type_free(&passxg);
-  MPI_Type_free(&passyg);
-  MPI_Type_free(&passzg);
-  MPI_Type_free(&passxk);
-  MPI_Type_free(&passyk);
-  MPI_Type_free(&passzk);
+  // MPI_Type_free(&passxg);
+  // MPI_Type_free(&passyg);
+  // MPI_Type_free(&passzg);
+  // MPI_Type_free(&passxk);
+  // MPI_Type_free(&passyk);
+  // MPI_Type_free(&passzk);
 
 }
 
@@ -1300,11 +1301,11 @@ void FixLbMulticomponent::dump_all(const int step) {
 	}
       }
 
-      MPI_File_write_all(dump_file_handle_raw, &density_2_fort[0], 1, fluid_density_2_mpitype, MPI_STATUS_IGNORE);
-      MPI_File_write_all(dump_file_handle_raw, &phi_2_fort[0], 1, fluid_phi_2_mpitype, MPI_STATUS_IGNORE);
-      MPI_File_write_all(dump_file_handle_raw, &psi_2_fort[0], 1, fluid_psi_2_mpitype, MPI_STATUS_IGNORE);
-      MPI_File_write_all(dump_file_handle_raw, &pressure_2_fort[0], 1, fluid_pressure_2_mpitype, MPI_STATUS_IGNORE);
-      MPI_File_write_all(dump_file_handle_raw, &velocity_2_fort[0], 1, fluid_velocity_2_mpitype, MPI_STATUS_IGNORE);
+      MPI_File_write_all(dump_file_handle_raw, &density_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
+      MPI_File_write_all(dump_file_handle_raw, &phi_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
+      MPI_File_write_all(dump_file_handle_raw, &psi_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
+      MPI_File_write_all(dump_file_handle_raw, &pressure_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
+      MPI_File_write_all(dump_file_handle_raw, &velocity_2_fort[0], 1, fluid_vector_field_mpitype, MPI_STATUS_IGNORE);
       
     }
   }
@@ -1380,7 +1381,7 @@ static MPI_Datatype mpiTypeLocalWrite(const int local_ghost,
 
     //fprintf(stderr,"local old: sizes=(%d,%d,%d) subsizes=(%d,%d,%d) starts=(%d,%d,%d)\n",sizes[0],sizes[1],sizes[2],subsizes[0],subsizes[1],subsizes[2],starts[0],starts[1],starts[2]);
 
-    // Note Fortran ordering as we switch order for paraview output
+    // Fortran ordering for paraview output
     MPI_Type_create_subarray(3, sizes, subsizes, starts, MPI_ORDER_FORTRAN, mpitype, &local_mpitype);
   }
 
@@ -1393,32 +1394,32 @@ static MPI_Datatype mpiTypeDumpGlobal_ternary(const int *local_size,
 					      const int *global_size) {
   MPI_Datatype dump_ternary;
 
-  // Global MPI types for our position of the global dump file
+  // MPI types for local position of the global dump file
   {
-    MPI_Datatype realType3_mpitype;
-    MPI_Type_contiguous(3, MPI_DOUBLE, &realType3_mpitype);
-    MPI_Type_commit(&realType3_mpitype);
+    MPI_Datatype real3_mpitype;
+    MPI_Type_contiguous(3, MPI_DOUBLE, &real3_mpitype);
+    MPI_Type_commit(&real3_mpitype);
 
-    // Density and velocity types for our chunk of the global file
-    MPI_Datatype density_mpitype = mpiTypeGlobalWrite(2, local_size, global_offset, 0, global_size, MPI_DOUBLE);
-    MPI_Datatype velocity_mpitype = mpiTypeGlobalWrite(2, local_size, global_offset, 0, global_size, realType3_mpitype);
+    // Scalar and vector types for the local chunk of the global file
+    MPI_Datatype scalar_mpitype = mpiTypeGlobalWrite(2, local_size, global_offset, 0, global_size, MPI_DOUBLE);
+    MPI_Datatype vector_mpitype = mpiTypeGlobalWrite(2, local_size, global_offset, 0, global_size, real3_mpitype);
 
-    // Density followed by velocity type for our chunk of the global dump file
+    // rho, phi, psi, pressure, velocity
     {
-      MPI_Aint density_lb, density_extent;
-      MPI_Type_get_extent(density_mpitype, &density_lb, &density_extent);
+      MPI_Aint lb, extent;
+      MPI_Type_get_extent(scalar_mpitype, &lb, &extent);
 
-      int blocklengths[] = { 1, 1, 1, 1, 1};
-      MPI_Aint displacements[] = { 0, density_lb+density_extent, 2*(density_lb+density_extent), 3*(density_lb+density_extent),  4*(density_lb+density_extent) };
-      MPI_Datatype datatypes[] = { density_mpitype, density_mpitype, density_mpitype, density_mpitype, velocity_mpitype };
+      int blocklengths[] = { 1, 1, 1, 1, 1 };
+      MPI_Aint displacements[] = { 0, lb+extent, 2*(lb+extent), 3*(lb+extent),  4*(lb+extent) };
+      MPI_Datatype datatypes[] = { scalar_mpitype, scalar_mpitype, scalar_mpitype, scalar_mpitype, vector_mpitype };
 
       MPI_Type_create_struct(5, blocklengths, displacements, datatypes, &dump_ternary);
     }
 
-    // Release local use types
-    MPI_Type_free(&realType3_mpitype);
-    MPI_Type_free(&velocity_mpitype);
-    MPI_Type_free(&density_mpitype);
+    // Free local MPI types
+    MPI_Type_free(&real3_mpitype);
+    MPI_Type_free(&scalar_mpitype);
+    MPI_Type_free(&vector_mpitype);
   }
 
   return dump_ternary;
@@ -1439,20 +1440,17 @@ void FixLbMulticomponent::init_output(void)
   fluid_global_o0[2] = (fluid_local_n0[2])*comm->myloc[2];
 
   // Local write MPI types for our portion of the global dump file
-  fluid_density_2_mpitype = mpiTypeLocalWrite(2, fluid_local_n0, fluid_global_o0, 0, fluid_global_n0, MPI_DOUBLE);
-  fluid_velocity_2_mpitype = mpiTypeLocalWrite(2, fluid_local_n0, fluid_global_o0, 0, fluid_global_n0, realType3_mpitype);
-  fluid_phi_2_mpitype = mpiTypeLocalWrite(2, fluid_local_n0, fluid_global_o0, 0, fluid_global_n0, MPI_DOUBLE);
-  fluid_psi_2_mpitype = mpiTypeLocalWrite(2, fluid_local_n0, fluid_global_o0, 0, fluid_global_n0, MPI_DOUBLE);
-  fluid_pressure_2_mpitype = mpiTypeLocalWrite(2, fluid_local_n0, fluid_global_o0, 0, fluid_global_n0, MPI_DOUBLE);
+  fluid_scalar_field_mpitype = mpiTypeLocalWrite(2, fluid_local_n0, fluid_global_o0, 0, fluid_global_n0, MPI_DOUBLE);
+  fluid_vector_field_mpitype = mpiTypeLocalWrite(2, fluid_local_n0, fluid_global_o0, 0, fluid_global_n0, realType3_mpitype);
+  // fluid_phi_2_mpitype = mpiTypeLocalWrite(2, fluid_local_n0, fluid_global_o0, 0, fluid_global_n0, MPI_DOUBLE);
+  // fluid_psi_2_mpitype = mpiTypeLocalWrite(2, fluid_local_n0, fluid_global_o0, 0, fluid_global_n0, MPI_DOUBLE);
+  // fluid_pressure_2_mpitype = mpiTypeLocalWrite(2, fluid_local_n0, fluid_global_o0, 0, fluid_global_n0, MPI_DOUBLE);
   
-  MPI_Type_commit(&fluid_density_2_mpitype);
-  MPI_Type_commit(&fluid_velocity_2_mpitype);
-  MPI_Type_commit(&fluid_phi_2_mpitype);
-  MPI_Type_commit(&fluid_psi_2_mpitype);
-  MPI_Type_commit(&fluid_pressure_2_mpitype);
-
-  // Global write MPI types for our porition of the global dump file
+  // Global write MPI type for our portion of the global dump file
   dump_file_mpitype = mpiTypeDumpGlobal_ternary(fluid_local_n0, fluid_global_o0, fluid_global_n0);
+
+  MPI_Type_commit(&fluid_scalar_field_mpitype);
+  MPI_Type_commit(&fluid_vector_field_mpitype);
   MPI_Type_commit(&dump_file_mpitype);
 
   // Output
@@ -1474,13 +1472,11 @@ void FixLbMulticomponent::init_output(void)
               "  <Domain>\n"
               "    <Grid Name=\"fluid\" GridType=\"Collection\" CollectionType=\"Temporal\">\n\n");
     }
-
     MPI_File_open(world, const_cast<char*>(dump_file_name_raw.c_str()),
                   MPI_MODE_CREATE | MPI_MODE_WRONLY,
                   MPI_INFO_NULL, &dump_file_handle_raw);
-
     MPI_File_set_size(dump_file_handle_raw, 0);
-    MPI_File_set_view(dump_file_handle_raw, 0, MPI_DOUBLE,dump_file_mpitype,"native", MPI_INFO_NULL);
+    MPI_File_set_view(dump_file_handle_raw, 0, MPI_DOUBLE, dump_file_mpitype, "native", MPI_INFO_NULL);
   }
 }
 
@@ -1489,9 +1485,9 @@ void FixLbMulticomponent::destroy_output() {
 
   MPI_File_close(&dump_file_handle_raw);
 
-  MPI_Type_free(&fluid_phi_2_mpitype);
-  MPI_Type_free(&fluid_psi_2_mpitype);
-  MPI_Type_free(&fluid_pressure_2_mpitype);
+  // MPI_Type_free(&dump_file_mpitype) is done in parent destructor
+  MPI_Type_free(&fluid_scalar_field_mpitype);
+  MPI_Type_free(&fluid_vector_field_mpitype);
 
 }
 

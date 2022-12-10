@@ -137,13 +137,10 @@ namespace LAMMPS_NS {
 
     static const int numrequests = 12;
     MPI_Request requests[numrequests];
-    MPI_Datatype passxg,passyg,passzg;
-    MPI_Datatype passxk,passyk,passzk;
-    MPI_Datatype fluid_phi_2_mpitype;
-    MPI_Datatype fluid_psi_2_mpitype;
-    MPI_Datatype fluid_pressure_2_mpitype;
+    MPI_Datatype fluid_scalar_field_mpitype;
+    MPI_Datatype fluid_vector_field_mpitype;
 
-    int halo_extent[3];            // extent of halo in x,y,z
+    int halo_extent[3]; // extent of halo in x,y,z
 
     void init_halo();
     void destroy_halo();
