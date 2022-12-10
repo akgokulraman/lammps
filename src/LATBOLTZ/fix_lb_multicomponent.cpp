@@ -507,26 +507,26 @@ void FixLbMulticomponent::calc_feq(int x, int y, int z) {
     fi -= 3.*w_lb19[i]*(kappa_rp*(rho*D2phi+phi*D2rho)
 		      +kappa_rs*(rho*D2psi+psi*D2rho)
 		      +kappa_ps*(phi*D2psi+psi*D2phi));
-    fi += 3.*(wg[i][0][0]*G[0][0]+wg[i][1][1]*G[1][1]+wg[i][2][2]*G[2][2]
-	      +wg[i][0][1]*G[0][1]+wg[i][1][2]*G[1][2]+wg[i][2][0]*G[2][0]);
-    fi += 6.*kappa_rp*(wg[i][0][0]*Drho[0]*Dphi[0]
-		       +wg[i][1][1]*Drho[1]*Dphi[1]
-		       +wg[i][2][2]*Drho[2]*Dphi[2]);
-    fi += 6.*kappa_rs*(wg[i][0][0]*Drho[0]*Dpsi[0]
-		       +wg[i][1][1]*Drho[1]*Dpsi[1]
-		       +wg[i][2][2]*Drho[2]*Dpsi[2]);
-    fi += 6.*kappa_ps*(wg[i][0][0]*Dphi[0]*Dpsi[0]
-		       +wg[i][1][1]*Dphi[1]*Dpsi[1]
-		       +wg[i][2][2]*Dphi[2]*Dpsi[2]);
-    fi += 3.*kappa_rp*(wg[i][0][1]*(Drho[0]*Dphi[1]+Drho[1]*Dphi[0])
-		       +wg[i][1][2]*(Drho[1]*Dphi[2]+Drho[2]*Dphi[1])
-		       +wg[i][2][0]*(Drho[2]*Dphi[0]+Drho[0]*Dphi[2]));
-    fi += 3.*kappa_rs*(wg[i][0][1]*(Drho[0]*Dpsi[1]+Drho[1]*Dpsi[0])
-		       +wg[i][1][2]*(Drho[1]*Dpsi[2]+Drho[2]*Dpsi[1])
-		       +wg[i][2][0]*(Drho[2]*Dpsi[0]+Drho[0]*Dpsi[2]));
-    fi += 3.*kappa_ps*(wg[i][0][1]*(Dphi[0]*Dpsi[1]+Dphi[1]*Dpsi[0])
-		       +wg[i][1][2]*(Dphi[1]*Dpsi[2]+Dphi[2]*Dpsi[1])
-		       +wg[i][2][0]*(Dphi[2]*Dpsi[0]+Dphi[0]*Dpsi[2]));
+    fi += 3.*(wg19[i][0][0]*G[0][0]+wg19[i][1][1]*G[1][1]+wg19[i][2][2]*G[2][2]
+	      +wg19[i][0][1]*G[0][1]+wg19[i][1][2]*G[1][2]+wg19[i][2][0]*G[2][0]);
+    fi += 6.*kappa_rp*(wg19[i][0][0]*Drho[0]*Dphi[0]
+		       +wg19[i][1][1]*Drho[1]*Dphi[1]
+		       +wg19[i][2][2]*Drho[2]*Dphi[2]);
+    fi += 6.*kappa_rs*(wg19[i][0][0]*Drho[0]*Dpsi[0]
+		       +wg19[i][1][1]*Drho[1]*Dpsi[1]
+		       +wg19[i][2][2]*Drho[2]*Dpsi[2]);
+    fi += 6.*kappa_ps*(wg19[i][0][0]*Dphi[0]*Dpsi[0]
+		       +wg19[i][1][1]*Dphi[1]*Dpsi[1]
+		       +wg19[i][2][2]*Dphi[2]*Dpsi[2]);
+    fi += 3.*kappa_rp*(wg19[i][0][1]*(Drho[0]*Dphi[1]+Drho[1]*Dphi[0])
+		       +wg19[i][1][2]*(Drho[1]*Dphi[2]+Drho[2]*Dphi[1])
+		       +wg19[i][2][0]*(Drho[2]*Dphi[0]+Drho[0]*Dphi[2]));
+    fi += 3.*kappa_rs*(wg19[i][0][1]*(Drho[0]*Dpsi[1]+Drho[1]*Dpsi[0])
+		       +wg19[i][1][2]*(Drho[1]*Dpsi[2]+Drho[2]*Dpsi[1])
+		       +wg19[i][2][0]*(Drho[2]*Dpsi[0]+Drho[0]*Dpsi[2]));
+    fi += 3.*kappa_ps*(wg19[i][0][1]*(Dphi[0]*Dpsi[1]+Dphi[1]*Dpsi[0])
+		       +wg19[i][1][2]*(Dphi[1]*Dpsi[2]+Dphi[2]*Dpsi[1])
+		       +wg19[i][2][0]*(Dphi[2]*Dpsi[0]+Dphi[0]*Dpsi[2]));
     feq[x][y][z][i] = fi;
     sumf += fi;
   }
