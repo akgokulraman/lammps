@@ -660,14 +660,6 @@ void FixLbMulticomponent::init_mixture() {
 
   /* communicate the equilibrium populations */
   halo_comm(); // check if needed
-  for (x=1; x<subNbx-1; x++) {
-    for (y=1; y<subNby-1; y++) {
-      for (z=1; z<subNbz-1; z++) {
-	calc_moments(x,y,z);
-      }
-    }
-  }
-  dump_all(update->ntimestep);
 
   delete(random);
 }
@@ -691,11 +683,9 @@ void FixLbMulticomponent::init_droplet(double radius) {
 	  g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
 	  k_lb[x][y][z][i] = w_lb19[i]*psi*densityinit;
 	}
-	calc_moments(x,y,z);
       }
     }
   }
-  dump_all(update->ntimestep);
 
 }
 
@@ -727,11 +717,9 @@ void FixLbMulticomponent::init_liquid_lens(double radius) {
 	  g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
 	  k_lb[x][y][z][i] = w_lb19[i]*psi*densityinit;
 	}
-	calc_moments(x,y,z);
       }
     }
   }
-  dump_all(update->ntimestep);
 
 }
 
@@ -764,11 +752,10 @@ void FixLbMulticomponent::init_double_emulsion(double radius) {
 	  g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
 	  k_lb[x][y][z][i] = w_lb19[i]*psi*densityinit;
 	}
-	calc_moments(x,y,z);
       }
     }
   }
-  dump_all(update->ntimestep);
+
 
 }
 
@@ -858,18 +845,10 @@ void FixLbMulticomponent::init_film(double thickness, double C1_film, double C2_
     }
   }
 
+  delete(random);
+
   /* communicate the equilibrium populations */
   halo_comm(); // check if needed
-  for (x=1; x<subNbx-1; x++) {
-    for (y=1; y<subNby-1; y++) {
-      for (z=1; z<subNbz-1; z++) {
-	calc_moments(x,y,z);
-      }
-    }
-  }
-  dump_all(update->ntimestep);
-
-  delete(random);
 }
 
 
@@ -927,16 +906,6 @@ void FixLbMulticomponent::init_mixed_droplet(double radius, double C1, double C2
   /* communicate the equilibrium populations */
   halo_comm(); // check if needed
 
-  for (x=1; x<subNbx-1; x++) {
-    for (y=1; y<subNby-1; y++) {
-      for (z=1; z<subNbz-1; z++) {
-	calc_moments(x,y,z);
-      }
-    }
-  }
-
-  dump_all(update->ntimestep);
-
 }
 
 
@@ -960,6 +929,16 @@ void FixLbMulticomponent::init_fluid() {
     case MIXED_DROPLET:
       break;
   }
+
+  for (int x=1; x<subNbx-1; x++) {
+    for (int y=1; y<subNby-1; y++) {
+      for (int z=1; z<subNbz-1; z++) {
+        calc_moments(x,y,z);
+      }
+    }
+  }
+
+  dump_all(update->ntimestep);
 
 }
 
