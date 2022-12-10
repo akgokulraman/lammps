@@ -96,7 +96,6 @@ namespace LAMMPS_NS {
     double ***mu_rho;
     double ***mu_phi;
     double ***mu_psi;
-    double ***sum_mu;
     
     void init_parameters(int, char **);
     void init_lattice();

@@ -442,9 +442,9 @@ void FixLbMulticomponent::calc_chemical_potentials(int x, int y, int z) {
 
 #if 0
   /* mu_rho is not needed for the calculations.
-     The following expression has not been tested.
+     The following expression has not been tested!
      (Eq. (38) in Semprebon et al. may contain typos) */
-  mu_rho[x][y][z] =
+  mu_rho[x][y][z] = // Eq. (38) in Semprebon et al.
       kappa1/8.*(rho+psi-phi)*(rho+phi-psi-2.)*(rho+phi-psi-1.)
     + kappa2/8.*(rho-phi-psi)*(rho-phi-psi-2.)*(rho-phi-psi-1.)
     - alpha2/4.*((kappa1+kappa2)*(D2rho-D2psi)-(kappa1-kappa2)*D2phi);
@@ -1351,10 +1351,10 @@ static MPI_Datatype mpiTypeGlobalWrite(const int local_ghost,
 
 
 static MPI_Datatype mpiTypeLocalWrite(const int local_ghost,
-				      const int *local_size,
+                                      const int *local_size,
                                       const int *global_offset,
                                       const int global_ghost,
-				      const int *global_size,
+                                      const int *global_size,
                                       const MPI_Datatype mpitype) {
   MPI_Datatype local_mpitype;
 
@@ -1557,8 +1557,8 @@ void FixLbMulticomponent::init_lattice() {
   memory->create(sublattice,subNbx,subNby,subNbz,"FixLBFluid:sublattice");
 
   // Initialize global lattice geometry.
-  initializeGlobalGeometry();
-  initializeGeometry();
+  //initializeGlobalGeometry();
+  //initializeGeometry();
 
   // Destroy redundant global lattice.
   memory->destroy(wholelattice);
@@ -1621,7 +1621,6 @@ void FixLbMulticomponent::destroy_lattice() {
   memory->destroy(mu_rho);
   memory->destroy(mu_phi);
   memory->destroy(mu_psi);
-  memory->destroy(sum_mu);
   memory->destroy(density_gradient);
   memory->destroy(phi_gradient);
   memory->destroy(psi_gradient);
