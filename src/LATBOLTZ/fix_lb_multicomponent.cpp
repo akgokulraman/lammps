@@ -673,7 +673,7 @@ void FixLbMulticomponent::init_mixture() {
 }
 
 // droplet composed of component C1 and C2 (C3=0)
-void FixLbMulticomponent::init_droplet(int radius) {
+void FixLbMulticomponent::init_droplet(double radius) {
   double rho=1.0, phi, psi=0.0;
   double pos[3], r2;
   int x, y, z, i;
@@ -700,7 +700,7 @@ void FixLbMulticomponent::init_droplet(int radius) {
 }
 
 // liquid lens of component C3 between layers of C1 and C2
-void FixLbMulticomponent::init_liquid_lens(int radius) {
+void FixLbMulticomponent::init_liquid_lens(double radius) {
   double rho=1.0, phi, psi;
   double pos[3], r2;
   int x, y, z, i;
@@ -736,28 +736,8 @@ void FixLbMulticomponent::init_liquid_lens(int radius) {
 }
 
 
-void FixLbMulticomponent::init_fluid() {
-
-  switch(init_method) {
-    case INIT_MIXTURE:
-      init_mixture();
-      break;
-    case INIT_DROPLET:
-      init_droplet(radius*dx_lb);
-      break;
-    case INIT_LIQUID_LENS:
-      init_liquid_lens(radius*dx_lb);
-      break;
-    case INIT_DOUBLE_EMULSION:
-      init_double_emulsion(radius*dx_lb);
-      break;
-  }
-
-}
-
-
 // double emulsion droplet of C1 and C2 surrounded by C3
-void FixLbMulticomponent::init_double_emulsion(int radius) {
+void FixLbMulticomponent::init_double_emulsion(double radius) {
   double rho=1.0, phi, psi;
   double pos[3], r2;
   int x, y, z, i;
@@ -791,6 +771,198 @@ void FixLbMulticomponent::init_double_emulsion(int radius) {
   dump_all(update->ntimestep);
 
 }
+
+
+void FixLbMulticomponent::init_film(double thickness, double C1_film, double C2_film) {
+  double rho, phi, psi;
+  double C1_init, C2_init, C3_init;
+  double C1tot=0., C2tot=0., C3tot=0.;
+  double C1tot_global=0., C2tot_global=0., C3tot_global=0.;
+  double pos[3];
+  int x, y, z, i;
+
+  int seed = 12345;
+  RanMars *random = new RanMars(lmp,seed + comm->me);
+
+  double filmlo = domain->boxlo[1] + 0.5*(1.0-thickness)*domain->yprd;
+  double filmhi = domain->boxhi[1] - 0.5*(1.0-thickness)*domain->yprd;
+
+  for (x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+    for (y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+      pos[1] = domain->sublo[1] + (y-halo_extent[1])*dx_lb;
+      for (z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
+
+	if (pos[1] > filmlo && pos[1] < filmhi) {
+
+	  C1_init = C1_film + 0.01*random->gaussian();
+	  C2_init = C2_film + 0.01*random->gaussian();
+	  C3_init = 1.0 - C1_init - C2_init;
+
+	} else {
+
+	  C1_init = C1 + 0.01*random->gaussian();
+	  C2_init = C2 + 0.01*random->gaussian();
+	  C3_init = 1.0 - C1_init - C2_init;
+
+	}
+
+	rho = densityinit;
+	phi = densityinit*(C1_init-C2_init);
+	psi = densityinit*C3_init;
+
+	for (i=0; i<numvel; i++) {
+	  f_lb[x][y][z][i] = w_lb19[i]*rho;
+	  g_lb[x][y][z][i] = w_lb19[i]*phi;
+	  k_lb[x][y][z][i] = w_lb19[i]*psi;
+	}
+
+	C1tot += C1_init;
+	C2tot += C2_init;
+	C3tot += C3_init;
+
+      }
+    }
+  }
+
+  MPI_Reduce(&C1tot,&C1tot_global,1,MPI_DOUBLE,MPI_SUM,0,world);
+  MPI_Reduce(&C2tot,&C2tot_global,1,MPI_DOUBLE,MPI_SUM,0,world);
+  MPI_Reduce(&C3tot,&C3tot_global,1,MPI_DOUBLE,MPI_SUM,0,world);
+  double vol = Nbx*Nby*Nbz;
+  if(comm->me==0){
+    char str[128];
+    sprintf(str,"Initialized ternary mixture with <C1> = %f, <C2> = %f, <C3> = %f",C1tot_global/vol,C2tot_global/vol,C3tot_global/vol);
+    error->message(FLERR,str);
+  }
+
+  /* communicate the populations with correct zeroth moment */
+  halo_comm(); // check if needed
+  for (x=1; x<subNbx-1; x++) {
+    for (y=1; y<subNby-1; y++) {
+      for (z=1; z<subNbz-1; z++) {
+	calc_moments(x,y,z);
+      }
+    }
+  }
+
+  /* next we set the populations to the equilibrium distribution */
+  for (x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+    for (y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+      for (z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
+	calc_equilibrium(x,y,z);
+	for (i=0; i<numvel; i++) {
+	  f_lb[x][y][z][i] = feq[x][y][z][i];
+	  g_lb[x][y][z][i] = geq[x][y][z][i];
+	  k_lb[x][y][z][i] = keq[x][y][z][i];
+	}
+      }
+    }
+  }
+
+  /* communicate the equilibrium populations */
+  halo_comm(); // check if needed
+  for (x=1; x<subNbx-1; x++) {
+    for (y=1; y<subNby-1; y++) {
+      for (z=1; z<subNbz-1; z++) {
+	calc_moments(x,y,z);
+      }
+    }
+  }
+  dump_all(update->ntimestep);
+
+  delete(random);
+}
+
+
+// mixed droplet of component C1 and C2 within pure C3
+void FixLbMulticomponent::init_mixed_droplet(double radius, double C1, double C2) {
+  double rho=1.0, C1_init, C2_init, phi, psi;
+  double pos[3], r2;
+  int x, y, z, i;
+
+  int seed = 12345;
+  RanMars *random = new RanMars(lmp,seed + comm->me);
+
+  for (x=0; x<subNbx; x++) {
+    pos[0] = domain->sublo[0] + (x-halo_extent[0])*dx_lb;
+    for (y=0; y<subNby; y++) {
+      pos[1] = domain->sublo[1] + (y-halo_extent[1])*dx_lb;
+      for (z=0; z<subNbz; z++) {
+	pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
+	r2 = pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2];
+	if (r2 < radius*radius) {
+	  C1_init = C1 + 0.01*random->gaussian();
+	  C2_init = 1. - C1_init;
+	  rho = densityinit;
+	  phi = densityinit*(C1_init - C2_init);
+	  psi = 0.0;
+	} else {
+	  rho = densityinit;
+	  phi = 0.0;
+	  psi = densityinit;
+	}
+	for (i=0; i<numvel; i++) {
+	  f_lb[x][y][z][i] = w_lb19[i]*rho*densityinit;
+	  g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
+	  k_lb[x][y][z][i] = w_lb19[i]*psi*densityinit;
+	}
+      }
+    }
+  }
+
+  /* next we set the populations to the equilibrium distribution */
+  for (x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+    for (y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+      for (z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
+	calc_moments(x,y,z);
+	calc_equilibrium(x,y,z);
+	for (i=0; i<numvel; i++) {
+	  f_lb[x][y][z][i] = feq[x][y][z][i];
+	  g_lb[x][y][z][i] = geq[x][y][z][i];
+	  k_lb[x][y][z][i] = keq[x][y][z][i];
+	}
+      }
+    }
+  }
+
+  /* communicate the equilibrium populations */
+  halo_comm(); // check if needed
+
+  for (x=1; x<subNbx-1; x++) {
+    for (y=1; y<subNby-1; y++) {
+      for (z=1; z<subNbz-1; z++) {
+	calc_moments(x,y,z);
+      }
+    }
+  }
+
+  dump_all(update->ntimestep);
+
+}
+
+
+void FixLbMulticomponent::init_fluid() {
+
+  switch(init_method) {
+    case MIXTURE:
+      init_mixture();
+      break;
+    case DROPLET:
+      init_droplet(radius*dx_lb);
+      break;
+    case LIQUID_LENS:
+      init_liquid_lens(radius*dx_lb);
+      break;
+    case DOUBLE_EMULSION:
+      init_double_emulsion(radius*dx_lb);
+      break;
+    case FILM:
+      break;
+    case MIXED_DROPLET:
+      break;
+  }
+
+}
+
 
 void FixLbMulticomponent::halo_comm(int dir) {
   int tag_low=15, tag_high=25;
@@ -1015,9 +1187,6 @@ void FixLbMulticomponent::init_halo() {
 
 void FixLbMulticomponent::destroy_halo() {
 
-  MPI_Type_free(&passxf);
-  MPI_Type_free(&passyf);
-  MPI_Type_free(&passzf);
   MPI_Type_free(&passxg);
   MPI_Type_free(&passyg);
   MPI_Type_free(&passzg);
@@ -1341,10 +1510,8 @@ void FixLbMulticomponent::destroy_output() {
 
   MPI_File_close(&dump_file_handle_raw);
 
-  MPI_Type_free(&fluid_density_2_mpitype);
   MPI_Type_free(&fluid_phi_2_mpitype);
   MPI_Type_free(&fluid_psi_2_mpitype);
-  MPI_Type_free(&fluid_velocity_2_mpitype);
   MPI_Type_free(&fluid_pressure_2_mpitype);
 
 }
@@ -1501,7 +1668,7 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
   kappa1 = 0.01; kappa2 = 0.02, kappa3 = 0.05; // surface tensions
   tau_r = 1.0; tau_p = 1.0; tau_s = 0.666667;  // relaxation times
   gamma_p = 1.0; gamma_s = 1.0;                // mobility coefficients
-  init_method = INIT_MIXTURE;                  // initialization
+  init_method = MIXTURE;                       // initialization
 
   // parse optional parameters
   int argi = 9;
@@ -1561,11 +1728,11 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
       C3 = utils::numeric(FLERR, argv[argi+1], false, lmp);
       argi += 2;
     }
-    else if (strcmp(argv[argi],"radius")==0) {
-      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
-      radius = utils::numeric(FLERR, argv[argi+1], false, lmp);
-      argi += 2;
-    }
+    // else if (strcmp(argv[argi],"radius")==0) {
+    //   if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+    //   radius = utils::numeric(FLERR, argv[argi+1], false, lmp);
+    //   argi += 2;
+    // }
     else if(strcmp(argv[argi],"dumpxdmf")==0){
       if (argi+3 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
       dump_interval = utils::inumeric(FLERR, argv[argi+1], false, lmp);
@@ -1578,25 +1745,36 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
       argi += 1;
       if(strcmp(argv[argi],"mixture")==0) {
         if (argi+1 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
-        init_method = INIT_MIXTURE;
+        init_method = MIXTURE;
         argi += 1;
       }
       else if(strcmp(argv[argi],"droplet")==0) {
-        if (argi+1 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
-        radius = utils::numeric(FLERR,argv[argi+1], false, lmp);
-        init_method = INIT_DROPLET;
-        argi += 1;
+        if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
+        radius = utils::numeric(FLERR, argv[argi+1], false, lmp);
+        init_method = DROPLET;
+        argi += 2;
       }
       else if(strcmp(argv[argi],"liquid_lens")==0) {
-        if (argi+1 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
-        radius = utils::numeric(FLERR,argv[argi+1], false, lmp);
-        init_method = INIT_LIQUID_LENS;
-        argi += 1;
+        if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
+        radius = utils::numeric(FLERR, argv[argi+1], false, lmp);
+        init_method = LIQUID_LENS;
+        argi += 2;
       }
       else if(strcmp(argv[argi],"double_emulsion")==0) {
+        if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
+        radius = utils::numeric(FLERR, argv[argi+1], false, lmp);
+        init_method = DOUBLE_EMULSION;
+        argi += 2;
+      }
+      else if(strcmp(argv[argi],"film")==0){
         if (argi+1 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
-        radius = utils::numeric(FLERR,argv[argi+1], false, lmp);
-        init_method = INIT_DOUBLE_EMULSION;
+        init_method = FILM;
+        argi += 1;
+      }
+      else if(strcmp(argv[argi],"mixed_droplet")==0){
+        if (argi+1 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
+        radius = utils::numeric(FLERR, argv[argi+1], false, lmp);
+        init_method = MIXED_DROPLET;
         argi += 1;
       }
       else error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
