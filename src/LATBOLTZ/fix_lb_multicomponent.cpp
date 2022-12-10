@@ -68,9 +68,7 @@ void FixLbMulticomponent::initial_integrate(int vflag) {
 void FixLbMulticomponent::end_of_step() {
 
   // Output fluid to dumpfile
-  halo_comm(2); halo_wait();
-  halo_comm(1); halo_wait();
-  halo_comm(0); halo_wait();
+  halo_comm(); // check if needed
   for (int x=0; x<subNbx; ++x) {
     for (int y=0; y<subNby; ++y) {
       for (int z=0; z<subNbz; ++z) {
@@ -83,23 +81,11 @@ void FixLbMulticomponent::end_of_step() {
 }
 
 void FixLbMulticomponent::lb_update() {
-  
-  MPI_Request req_send15,req_recv15;
-  MPI_Request req_send25,req_recv25;	
-  numrequests = 12;
-  int tag_low=15, tag_high=25;
-  double tmp1,tmp2,tmp3;
-  double rb;
-  int i,j,k,m;
-  MPI_Status status;
-  for (int i=0; i<numrequests; ++i) requests[i] = MPI_REQUEST_NULL;
 
 #if 1 /* for testing do not overlap communication and computation */
-    halo_comm(2); halo_wait();
-    halo_comm(1); halo_wait();
-    halo_comm(0); halo_wait();
+    halo_comm();
     update_cube(0,subNbx,0,subNby,0,subNbz);    
-#else
+#else // the following is buggy [uschille 2022/12/10]
   // communicate in z direction
   halo_comm(2);
   // update inner cube
@@ -649,9 +635,7 @@ void FixLbMulticomponent::init_mixture() {
   }
 
   /* communicate the populations with correct zeroth moment */
-  halo_comm(2); halo_wait();
-  halo_comm(1); halo_wait();
-  halo_comm(0); halo_wait();
+  halo_comm(); // check if needed
   for (x=1; x<subNbx-1; x++) {
     for (y=1; y<subNby-1; y++) {
       for (z=1; z<subNbz-1; z++) {
@@ -675,9 +659,7 @@ void FixLbMulticomponent::init_mixture() {
   }
 
   /* communicate the equilibrium populations */
-  halo_comm(2); halo_wait();
-  halo_comm(1); halo_wait();
-  halo_comm(0); halo_wait();
+  halo_comm(); // check if needed
   for (x=1; x<subNbx-1; x++) {
     for (y=1; y<subNby-1; y++) {
       for (z=1; z<subNbz-1; z++) {
@@ -798,9 +780,8 @@ void FixLbMulticomponent::init_double_emulsion(int radius) {
 }
 
 void FixLbMulticomponent::halo_comm(int dir) {
-  numrequests = 12;
   int tag_low=15, tag_high=25;
-  for (int i=0; i<numrequests; ++i) requests[i] = MPI_REQUEST_NULL;
+  for (int i=0; i<12; ++i) requests[i] = MPI_REQUEST_NULL;
   switch (dir) {
     case 2:
       MPI_Isend(&f_lb[2][2][2][0],2,passzf,comm->procneigh[2][0],tag_low,world,&requests[0]);
@@ -853,15 +834,18 @@ void FixLbMulticomponent::halo_comm(int dir) {
     }
 }
 
+
+void FixLbMulticomponent::halo_wait() {
+  MPI_Waitall(numrequests,requests,MPI_STATUS_IGNORE);
+}
+
+
 void FixLbMulticomponent::halo_comm() {
   halo_comm(2); halo_wait();
   halo_comm(1); halo_wait();
   halo_comm(0); halo_wait();
 }
 
-void FixLbMulticomponent::halo_wait() {
-  MPI_Waitall(numrequests,requests,MPI_STATUS_IGNORE);
-}
 
 void FixLbMulticomponent::init_halo() {
 
@@ -1492,6 +1476,7 @@ void FixLbMulticomponent::destroy_lattice() {
   memory->destroy(wg);
 
 }
+
 
 void FixLbMulticomponent::init_parameters(int argc, char **argv) {
 

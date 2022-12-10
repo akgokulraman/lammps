@@ -130,8 +130,8 @@ namespace LAMMPS_NS {
     void calc_psi_gradients(int x, int y, int z);
     double pressure(double rho, double phi, double psi);
 
-    int numrequests;
-    MPI_Request requests[12];
+    static const int numrequests = 12;
+    MPI_Request requests[numrequests];
     MPI_Datatype passxg,passyg,passzg;
     MPI_Datatype passxk,passyk,passzk;
     MPI_Datatype fluid_phi_2_mpitype;
