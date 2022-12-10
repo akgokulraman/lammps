@@ -740,6 +740,14 @@ void FixLbMulticomponent::init_liquid_lens(int radius) {
 
 }
 
+
+void FixLbMulticomponent::init_fluid() {
+
+  init_mixture();
+
+}
+
+
 // double emulsion droplet of C1 and C2 surrounded by C3
 void FixLbMulticomponent::init_double_emulsion(int radius) {
   double rho=1.0, phi, psi;
@@ -842,7 +850,7 @@ void FixLbMulticomponent::halo_wait() {
   MPI_Waitall(numrequests,requests,MPI_STATUS_IGNORE);
 }
 
-void FixLbMulticomponent::halo_init() {
+void FixLbMulticomponent::init_halo() {
 
   //--------------------------------------------------------------------------
   // Create the MPI datatypes used to pass portions of arrays:
@@ -993,6 +1001,22 @@ void FixLbMulticomponent::halo_init() {
 #endif
 
 }
+
+
+void FixLbMulticomponent::destroy_halo() {
+
+  MPI_Type_free(&passxf);
+  MPI_Type_free(&passyf);
+  MPI_Type_free(&passzf);
+  MPI_Type_free(&passxg);
+  MPI_Type_free(&passyg);
+  MPI_Type_free(&passzg);
+  MPI_Type_free(&passxk);
+  MPI_Type_free(&passyk);
+  MPI_Type_free(&passzk);
+
+}
+
 
 void FixLbMulticomponent::dump_all(const int step) {
   if ( dump_interval && step % dump_interval == 0 ) {
@@ -1242,66 +1266,87 @@ static MPI_Datatype mpiTypeDumpGlobal_ternary(const int *local_size,
   return dump_ternary;
 }
 
+void FixLbMulticomponent::init_output(void)
+{
+  fluid_global_n0[0] = Nbx + (domain->periodicity[0]==0);
+  fluid_global_n0[1] = Nby + (domain->periodicity[1]==0);
+  fluid_global_n0[2] = Nbz + (domain->periodicity[2]==0);
 
-void FixLbMulticomponent::init_lattice() { 
+  fluid_local_n0[0] = subNbx-2*halo_extent[0] + (domain->periodicity[0]==0 && (comm->myloc[0]==comm->procgrid[0]-1));
+  fluid_local_n0[1] = subNby-2*halo_extent[1] + (domain->periodicity[1]==0 && (comm->myloc[1]==comm->procgrid[1]-1));
+  fluid_local_n0[2] = subNbz-2*halo_extent[2] + (domain->periodicity[2]==0 && (comm->myloc[2]==comm->procgrid[2]-1));
 
-  subNbx += 2;
-  subNby += 2;
-  subNbz += 2;
+  fluid_global_o0[0] = (fluid_local_n0[0])*comm->myloc[0];
+  fluid_global_o0[1] = (fluid_local_n0[1])*comm->myloc[1];
+  fluid_global_o0[2] = (fluid_local_n0[2])*comm->myloc[2];
 
-  halo_extent[0] = halo_extent[1] = halo_extent[2] = 2;
+  // Local write MPI types for our portion of the global dump file
+  fluid_density_2_mpitype = mpiTypeLocalWrite(2, fluid_local_n0, fluid_global_o0, 0, fluid_global_n0, MPI_DOUBLE);
+  fluid_velocity_2_mpitype = mpiTypeLocalWrite(2, fluid_local_n0, fluid_global_o0, 0, fluid_global_n0, realType3_mpitype);
+  fluid_phi_2_mpitype = mpiTypeLocalWrite(2, fluid_local_n0, fluid_global_o0, 0, fluid_global_n0, MPI_DOUBLE);
+  fluid_psi_2_mpitype = mpiTypeLocalWrite(2, fluid_local_n0, fluid_global_o0, 0, fluid_global_n0, MPI_DOUBLE);
+  fluid_pressure_2_mpitype = mpiTypeLocalWrite(2, fluid_local_n0, fluid_global_o0, 0, fluid_global_n0, MPI_DOUBLE);
+  
+  MPI_Type_commit(&fluid_density_2_mpitype);
+  MPI_Type_commit(&fluid_velocity_2_mpitype);
+  MPI_Type_commit(&fluid_phi_2_mpitype);
+  MPI_Type_commit(&fluid_psi_2_mpitype);
+  MPI_Type_commit(&fluid_pressure_2_mpitype);
 
-  halo_init();
-  
-  memory->destroy(f_lb);
-  memory->destroy(g_lb);
-  memory->destroy(k_lb);
-  memory->destroy(fnew);
-  memory->destroy(gnew);
-  memory->destroy(knew);
-  memory->destroy(feq);
-  memory->destroy(geq);
-  memory->destroy(keq);
-  memory->destroy(phi_lb);
-  memory->destroy(psi_lb);
-  memory->destroy(pressure_lb);
+  // Global write MPI types for our porition of the global dump file
+  dump_file_mpitype = mpiTypeDumpGlobal_ternary(fluid_local_n0, fluid_global_o0, fluid_global_n0);
+  MPI_Type_commit(&dump_file_mpitype);
 
-  memory->create(feq,subNbx,subNby,subNbz,numvel,"FixLbFluid:feq");
-  memory->create(f_lb,subNbx,subNby,subNbz,numvel,"FixLbFluid:f_lb");
-  memory->create(fnew,subNbx,subNby,subNbz,numvel,"FixLbFluid:fnew");
-  
-  memory->create(geq,subNbx,subNby,subNbz,numvel,"FixLbMulticomponent:geq");
-  memory->create(g_lb,subNbx,subNby,subNbz,numvel,"FixLbMulticomponent:g_lb");
-  memory->create(gnew,subNbx,subNby,subNbz,numvel,"FixLbMulticomponent:gnew");
-  
-  memory->create(keq,subNbx,subNby,subNbz,numvel,"FixLbMulticomponent:keq");
-  memory->create(k_lb,subNbx,subNby,subNbz,numvel,"FixLbMulticomponent:k_lb");
-  memory->create(knew,subNbx,subNby,subNbz,numvel,"FixLbMulticomponent:knew");
-  
-  //memory->create(density_lb,subNbx,subNby,subNbz,"FixLbFluid:density_lb");
-  //memory->create(u_lb,subNbx,subNby,subNbz,3,"FixLbFluid:u_lb");
-  
-  memory->create(phi_lb,subNbx+3,subNby+3,subNbz+3,"FixLbMulticomponent:phi_lb");
-  memory->create(psi_lb,subNbx+3,subNby+3,subNbz+3,"FixLbMulticomponent:psi_lb");
-  memory->create(pressure_lb,subNbx+3,subNby+3,subNbz+3,"FixLbMulticomponent:pressure_lb");
+  // Output
+  if ( dump_interval ) {
+    if ( me == 0 ) {
+      dump_file_handle_xdmf = fopen( dump_file_name_xdmf.c_str(), "w");
+      if (!dump_file_handle_xdmf) {
+	    std::ostringstream combined;
 
-  memory->create(laplace_rho,subNbx,subNby,subNbz,"FixLbMulticomponent:laplace_rho");
-  memory->create(density_gradient,subNbx,subNby,subNbz,3,"FixLbMulticomponent:density_gradient");
+	    // The message plus the status
+	    combined <<  std::string("unable to truncate/create \"") + dump_file_name_xdmf + std::string("\"");
+
+        error->one(FLERR, combined.str().c_str() );
+      }
+      fprintf(dump_file_handle_xdmf,
+              "<?xml version=\"1.0\" ?>\n"
+              "<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\" []>\n"
+              "<Xdmf Version=\"2.0\">\n"
+              "  <Domain>\n"
+              "    <Grid Name=\"fluid\" GridType=\"Collection\" CollectionType=\"Temporal\">\n\n");
+    }
+
+    MPI_File_open(world, const_cast<char*>(dump_file_name_raw.c_str()),
+                  MPI_MODE_CREATE | MPI_MODE_WRONLY,
+                  MPI_INFO_NULL, &dump_file_handle_raw);
+
+    MPI_File_set_size(dump_file_handle_raw, 0);
+    MPI_File_set_view(dump_file_handle_raw, 0, MPI_DOUBLE,dump_file_mpitype,"native", MPI_INFO_NULL);
+  }
+}
+
+
+void FixLbMulticomponent::destroy_output() {
+
+  MPI_File_close(&dump_file_handle_raw);
+
+  MPI_Type_free(&fluid_density_2_mpitype);
+  MPI_Type_free(&fluid_phi_2_mpitype);
+  MPI_Type_free(&fluid_psi_2_mpitype);
+  MPI_Type_free(&fluid_velocity_2_mpitype);
+  MPI_Type_free(&fluid_pressure_2_mpitype);
+
+}
+
+
+void FixLbMulticomponent::init_lattice() {
+
+  cs2 = 1./3.; // lattice speed of sound
   
-  memory->create(laplace_phi,subNbx,subNby,subNbz,"FixLbMulticomponent:laplace_phi");
-  memory->create(phi_gradient,subNbx,subNby,subNbz,3,"FixLbMulticomponent:phi_gradient");
-  
-  memory->create(laplace_psi,subNbx,subNby,subNbz,"FixLbMulticomponent:laplace_psi");
-  memory->create(psi_gradient,subNbx,subNby,subNbz,3,"FixLbMulticomponent:psi_gradient");
-  
-  memory->create(mu_rho,subNbx,subNby,subNbz,"FixLbMulticomponent:mu_rho");
-  memory->create(mu_phi,subNbx,subNby,subNbz,"FixLbMulticomponent:mu_phi");
-  memory->create(mu_psi,subNbx,subNby,subNbz,"FixLbMulticomponent:mu_psi");
-  memory->create(sum_mu,subNbx,subNby,subNbz,"FixLbMulticomponent:sum_mu");
+  // weights for gradient terms in equilibrium distribution
   memory->create(wg,numvel,3,3,"FixLbMulticomponent:wg");
 
-  cs2 = 1./3.;
-  
   wg[1][0][0] = wg[3][0][0] = 5./36.;
   wg[2][1][1] = wg[4][1][1] = 5./36.;
   wg[5][2][2] = wg[6][2][2] = 5./36.;
@@ -1353,6 +1398,87 @@ void FixLbMulticomponent::init_lattice() {
   wg[15][0][2] = wg[16][0][2] = wg[17][0][2] = wg[18][0][2] = 0.0;
   wg[15][1][0] = wg[16][1][0] = wg[17][1][0] = wg[18][1][0] = 0.0;
   wg[15][2][0] = wg[16][2][0] = wg[17][2][0] = wg[18][2][0] = 0.0;
+
+  subNbx += 2;
+  subNby += 2;
+  subNbz += 2;
+
+  memory->create(wholelattice,Nbx,Nby,Nbz,"FixLBFluid:lattice");
+  memory->create(sublattice,subNbx,subNby,subNbz,"FixLBFluid:sublattice");
+
+  // Initialize global lattice geometry.
+  initializeGlobalGeometry();
+  initializeGeometry();
+
+  // Destroy redundant global lattice.
+  memory->destroy(wholelattice);
+
+  // Destroy memory created in FixLbFluid constructor previously
+  memory->destroy(f_lb);
+  memory->destroy(fnew);
+  memory->destroy(feq);
+  memory->destroy(density_lb);
+  memory->destroy(u_lb);
+
+  memory->create(feq,subNbx,subNby,subNbz,numvel,"FixLbMulticomponent:feq");
+  memory->create(f_lb,subNbx,subNby,subNbz,numvel,"FixLbMulticomponent:f_lb");
+  memory->create(fnew,subNbx,subNby,subNbz,numvel,"FixLbMulticomponent:fnew");
+
+  memory->create(geq,subNbx,subNby,subNbz,numvel,"FixLbMulticomponent:geq");
+  memory->create(g_lb,subNbx,subNby,subNbz,numvel,"FixLbMulticomponent:g_lb");
+  memory->create(gnew,subNbx,subNby,subNbz,numvel,"FixLbMulticomponent:gnew");
+
+  memory->create(keq,subNbx,subNby,subNbz,numvel,"FixLbMulticomponent:keq");
+  memory->create(k_lb,subNbx,subNby,subNbz,numvel,"FixLbMulticomponent:k_lb");
+  memory->create(knew,subNbx,subNby,subNbz,numvel,"FixLbMulticomponent:knew");
+
+  memory->create(density_lb,subNbx,subNby,subNbz,"FixLbMulticomponent:rho_lb");
+  memory->create(u_lb,subNbx,subNby,subNbz,3,"FixLBMulticomponent:u_lb");
+  memory->create(phi_lb,subNbx,subNby,subNbz,"FixLbMulticomponent:phi_lb");
+  memory->create(psi_lb,subNbx,subNby,subNbz,"FixLbMulticomponent:psi_lb");
+  memory->create(pressure_lb,subNbx,subNby,subNbz,"FixLbMulticomponent:pressure_lb");
+  memory->create(mu_rho,subNbx,subNby,subNbz,"FixLbMulticomponent:mu_rho");
+  memory->create(mu_phi,subNbx,subNby,subNbz,"FixLbMulticomponent:mu_phi");
+  memory->create(mu_psi,subNbx,subNby,subNbz,"FixLbMulticomponent:mu_psi");
+
+  memory->create(density_gradient,subNbx,subNby,subNbz,3,"FixLbMulticomponent:density_gradient");
+  memory->create(phi_gradient,subNbx,subNby,subNbz,3,"FixLbMulticomponent:phi_gradient");
+  memory->create(psi_gradient,subNbx,subNby,subNbz,3,"FixLbMulticomponent:psi_gradient");
+  memory->create(laplace_rho,subNbx,subNby,subNbz,"FixLbMulticomponent:laplace_rho");
+  memory->create(laplace_phi,subNbx,subNby,subNbz,"FixLbMulticomponent:laplace_phi");
+  memory->create(laplace_psi,subNbx,subNby,subNbz,"FixLbMulticomponent:laplace_psi");
+
+  //initializeLB();
+  //parametercalc_full();
+
+}
+
+
+void FixLbMulticomponent::destroy_lattice() {
+
+  memory->destroy(f_lb);
+  memory->destroy(g_lb);
+  memory->destroy(k_lb);
+  memory->destroy(fnew);
+  memory->destroy(gnew);
+  memory->destroy(knew);
+  memory->destroy(feq);
+  memory->destroy(geq);
+  memory->destroy(keq);
+  memory->destroy(phi_lb);
+  memory->destroy(psi_lb);
+  memory->destroy(pressure_lb);
+  memory->destroy(mu_rho);
+  memory->destroy(mu_phi);
+  memory->destroy(mu_psi);
+  memory->destroy(sum_mu);
+  memory->destroy(density_gradient);
+  memory->destroy(phi_gradient);
+  memory->destroy(psi_gradient);
+  memory->destroy(laplace_phi);
+  memory->destroy(laplace_rho);
+  memory->destroy(laplace_psi);
+  memory->destroy(wg);
 
 }
 
@@ -1445,26 +1571,22 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
       argi += 3;
     }
     else if(strcmp(argv[argi],"mixture")==0) {
-      init_lattice();
       init_mixture();
       argi += 1;
     }
     else if(strcmp(argv[argi],"droplet")==0) {
-      init_lattice();
       init_droplet(radius*dx_lb);
       argi += 1;
     }
     else if(strcmp(argv[argi],"liquid_lens")==0) {
-      init_lattice();
       init_liquid_lens(radius*dx_lb);
       argi += 1;
     }
     else if(strcmp(argv[argi],"double_emulsion")==0) {
-      init_lattice();
       init_double_emulsion(radius*dx_lb);
       argi += 1;
     }
-    else error->all(FLERR,"Illegal fix lb/multicomponent command");
+    else error->all(FLERR,"Illegal fix lb/multicomponent command: {}", argv[argi]);
   }
 
   kappa_rr = kappa_pp = (kappa1+kappa2)/4.;
@@ -1475,194 +1597,29 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
 
 }
 
-void FixLbMulticomponent::SetupBuffers(void)
-{
-  fluid_global_n0[0] = Nbx + (domain->periodicity[0]==0);
-  fluid_global_n0[1] = Nby + (domain->periodicity[1]==0);
-  fluid_global_n0[2] = Nbz + (domain->periodicity[2]==0);
-
-  fluid_local_n0[0] = subNbx-2*halo_extent[0] + (domain->periodicity[0]==0 && (comm->myloc[0]==comm->procgrid[0]-1));
-  fluid_local_n0[1] = subNby-2*halo_extent[1] + (domain->periodicity[1]==0 && (comm->myloc[1]==comm->procgrid[1]-1));
-  fluid_local_n0[2] = subNbz-2*halo_extent[2] + (domain->periodicity[2]==0 && (comm->myloc[2]==comm->procgrid[2]-1));
-
-  fluid_global_o0[0] = (fluid_local_n0[0])*comm->myloc[0];
-  fluid_global_o0[1] = (fluid_local_n0[1])*comm->myloc[1];
-  fluid_global_o0[2] = (fluid_local_n0[2])*comm->myloc[2];
-
-  // Local write MPI types for our portion of the global dump file
-  fluid_density_2_mpitype = mpiTypeLocalWrite(2, fluid_local_n0, fluid_global_o0, 0, fluid_global_n0, MPI_DOUBLE);
-  fluid_phi_2_mpitype = mpiTypeLocalWrite(2, fluid_local_n0, fluid_global_o0, 0, fluid_global_n0, MPI_DOUBLE);
-  fluid_psi_2_mpitype = mpiTypeLocalWrite(2, fluid_local_n0, fluid_global_o0, 0, fluid_global_n0, MPI_DOUBLE);
-  fluid_pressure_2_mpitype = mpiTypeLocalWrite(2, fluid_local_n0, fluid_global_o0, 0, fluid_global_n0, MPI_DOUBLE);
-  fluid_velocity_2_mpitype = mpiTypeLocalWrite(2, fluid_local_n0, fluid_global_o0, 0, fluid_global_n0, realType3_mpitype);
-  
-  MPI_Type_commit(&fluid_density_2_mpitype);
-  MPI_Type_commit(&fluid_phi_2_mpitype);
-  MPI_Type_commit(&fluid_psi_2_mpitype);
-  MPI_Type_commit(&fluid_pressure_2_mpitype);
-  MPI_Type_commit(&fluid_velocity_2_mpitype);
-
-  // Global write MPI types for our porition of the global dump file
-  dump_file_mpitype = mpiTypeDumpGlobal_ternary(fluid_local_n0, fluid_global_o0, fluid_global_n0);
-  MPI_Type_commit(&dump_file_mpitype);
-
-  // Output
-  if ( dump_interval ) {
-    if ( me == 0 ) {
-      dump_file_handle_xdmf = fopen( dump_file_name_xdmf.c_str(), "w");
-      if (!dump_file_handle_xdmf) {
-	    std::ostringstream combined;
-
-	    // The message plus the status
-	    combined <<  std::string("unable to truncate/create \"") + dump_file_name_xdmf + std::string("\"");
-
-        error->one(FLERR, combined.str().c_str() );
-      }
-      fprintf(dump_file_handle_xdmf,
-              "<?xml version=\"1.0\" ?>\n"
-              "<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\" []>\n"
-              "<Xdmf Version=\"2.0\">\n"
-              "  <Domain>\n"
-              "    <Grid Name=\"fluid\" GridType=\"Collection\" CollectionType=\"Temporal\">\n\n");
-    }
-
-    // MPI_File_open(world, const_cast<char*>(dump_file_name_raw.c_str()),
-    //               MPI_MODE_CREATE|MPI_MODE_WRONLY|MPI_MODE_UNIQUE_OPEN,
-    //               MPI_INFO_NULL, &dump_file_handle_raw);
-    MPI_File_open(world, const_cast<char*>(dump_file_name_raw.c_str()),
-                  MPI_MODE_CREATE|MPI_MODE_WRONLY,
-                  MPI_INFO_NULL, &dump_file_handle_raw);
-
-    //MPI_File_set_size(dump_file_handle_raw, 0);
-    MPI_File_set_view(dump_file_handle_raw, 0, MPI_DOUBLE,dump_file_mpitype,"native", MPI_INFO_NULL);
-    //MPI_File_close(&dump_file_handle_raw);
-    //MPI_Type_free(&dump_file_mpitype);
-  }
-  //MPI_Type_free(&dump_file_mpitype);
-}
-
-void FixLbMulticomponent::Initialize(void) {
-  int x, y, z;
-  double rho;
-  double phi;
-  double psi;
-
-  memory->create(wholelattice,Nbx,Nby,Nbz,"FixLBFluid:lattice");
-  memory->create(sublattice,subNbx,subNby,subNbz,"FixLBFluid:sublattice");
-  memory->create(phi_lb,subNbx+3,subNby+3,subNbz+3,"FixLbMulticomponent:phi_lb");
-  memory->create(psi_lb,subNbx+3,subNby+3,subNbz+3,"FixLbMulticomponent:psi_lb");
-  memory->create(pressure_lb,subNbx+3,subNby+3,subNbz+3,"FixLbMulticomponent:pressure_lb");
-
-  // Initialize global lattice geometry.
-  initializeGlobalGeometry();
-  // if(comm->me==0){
-  //   char str[128];
-  //   sprintf(str,"Global Grid Geometry created.");
-  //   error->message(FLERR,str);
-  // }
-  // Initialize local lattice geometry based on global geometry.
-  initializeGeometry();
-  //if(comm->me==0){
-  //  char str[128];
-  //  sprintf(str,"Local Grid Geometry created.");
-  //  error->message(FLERR,str);
-  //}
-  // Destroy redundant global lattice.
-  memory->destroy(wholelattice);
-
-  //--------------------------------------------------------------------------
-  // Initialize the arrays.
-  //--------------------------------------------------------------------------
-  //calc_fluidforceweight(); // Gives us info about where the particles are
-
-  initializeLB();
-  parametercalc_full();
-
-  //init_fluid();
-  for (x=0; x<subNbx; x++) {
-    for (y=0; y<subNby; y++) {
-      for (z=0; z<subNbz; z++) {
-	    phi_lb[x][y][z] = density_lb[x][y][z]*C1;
-	    psi_lb[x][y][z] = density_lb[x][y][z]*C3;
-	    rho = density_lb[x][y][z];
-	    phi = phi_lb[x][y][z];
-	    psi = psi_lb[x][y][z];
-	    pressure_lb[x][y][z] = pressure(rho,phi,psi);
-      }
-    }
-  }
-
-  // Output for t=0
-  //dump_all(update->ntimestep);
-}
-
 FixLbMulticomponent::~FixLbMulticomponent() {
 	
-  memory->destroy(f_lb);
-  memory->destroy(g_lb);
-  memory->destroy(k_lb);
-  memory->destroy(fnew);
-  memory->destroy(gnew);
-  memory->destroy(knew);
-  memory->destroy(feq);
-  memory->destroy(geq);
-  memory->destroy(keq);
-  memory->destroy(phi_lb);
-  memory->destroy(psi_lb);
-  memory->destroy(laplace_rho);
-  memory->destroy(density_gradient);
-  memory->destroy(laplace_phi);
-  memory->destroy(phi_gradient);
-  memory->destroy(laplace_psi);
-  memory->destroy(psi_gradient);
-  memory->destroy(mu_rho);
-  memory->destroy(mu_phi);
-  memory->destroy(mu_psi);
-  memory->destroy(sum_mu);
-  memory->destroy(wg);
-  memory->destroy(pressure_lb);
-
-  MPI_Type_free(&passxf);
-  MPI_Type_free(&passyf);
-  MPI_Type_free(&passzf);
-
-  MPI_Type_free(&fluid_density_2_mpitype);
-  MPI_Type_free(&fluid_phi_2_mpitype);
-  MPI_Type_free(&fluid_psi_2_mpitype);
-  MPI_Type_free(&fluid_pressure_2_mpitype);
-  MPI_Type_free(&fluid_velocity_2_mpitype);
-
-  MPI_File_close(&dump_file_handle_raw);
+  destroy_output();
+  destroy_halo();
+  destroy_lattice();
 
 }
 
 FixLbMulticomponent::FixLbMulticomponent(LAMMPS *lmp, int argc, char **argv)
-  : FixLbFluid(lmp, argc, argv) {
+  : FixLbFluid(lmp, 9, argv), // use only the first 9 arguments to parse in FixLbFluid
+  g_lb(nullptr), gnew(nullptr), geq(nullptr),
+  k_lb(nullptr), knew(nullptr), keq(nullptr),
+  phi_lb(nullptr), psi_lb(nullptr), pressure_lb(nullptr), mu_phi(nullptr), mu_psi(nullptr),
+  density_gradient(nullptr), phi_gradient(nullptr), psi_gradient(nullptr),
+  laplace_rho(nullptr), laplace_phi(nullptr), laplace_psi(nullptr)
+{
+  // Set halo extent to 2 for gradient calculations
+  halo_extent[0] = halo_extent[1] = halo_extent[2] = 2;
 
-  geq = NULL;
-  g_lb = NULL;
-  gnew = NULL;
-  phi_lb = NULL;
-  keq = NULL;
-  k_lb = NULL;
-  knew = NULL;
-  psi_lb = NULL;
-  laplace_rho = NULL;
-  density_gradient = NULL;
-  laplace_phi = NULL;
-  phi_gradient = NULL;
-  laplace_psi = NULL;
-  psi_gradient = NULL;
-  mu_rho = NULL;
-  mu_phi = NULL;
-  mu_psi = NULL;
-  sum_mu = NULL;
-  pressure_lb = NULL;
-
-  SetupBuffers();
-
-  Initialize();
-
+  init_lattice();
+  init_halo();
   init_parameters(argc,argv);
+  init_output();
+  init_fluid();
 
 }

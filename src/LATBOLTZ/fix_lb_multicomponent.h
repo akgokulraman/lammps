@@ -31,17 +31,14 @@ FixStyle(lb/multicomponent,FixLbMulticomponent)
 namespace LAMMPS_NS {
 
   class FixLbMulticomponent : public FixLbFluid {
-    friend class FixLbFluid;
 
   public:
     FixLbMulticomponent(class LAMMPS *, int, char **);
-    ~FixLbMulticomponent();
+    ~FixLbMulticomponent() override;
 
-    int setmask();
-    void end_of_step();
-    void initial_integrate(int);
-
-  protected:
+    int setmask() override;
+    void initial_integrate(int) override;
+    void end_of_step() override;
 
   private:
     double tau_r, tau_p, tau_s;
@@ -79,25 +76,18 @@ namespace LAMMPS_NS {
     double ***mu_psi;
     double ***sum_mu;
     
-    int numrequests;
-    MPI_Request requests[12];
-    MPI_Datatype passxg,passyg,passzg;
-    MPI_Datatype passxk,passyk,passzk;
-    MPI_Datatype fluid_phi_2_mpitype;
-    MPI_Datatype fluid_psi_2_mpitype;
-    MPI_Datatype fluid_pressure_2_mpitype;
-
-    void SetupBuffers(void);
-    void Initialize(void);
-
     void init_parameters(int, char **);
     void init_lattice();
+    void destroy_lattice();
+
+    void init_fluid();
     void init_mixture();
     void init_droplet(int radius);
     void init_liquid_lens(int radius);
     void init_double_emulsion(int radius);
 
     void lb_update();
+    void collide_stream(int x, int y, int z);
     void update_cube(int xmin, int xmax, int ymin, int ymax, int zmin, int zmax);
     void update_slab(int x, int ymin, int ymax, int zmin, int zmax);
     void update_column(int x, int y, int zmin, int zmax);
@@ -105,7 +95,7 @@ namespace LAMMPS_NS {
     void read_column(int x,int y, int zmin, int zmax);
     void read_site(int x, int y, int z);
     void write_site(int x, int y, int z);
-    void collide_stream(int x, int y, int z);
+
     void calc_moments(int x, int y, int z);
     void calc_chemical_potentials(int x, int y, int z);
     void calc_equilibrium(int x, int y, int z);
@@ -118,11 +108,22 @@ namespace LAMMPS_NS {
     void calc_psi_gradients(int x, int y, int z);
     double pressure(double rho, double phi, double psi);
 
-    void halo_init();
+    int numrequests;
+    MPI_Request requests[12];
+    MPI_Datatype passxg,passyg,passzg;
+    MPI_Datatype passxk,passyk,passzk;
+    MPI_Datatype fluid_phi_2_mpitype;
+    MPI_Datatype fluid_psi_2_mpitype;
+    MPI_Datatype fluid_pressure_2_mpitype;
+
+    void init_halo();
+    void destroy_halo();
     void halo_wait();
     void halo_comm();
     void halo_comm(int dir);
 
+    void init_output();
+    void destroy_output();
     void dump_all(int);
 
   };
