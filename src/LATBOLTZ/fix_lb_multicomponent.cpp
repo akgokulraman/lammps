@@ -1013,11 +1013,7 @@ void FixLbMulticomponent::halo_comm() {
 
 void FixLbMulticomponent::init_halo() {
 
-  //----------------------------------------------------
-  // Create the MPI datatypes used to pass halo layers:
-  //----------------------------------------------------
-
-  // Datatypes to pass the f,g,j and feq,geq,keq arrays
+  // Create MPI datatypes to pass the f,g,j and feq,geq,keq arrays
   int size;
   MPI_Aint lb, extent;
   MPI_Datatype slice[3];
@@ -1549,9 +1545,11 @@ void FixLbMulticomponent::init_lattice() {
   wg[15][1][0] = wg[16][1][0] = wg[17][1][0] = wg[18][1][0] = 0.0;
   wg[15][2][0] = wg[16][2][0] = wg[17][2][0] = wg[18][2][0] = 0.0;
 
-  subNbx += 2;
-  subNby += 2;
-  subNbz += 2;
+  // Set halo extent to 2 for gradient calculations
+  halo_extent[0] = halo_extent[1] = halo_extent[2] = 2;
+  subNbx += 2*halo_extent[0]-2; // -2 comes from prior inintialization in FixLbFluid
+  subNby += 2*halo_extent[1]-2;
+  subNbz += 2*halo_extent[2]-2;
 
   memory->create(wholelattice,Nbx,Nby,Nbz,"FixLBFluid:lattice");
   memory->create(sublattice,subNbx,subNby,subNbz,"FixLBFluid:sublattice");
@@ -1782,12 +1780,9 @@ FixLbMulticomponent::FixLbMulticomponent(LAMMPS *lmp, int argc, char **argv)
 {
   if (lmp->citeme) lmp->citeme->add(cite_fix_lbmulticomponent);
 
-  // Set halo extent to 2 for gradient calculations
-  halo_extent[0] = halo_extent[1] = halo_extent[2] = 2;
-
+  init_parameters(argc,argv);
   init_lattice();
   init_halo();
-  init_parameters(argc,argv);
   init_output();
   init_fluid();
 
