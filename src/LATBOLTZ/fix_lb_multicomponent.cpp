@@ -1549,16 +1549,6 @@ void FixLbMulticomponent::init_lattice() {
   subNby += 2*halo_extent[1]-2;
   subNbz += 2*halo_extent[2]-2;
 
-  memory->create(wholelattice,Nbx,Nby,Nbz,"FixLBFluid:lattice");
-  memory->create(sublattice,subNbx,subNby,subNbz,"FixLBFluid:sublattice");
-
-  // Initialize global lattice geometry.
-  //initializeGlobalGeometry();
-  //initializeGeometry();
-
-  // Destroy redundant global lattice.
-  memory->destroy(wholelattice);
-
   // Destroy memory created in FixLbFluid constructor previously
   memory->destroy(f_lb);
   memory->destroy(fnew);
