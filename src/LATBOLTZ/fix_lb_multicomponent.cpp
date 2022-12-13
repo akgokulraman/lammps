@@ -938,8 +938,6 @@ void FixLbMulticomponent::init_fluid() {
     }
   }
 
-  dump_all(update->ntimestep);
-
 }
 
 
@@ -1785,5 +1783,6 @@ FixLbMulticomponent::FixLbMulticomponent(LAMMPS *lmp, int argc, char **argv)
   init_halo();
   init_output();
   init_fluid();
+  dump_all(update->ntimestep);
 
 }
