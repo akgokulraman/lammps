@@ -73,8 +73,6 @@ namespace LAMMPS_NS {
     double C1, C2, C3;
     int radius;
 
-    double ***wg;
-
     double ****g_lb;                                
     double ****gnew;                              
     double ****geq;    
