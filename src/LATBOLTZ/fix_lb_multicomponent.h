@@ -70,6 +70,7 @@ namespace LAMMPS_NS {
     double kappa_rr, kappa_pp, kappa_ss, kappa_rp, kappa_ps, kappa_rs;
     double alpha;
 
+    int seed;
     double C1, C2, C3;
     int radius;
 
