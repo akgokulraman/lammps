@@ -67,7 +67,7 @@ void FixLbMulticomponent::initial_integrate(int vflag) {
 
 void FixLbMulticomponent::end_of_step() {
 
-  // Output fluid to dumpfile
+  dump_xdmf(update->ntimestep);
   halo_comm(); // check if needed
   for (int x=0; x<subNbx; ++x) {
     for (int y=0; y<subNby; ++y) {
@@ -76,7 +76,6 @@ void FixLbMulticomponent::end_of_step() {
       }
     }
   }
-  dump_all(update->ntimestep);
 
 }
 
@@ -1171,7 +1170,7 @@ void FixLbMulticomponent::destroy_halo() {
 }
 
 
-void FixLbMulticomponent::dump_all(const int step) {
+void FixLbMulticomponent::dump_xdmf(const int step) {
   if ( dump_interval && step % dump_interval == 0 ) {
     // Write XDMF grid entry for time step
     if ( me == 0 ) {
@@ -1717,6 +1716,6 @@ FixLbMulticomponent::FixLbMulticomponent(LAMMPS *lmp, int argc, char **argv)
   init_halo();
   init_output();
   init_fluid();
-  dump_all(update->ntimestep);
+  dump_xdmf(update->ntimestep);
 
 }

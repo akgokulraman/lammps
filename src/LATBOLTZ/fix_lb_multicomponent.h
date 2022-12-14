@@ -147,7 +147,7 @@ namespace LAMMPS_NS {
 
     void init_output();
     void destroy_output();
-    void dump_all(int);
+    void dump_xdmf(int);
 
   };
 
