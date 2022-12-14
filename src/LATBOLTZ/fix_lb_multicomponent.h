@@ -111,6 +111,7 @@ namespace LAMMPS_NS {
     void init_mixed_droplet(double radius, double C1, double C2);
 
     void lb_update();
+    void calc_moments_full();
     void collide_stream(int x, int y, int z);
     void update_cube(int xmin, int xmax, int ymin, int ymax, int zmin, int zmax);
     void update_slab(int x, int ymin, int ymax, int zmin, int zmax);
