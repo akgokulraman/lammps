@@ -1569,7 +1569,7 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
   // default parameter values
   alpha = 1.0;
   C1 = 0.333333; C2 = 0.333333; C3 = 0.333334; // concentrations
-  kappa1 = 0.01; kappa2 = 0.02, kappa3 = 0.05; // surface tensions
+  kappa1 = 0.01; kappa2 = 0.01, kappa3 = 0.01; // surface tensions
   tau_r = 1.0; tau_p = 1.0; tau_s = 0.666667;  // relaxation times
   gamma_p = 1.0; gamma_s = 1.0;                // mobility coefficients
   init_method = MIXTURE;                       // initialization
