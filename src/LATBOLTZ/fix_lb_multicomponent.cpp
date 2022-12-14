@@ -28,21 +28,16 @@
        https://doi.org/10.1103/PhysRevE.54.5041
 ------------------------------------------------------------------------- */
 
-#include <stdlib.h>
-#include <string.h>
-#include <vector>
-#include <iostream>
-#include <sstream>
-#include <fstream>
-#include "memory.h"
-#include "domain.h"
-#include "update.h"
-#include "comm.h"
-#include "error.h"
-#include "random_mars.h"
-#include "citeme.h"
 #include "fix_lb_multicomponent.h"
 #include "latboltz_const.h"
+
+#include "citeme.h"
+#include "memory.h"
+#include "domain.h"
+#include "comm.h"
+#include "update.h"
+#include "error.h"
+#include "random_mars.h"
 
 using namespace LAMMPS_NS;
 
@@ -66,17 +61,15 @@ void FixLbMulticomponent::initial_integrate(int vflag) {
 }
 
 void FixLbMulticomponent::end_of_step() {
-
   dump_xdmf(update->ntimestep);
-
 }
 
 void FixLbMulticomponent::lb_update() {
 
-#if 1 /* for testing do not overlap communication and computation */
-    halo_comm();
-    update_cube(0,subNbx,0,subNby,0,subNbz);    
-#else // the following is buggy [uschille 2022/12/10]
+#if 1 /* no overlap of communication and computation */
+  halo_comm();
+  update_cube(0,subNbx,0,subNby,0,subNbz);
+#else // the following is not tested and may be buggy[uschille 2022/12/10]
   // communicate in z direction
   halo_comm(2);
   // update inner cube
@@ -117,8 +110,8 @@ void FixLbMulticomponent::update_cube(int xmin, int xmax, int ymin, int ymax, in
   read_slab(xmin,ymin,ymax,zmin,zmax);
   read_slab(xmin+1,ymin,ymax,zmin,zmax);
   for (x=xmin+2; x<xmax; ++x) {
-      update_slab(x,ymin,ymax,zmin,zmax);
-    }
+    update_slab(x,ymin,ymax,zmin,zmax);
+  }
 }
 
 void FixLbMulticomponent::update_slab(int x, int ymin, int ymax, int zmin, int zmax) {
@@ -210,8 +203,6 @@ void FixLbMulticomponent::calc_equilibrium(int x, int y, int z) {
 }
 
 void FixLbMulticomponent::calc_gradient_laplacian(int x, int y, int z, double ***field, double ****gradient, double ***laplacian) {
-
-#if 1
   int i, xp, yp, zp, dir;
   laplacian[x][y][z] = 0.0;
   for (dir=0; dir<3; dir++) gradient[x][y][z][dir] = 0.0;
@@ -224,168 +215,7 @@ void FixLbMulticomponent::calc_gradient_laplacian(int x, int y, int z, double **
     }
     laplacian[x][y][z] += 6.*w_lb19[i]*(field[xp][yp][zp]-field[x][y][z]);
   }
-#else
-  const double A = 1./6.;  /* 2A+8B=1 */
-  const double B = 1./12.;
-  const double C = 1./3.;  /* C+4D=1 */
-  const double D = 1./6.;
-  const double E = -4.;    /* E=-6C-12D */
-
-  gradient[x][y][z][0] =
-      A * (  field[x+1][y  ][z  ]-field[x-1][y  ][z  ])
-    + B * (  field[x+1][y+1][z  ]-field[x-1][y+1][z  ]
-	   + field[x+1][y-1][z  ]-field[x-1][y-1][z  ]
-           + field[x+1][y  ][z+1]-field[x-1][y  ][z+1]
-	   + field[x+1][y  ][z-1]-field[x-1][y  ][z-1]);
-  gradient[x][y][z][1] =
-      A * (  field[x  ][y+1][z  ]-field[x  ][y-1][z  ])
-    + B * (  field[x+1][y+1][z  ]-field[x+1][y-1][z  ]
-	   + field[x-1][y+1][z  ]-field[x-1][y-1][z  ]
-           + field[x  ][y+1][z+1]-field[x  ][y-1][z+1]
-           + field[x  ][y+1][z-1]-field[x  ][y-1][z-1]);
-  gradient[x][y][z][2] =
-      A * (  field[x  ][y  ][z+1]-field[x  ][y  ][z-1])
-    + B * (  field[x+1][y  ][z+1]-field[x+1][y  ][z-1]
-	   + field[x-1][y  ][z+1]-field[x-1][y  ][z-1]
-           + field[x  ][y+1][z+1]-field[x  ][y+1][z-1]
-	   + field[x  ][y-1][z+1]-field[x  ][y-1][z-1]);
-
-  laplacian[x][y][z] =
-      C * (  field[x+1][y  ][z  ]+field[x-1][y  ][z  ]
-	   + field[x  ][y+1][z  ]+field[x  ][y-1][z  ]
-	   + field[x  ][y  ][z+1]+field[x  ][y  ][z-1]);
-    + D * (  field[x+1][y+1][z  ]+field[x-1][y+1][z  ]
-	   + field[x+1][y-1][z  ]+field[x-1][y-1][z  ]
-	   + field[x+1][y  ][z+1]+field[x-1][y  ][z+1]
-	   + field[x+1][y  ][z-1]+field[x-1][y  ][z-1]
-	   + field[x  ][y+1][z+1]+field[x  ][y-1][z+1]
-	   + field[x  ][y+1][z-1]+field[x  ][y-1][z-1]);
-    + E * field[x][y][z];
-#endif
-
 }
-
-#if 0
-void FixLbMulticomponent::calc_rho_gradients(int x, int y, int z) {
-  const double A = 1./6.;  /* 2A+8B=1 */
-  const double B = 1./12.;
-  const double C = 1./3.;  /* C+4D=1 */
-  const double D = 1./6.;
-  const double E = -4.;    /* E=-6C-12D */
-
-  density_gradient[x][y][z][0] =
-      A * (  density_lb[x+1][y  ][z  ]-density_lb[x-1][y  ][z  ])
-    + B * (  density_lb[x+1][y+1][z  ]-density_lb[x-1][y+1][z  ]
-	   + density_lb[x+1][y-1][z  ]-density_lb[x-1][y-1][z  ]
-           + density_lb[x+1][y  ][z+1]-density_lb[x-1][y  ][z+1]
-	   + density_lb[x+1][y  ][z-1]-density_lb[x-1][y  ][z-1]);
-  density_gradient[x][y][z][1] =
-      A * (  density_lb[x  ][y+1][z  ]-density_lb[x  ][y-1][z  ])
-    + B * (  density_lb[x+1][y+1][z  ]-density_lb[x+1][y-1][z  ]
-	   + density_lb[x-1][y+1][z  ]-density_lb[x-1][y-1][z  ]
-           + density_lb[x  ][y+1][z+1]-density_lb[x  ][y-1][z+1]
-           + density_lb[x  ][y+1][z-1]-density_lb[x  ][y-1][z-1]);
-  density_gradient[x][y][z][2] =
-      A * (  density_lb[x  ][y  ][z+1]-density_lb[x  ][y  ][z-1])
-    + B * (  density_lb[x+1][y  ][z+1]-density_lb[x+1][y  ][z-1]
-	   + density_lb[x-1][y  ][z+1]-density_lb[x-1][y  ][z-1]
-           + density_lb[x  ][y+1][z+1]-density_lb[x  ][y+1][z-1]
-	   + density_lb[x  ][y-1][z+1]-density_lb[x  ][y-1][z-1]);
-
-  laplace_rho[x][y][z] =
-      C * (  density_lb[x+1][y  ][z  ]+density_lb[x-1][y  ][z  ]
-	   + density_lb[x  ][y+1][z  ]+density_lb[x  ][y-1][z  ]
-	   + density_lb[x  ][y  ][z+1]+density_lb[x  ][y  ][z-1]);
-    + D * (  density_lb[x+1][y+1][z  ]+density_lb[x-1][y+1][z  ]
-	   + density_lb[x+1][y-1][z  ]+density_lb[x-1][y-1][z  ]
-	   + density_lb[x+1][y  ][z+1]+density_lb[x-1][y  ][z+1]
-	   + density_lb[x+1][y  ][z-1]+density_lb[x-1][y  ][z-1]
-	   + density_lb[x  ][y+1][z+1]+density_lb[x  ][y-1][z+1]
-	   + density_lb[x  ][y+1][z-1]+density_lb[x  ][y-1][z-1]);
-    + E * density_lb[x][y][z];
-
-}
-
-void FixLbMulticomponent::calc_phi_gradients(int x, int y, int z) {
-  const double A = 1./6.;  /* 2A+8B=1 */
-  const double B = 1./12.;
-  const double C = 1./3.;  /* C+4D=1 */
-  const double D = 1./6.;
-  const double E = -4.;    /* E=-6C-12D */
-
-  phi_gradient[x][y][z][0] =
-      A * (  phi_lb[x+1][y  ][z  ]-phi_lb[x-1][y  ][z  ])
-    + B * (  phi_lb[x+1][y+1][z  ]-phi_lb[x-1][y+1][z  ]
-	   + phi_lb[x+1][y-1][z  ]-phi_lb[x-1][y-1][z  ]
-           + phi_lb[x+1][y  ][z+1]-phi_lb[x-1][y  ][z+1]
-	   + phi_lb[x+1][y  ][z-1]-phi_lb[x-1][y  ][z-1]);
-  phi_gradient[x][y][z][1] =
-      A * (  phi_lb[x  ][y+1][z  ]-phi_lb[x  ][y-1][z  ])
-    + B * (  phi_lb[x+1][y+1][z  ]-phi_lb[x+1][y-1][z  ]
-	   + phi_lb[x-1][y+1][z  ]-phi_lb[x-1][y-1][z  ]
-	   + phi_lb[x  ][y+1][z+1]-phi_lb[x  ][y-1][z+1]
-	   + phi_lb[x  ][y+1][z-1]-phi_lb[x  ][y-1][z-1]);
-  phi_gradient[x][y][z][2] =
-      A * (  phi_lb[x  ][y  ][z+1]-phi_lb[x  ][y  ][z-1])
-    + B * (  phi_lb[x  ][y+1][z+1]-phi_lb[x  ][y+1][z-1]
-	   + phi_lb[x  ][y-1][z+1]-phi_lb[x  ][y-1][z-1]
-	   + phi_lb[x+1][y  ][z+1]-phi_lb[x+1][y  ][z-1]
-	   + phi_lb[x-1][y  ][z+1]-phi_lb[x-1][y  ][z-1]);
-
-  laplace_phi[x][y][z] =
-      C * (  phi_lb[x+1][y  ][z  ]+phi_lb[x-1][y  ][z  ]
-	   + phi_lb[x  ][y+1][z  ]+phi_lb[x  ][y-1][z  ]
-	   + phi_lb[x  ][y  ][z+1]+phi_lb[x  ][y  ][z-1])
-    + D * (  phi_lb[x+1][y+1][z  ]+phi_lb[x-1][y+1][z  ]
-	   + phi_lb[x+1][y-1][z  ]+phi_lb[x-1][y-1][z  ]
-	   + phi_lb[x+1][y  ][z+1]+phi_lb[x-1][y  ][z+1]
-	   + phi_lb[x+1][y  ][z-1]+phi_lb[x-1][y  ][z-1]
-	   + phi_lb[x  ][y+1][z+1]+phi_lb[x  ][y-1][z+1]
-	   + phi_lb[x  ][y+1][z-1]+phi_lb[x  ][y-1][z-1])
-    + E * phi_lb[x][y][z];
-
-}
-
-void FixLbMulticomponent::calc_psi_gradients(int x, int y, int z) {
-  const double A = 1./6.;  /* 2A+8B=1 */
-  const double B = 1./12.;
-  const double C = 1./3.;  /* C+4D=1 */
-  const double D = 1./6.;
-  const double E = -4.;    /* E=-6C-12D */
-
-  psi_gradient[x][y][z][0] =
-      A * (  psi_lb[x+1][y  ][z  ]-psi_lb[x-1][y  ][z  ])
-    + B * (  psi_lb[x+1][y+1][z  ]-psi_lb[x-1][y+1][z  ]
-	   + psi_lb[x+1][y-1][z  ]-psi_lb[x-1][y-1][z  ]
-           + psi_lb[x+1][y  ][z+1]-psi_lb[x-1][y  ][z+1]
-           + psi_lb[x+1][y  ][z-1]-psi_lb[x-1][y  ][z-1]);
-  psi_gradient[x][y][z][1] =
-      A * (  psi_lb[x  ][y+1][z  ]-psi_lb[x  ][y-1][z  ])
-    + B * (  psi_lb[x+1][y+1][z  ]-psi_lb[x+1][y-1][z  ]
-	   + psi_lb[x-1][y+1][z  ]-psi_lb[x-1][y-1][z  ]
-           + psi_lb[x  ][y+1][z+1]-psi_lb[x  ][y-1][z+1]
-	   + psi_lb[x  ][y+1][z-1]-psi_lb[x  ][y-1][z-1]);
-  psi_gradient[x][y][z][2] =
-      A * (  psi_lb[x  ][y  ][z+1]-psi_lb[x  ][y  ][z-1])
-    + B * (  psi_lb[x  ][y+1][z+1]-psi_lb[x  ][y+1][z-1]
-	   + psi_lb[x  ][y-1][z+1]-psi_lb[x  ][y-1][z-1]
-           + psi_lb[x+1][y  ][z+1]-psi_lb[x+1][y  ][z-1]
-	   + psi_lb[x-1][y  ][z+1]-psi_lb[x-1][y  ][z-1]);
-
-  laplace_psi[x][y][z] =
-      C * (  psi_lb[x+1][y  ][z  ]+psi_lb[x-1][y  ][z  ]
-	   + psi_lb[x  ][y+1][z  ]+psi_lb[x  ][y-1][z  ]
-	   + psi_lb[x  ][y  ][z+1]+psi_lb[x  ][y  ][z-1])
-    + D * (  psi_lb[x+1][y+1][z  ]+psi_lb[x-1][y+1][z  ]
-	   + psi_lb[x+1][y-1][z  ]+psi_lb[x-1][y-1][z  ]
-	   + psi_lb[x+1][y  ][z+1]+psi_lb[x-1][y  ][z+1]
-	   + psi_lb[x+1][y  ][z-1]+psi_lb[x-1][y  ][z-1]
-	   + psi_lb[x  ][y+1][z+1]+psi_lb[x  ][y-1][z+1]
-	   + psi_lb[x  ][y+1][z-1]+psi_lb[x  ][y-1][z-1])
-    + E * psi_lb[x][y][z];
-
-}
-#endif
 
 double FixLbMulticomponent::pressure(double rho, double phi, double psi) {
   const double rho2 = rho*rho;
@@ -404,7 +234,7 @@ double FixLbMulticomponent::pressure(double rho, double phi, double psi) {
   p0 = rho*cs2;
   p0 += kappa1*((3.0/32.0)*pow(phi, 4) - 3.0/8.0*pow(phi, 3)*psi + (3.0/8.0)*pow(phi, 3)*rho - 1.0/4.0*pow(phi, 3) + (9.0/16.0)*pow(phi, 2)*pow(psi, 2) - 9.0/8.0*pow(phi, 2)*psi*rho + (3.0/4.0)*pow(phi, 2)*psi + (9.0/16.0)*pow(phi, 2)*pow(rho, 2) - 3.0/4.0*pow(phi, 2)*rho + (1.0/8.0)*pow(phi, 2) - 3.0/8.0*phi*pow(psi, 3) + (9.0/8.0)*phi*pow(psi, 2)*rho - 3.0/4.0*phi*pow(psi, 2) - 9.0/8.0*phi*psi*pow(rho, 2) + (3.0/2.0)*phi*psi*rho - 1.0/4.0*phi*psi + (3.0/8.0)*phi*pow(rho, 3) - 3.0/4.0*phi*pow(rho, 2) + (1.0/4.0)*phi*rho + (3.0/32.0)*pow(psi, 4) - 3.0/8.0*pow(psi, 3)*rho + (1.0/4.0)*pow(psi, 3) + (9.0/16.0)*pow(psi, 2)*pow(rho, 2) - 3.0/4.0*pow(psi, 2)*rho + (1.0/8.0)*pow(psi, 2) - 3.0/8.0*psi*pow(rho, 3) + (3.0/4.0)*psi*pow(rho, 2) - 1.0/4.0*psi*rho + (3.0/32.0)*pow(rho, 4) - 1.0/4.0*pow(rho, 3) + (1.0/8.0)*pow(rho, 2)) + kappa2*((3.0/32.0)*pow(phi, 4) + (3.0/8.0)*pow(phi, 3)*psi - 3.0/8.0*pow(phi, 3)*rho + (1.0/4.0)*pow(phi, 3) + (9.0/16.0)*pow(phi, 2)*pow(psi, 2) - 9.0/8.0*pow(phi, 2)*psi*rho + (3.0/4.0)*pow(phi, 2)*psi + (9.0/16.0)*pow(phi, 2)*pow(rho, 2) - 3.0/4.0*pow(phi, 2)*rho + (1.0/8.0)*pow(phi, 2) + (3.0/8.0)*phi*pow(psi, 3) - 9.0/8.0*phi*pow(psi, 2)*rho + (3.0/4.0)*phi*pow(psi, 2) + (9.0/8.0)*phi*psi*pow(rho, 2) - 3.0/2.0*phi*psi*rho + (1.0/4.0)*phi*psi - 3.0/8.0*phi*pow(rho, 3) + (3.0/4.0)*phi*pow(rho, 2) - 1.0/4.0*phi*rho + (3.0/32.0)*pow(psi, 4) - 3.0/8.0*pow(psi, 3)*rho + (1.0/4.0)*pow(psi, 3) + (9.0/16.0)*pow(psi, 2)*pow(rho, 2) - 3.0/4.0*pow(psi, 2)*rho + (1.0/8.0)*pow(psi, 2) - 3.0/8.0*psi*pow(rho, 3) + (3.0/4.0)*psi*pow(rho, 2) - 1.0/4.0*psi*rho + (3.0/32.0)*pow(rho, 4) - 1.0/4.0*pow(rho, 3) + (1.0/8.0)*pow(rho, 2)) + kappa3*((3.0/2.0)*pow(psi, 4) - 2*pow(psi, 3) + (1.0/2.0)*pow(psi, 2));
 #else
-  p0 = rho*cs2 // Eq. (43) Semprebon et al.
+  p0 = rho*cs2 // Eq. (43) Semprebon et al. (note that there is a typo in this equation in the paper)
     + (kappa1+kappa2)*(3./32.*(rho4+phi4+psi4)
 		       - 1./4.*(rho3+rho*psi-psi3)
 		       + 1./8.*(rho2+phi2+psi2)
@@ -419,6 +249,7 @@ double FixLbMulticomponent::pressure(double rho, double phi, double psi) {
 		       + 3./2.*phi*psi*rho)
     + kappa3*(3./2.*psi4 - 2.*psi3 + 1./2.*psi2);
 #endif
+
   return p0;
 }
 
@@ -603,23 +434,23 @@ void FixLbMulticomponent::init_mixture() {
     for (y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
       for (z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
 
-	C1_init = C1 + 0.01*random->gaussian();
-	C2_init = C2 + 0.01*random->gaussian();
-	C3_init = 1.0 - C1_init - C2_init;
+	      C1_init = C1 + 0.01*random->gaussian();
+	      C2_init = C2 + 0.01*random->gaussian();
+	      C3_init = 1.0 - C1_init - C2_init;
 
-	rho = densityinit;
-	phi = densityinit*(C1_init-C2_init);
-	psi = densityinit*C3_init;
+	      rho = densityinit;
+	      phi = densityinit*(C1_init-C2_init);
+	      psi = densityinit*C3_init;
 
-	for (i=0; i<numvel; i++) {
-	  f_lb[x][y][z][i] = w_lb19[i]*rho;
-	  g_lb[x][y][z][i] = w_lb19[i]*phi;
-	  k_lb[x][y][z][i] = w_lb19[i]*psi;
-	}
+	      for (i=0; i<numvel; i++) {
+	        f_lb[x][y][z][i] = w_lb19[i]*rho;
+	        g_lb[x][y][z][i] = w_lb19[i]*phi;
+	        k_lb[x][y][z][i] = w_lb19[i]*psi;
+	      }
 
-	C1tot += C1_init;
-	C2tot += C2_init;
-	C3tot += C3_init;
+	      C1tot += C1_init;
+	      C2tot += C2_init;
+	      C3tot += C3_init;
 
       }
     }
@@ -640,7 +471,7 @@ void FixLbMulticomponent::init_mixture() {
   for (x=1; x<subNbx-1; x++) {
     for (y=1; y<subNby-1; y++) {
       for (z=1; z<subNbz-1; z++) {
-	calc_moments(x,y,z);
+	      calc_moments(x,y,z);
       }
     }
   }
@@ -649,12 +480,12 @@ void FixLbMulticomponent::init_mixture() {
   for (x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
     for (y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
       for (z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
-	calc_equilibrium(x,y,z);
-	for (i=0; i<numvel; i++) {
-	  f_lb[x][y][z][i] = feq[x][y][z][i];
-	  g_lb[x][y][z][i] = geq[x][y][z][i];
-	  k_lb[x][y][z][i] = keq[x][y][z][i];
-	}
+	      calc_equilibrium(x,y,z);
+	      for (i=0; i<numvel; i++) {
+	        f_lb[x][y][z][i] = feq[x][y][z][i];
+	        g_lb[x][y][z][i] = geq[x][y][z][i];
+	        k_lb[x][y][z][i] = keq[x][y][z][i];
+	      }
       }
     }
   }
@@ -676,14 +507,14 @@ void FixLbMulticomponent::init_droplet(double radius) {
     for (y=0; y<subNby; y++) {
       pos[1] = domain->sublo[1] + (y-halo_extent[1])*dx_lb;
       for (z=0; z<subNbz; z++) {
-	pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
-	r2 = pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2];
-	phi = r2 < radius*radius ? 1.0 : -1.0;
-	for (i=0; i<numvel; i++) {
-	  f_lb[x][y][z][i] = w_lb19[i]*rho*densityinit;
-	  g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
-	  k_lb[x][y][z][i] = w_lb19[i]*psi*densityinit;
-	}
+	      pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
+	      r2 = pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2];
+	      phi = r2 < radius*radius ? 1.0 : -1.0;
+	      for (i=0; i<numvel; i++) {
+	        f_lb[x][y][z][i] = w_lb19[i]*rho*densityinit;
+	        g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
+	        k_lb[x][y][z][i] = w_lb19[i]*psi*densityinit;
+	      }
       }
     }
   }
@@ -701,23 +532,23 @@ void FixLbMulticomponent::init_liquid_lens(double radius) {
     for (y=0; y<subNby; y++) {
       pos[1] = domain->sublo[1] + (y-halo_extent[1])*dx_lb;
       for (z=0; z<subNbz; z++) {
-	pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
-	r2 = pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2];
-	if (r2 < radius*radius) {
-	  phi = 0.0;
-	  psi = 1.0;
-	} else if (pos[2] > 0) {
-	  phi = 1.0;
-	  psi = 0.0;
-	} else {
-	  phi = -1.0;
-	  psi = 0.0;
-	}
-	for (i=0; i<numvel; i++) {
-	  f_lb[x][y][z][i] = w_lb19[i]*rho*densityinit;
-	  g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
-	  k_lb[x][y][z][i] = w_lb19[i]*psi*densityinit;
-	}
+	      pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
+	      r2 = pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2];
+	      if (r2 < radius*radius) {
+	        phi = 0.0;
+	        psi = 1.0;
+	      } else if (pos[2] > 0) {
+	        phi = 1.0;
+	        psi = 0.0;
+	      } else {
+	        phi = -1.0;
+	        psi = 0.0;
+	      }
+	      for (i=0; i<numvel; i++) {
+	        f_lb[x][y][z][i] = w_lb19[i]*rho*densityinit;
+	        g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
+	        k_lb[x][y][z][i] = w_lb19[i]*psi*densityinit;
+	      }
       }
     }
   }
@@ -736,27 +567,26 @@ void FixLbMulticomponent::init_double_emulsion(double radius) {
     for (y=0; y<subNby; y++) {
       pos[1] = domain->sublo[1] + (y-halo_extent[1])*dx_lb;
       for (z=0; z<subNbz; z++) {
-	pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
-	r2 = pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2];
-	if (r2 > radius*radius) {
-	  phi = 0.0;
-	  psi = 1.0;
-	}  else if (pos[0] < 0) {
-	  phi = 1.0;
-	  psi = 0.0;
-	} else {
-	  phi = -1.0;
-	  psi = 0.0;
-	}
-	for (i=0; i<numvel; i++) {
-	  f_lb[x][y][z][i] = w_lb19[i]*rho*densityinit;
-	  g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
-	  k_lb[x][y][z][i] = w_lb19[i]*psi*densityinit;
-	}
+	      pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
+	      r2 = pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2];
+	      if (r2 > radius*radius) {
+	        phi = 0.0;
+	        psi = 1.0;
+	      }  else if (pos[0] < 0) {
+	        phi = 1.0;
+	        psi = 0.0;
+	      } else {
+	        phi = -1.0;
+	        psi = 0.0;
+	      }
+	      for (i=0; i<numvel; i++) {
+	        f_lb[x][y][z][i] = w_lb19[i]*rho*densityinit;
+	        g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
+	        k_lb[x][y][z][i] = w_lb19[i]*psi*densityinit;
+	      }
       }
     }
   }
-
 
 }
 
@@ -780,33 +610,33 @@ void FixLbMulticomponent::init_film(double thickness, double C1_film, double C2_
       pos[1] = domain->sublo[1] + (y-halo_extent[1])*dx_lb;
       for (z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
 
-	if (pos[1] > filmlo && pos[1] < filmhi) {
+	      if (pos[1] > filmlo && pos[1] < filmhi) {
 
-	  C1_init = C1_film + 0.01*random->gaussian();
-	  C2_init = C2_film + 0.01*random->gaussian();
-	  C3_init = 1.0 - C1_init - C2_init;
+	        C1_init = C1_film + 0.01*random->gaussian();
+	        C2_init = C2_film + 0.01*random->gaussian();
+	        C3_init = 1.0 - C1_init - C2_init;
 
-	} else {
+	      } else {
 
-	  C1_init = C1 + 0.01*random->gaussian();
-	  C2_init = C2 + 0.01*random->gaussian();
-	  C3_init = 1.0 - C1_init - C2_init;
+	        C1_init = C1 + 0.01*random->gaussian();
+	        C2_init = C2 + 0.01*random->gaussian();
+	        C3_init = 1.0 - C1_init - C2_init;
 
-	}
+	      }
 
-	rho = densityinit;
-	phi = densityinit*(C1_init-C2_init);
-	psi = densityinit*C3_init;
+	      rho = densityinit;
+	      phi = densityinit*(C1_init-C2_init);
+	      psi = densityinit*C3_init;
 
-	for (i=0; i<numvel; i++) {
-	  f_lb[x][y][z][i] = w_lb19[i]*rho;
-	  g_lb[x][y][z][i] = w_lb19[i]*phi;
-	  k_lb[x][y][z][i] = w_lb19[i]*psi;
-	}
+	      for (i=0; i<numvel; i++) {
+	        f_lb[x][y][z][i] = w_lb19[i]*rho;
+	        g_lb[x][y][z][i] = w_lb19[i]*phi;
+	        k_lb[x][y][z][i] = w_lb19[i]*psi;
+	      }
 
-	C1tot += C1_init;
-	C2tot += C2_init;
-	C3tot += C3_init;
+	      C1tot += C1_init;
+	      C2tot += C2_init;
+	      C3tot += C3_init;
 
       }
     }
@@ -818,7 +648,7 @@ void FixLbMulticomponent::init_film(double thickness, double C1_film, double C2_
   double vol = Nbx*Nby*Nbz;
   if(comm->me==0){
     char str[128];
-    sprintf(str,"Initialized ternary mixture with <C1> = %f, <C2> = %f, <C3> = %f",C1tot_global/vol,C2tot_global/vol,C3tot_global/vol);
+    sprintf(str,"Initialized ternary film with <C1> = %f, <C2> = %f, <C3> = %f",C1tot_global/vol,C2tot_global/vol,C3tot_global/vol);
     error->message(FLERR,str);
   }
 
@@ -827,7 +657,7 @@ void FixLbMulticomponent::init_film(double thickness, double C1_film, double C2_
   for (x=1; x<subNbx-1; x++) {
     for (y=1; y<subNby-1; y++) {
       for (z=1; z<subNbz-1; z++) {
-	calc_moments(x,y,z);
+	      calc_moments(x,y,z);
       }
     }
   }
@@ -836,20 +666,17 @@ void FixLbMulticomponent::init_film(double thickness, double C1_film, double C2_
   for (x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
     for (y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
       for (z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
-	calc_equilibrium(x,y,z);
-	for (i=0; i<numvel; i++) {
-	  f_lb[x][y][z][i] = feq[x][y][z][i];
-	  g_lb[x][y][z][i] = geq[x][y][z][i];
-	  k_lb[x][y][z][i] = keq[x][y][z][i];
-	}
+	      calc_equilibrium(x,y,z);
+	      for (i=0; i<numvel; i++) {
+	       f_lb[x][y][z][i] = feq[x][y][z][i];
+	       g_lb[x][y][z][i] = geq[x][y][z][i];
+	       k_lb[x][y][z][i] = keq[x][y][z][i];
+	      }
       }
     }
   }
 
   delete(random);
-
-  /* communicate the equilibrium populations */
-  halo_comm(); // check if needed
 }
 
 
@@ -867,24 +694,24 @@ void FixLbMulticomponent::init_mixed_droplet(double radius, double C1, double C2
     for (y=0; y<subNby; y++) {
       pos[1] = domain->sublo[1] + (y-halo_extent[1])*dx_lb;
       for (z=0; z<subNbz; z++) {
-	pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
-	r2 = pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2];
-	if (r2 < radius*radius) {
-	  C1_init = C1 + 0.01*random->gaussian();
-	  C2_init = 1. - C1_init;
-	  rho = densityinit;
-	  phi = densityinit*(C1_init - C2_init);
-	  psi = 0.0;
-	} else {
-	  rho = densityinit;
-	  phi = 0.0;
-	  psi = densityinit;
-	}
-	for (i=0; i<numvel; i++) {
-	  f_lb[x][y][z][i] = w_lb19[i]*rho*densityinit;
-	  g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
-	  k_lb[x][y][z][i] = w_lb19[i]*psi*densityinit;
-	}
+      	pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
+      	r2 = pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2];
+      	if (r2 < radius*radius) {
+	        C1_init = C1 + 0.01*random->gaussian();
+	        C2_init = 1. - C1_init;
+	        rho = densityinit;
+	        phi = densityinit*(C1_init - C2_init);
+	        psi = 0.0;
+	      } else {
+	        rho = densityinit;
+	        phi = 0.0;
+	        psi = densityinit;
+	      }
+	      for (i=0; i<numvel; i++) {
+	        f_lb[x][y][z][i] = w_lb19[i]*rho*densityinit;
+	        g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
+	        k_lb[x][y][z][i] = w_lb19[i]*psi*densityinit;
+	      }
       }
     }
   }
@@ -893,13 +720,13 @@ void FixLbMulticomponent::init_mixed_droplet(double radius, double C1, double C2
   for (x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
     for (y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
       for (z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
-	calc_moments(x,y,z);
-	calc_equilibrium(x,y,z);
-	for (i=0; i<numvel; i++) {
-	  f_lb[x][y][z][i] = feq[x][y][z][i];
-	  g_lb[x][y][z][i] = geq[x][y][z][i];
-	  k_lb[x][y][z][i] = keq[x][y][z][i];
-	}
+	      calc_moments(x,y,z);
+	      calc_equilibrium(x,y,z);
+	      for (i=0; i<numvel; i++) {
+	        f_lb[x][y][z][i] = feq[x][y][z][i];
+	        g_lb[x][y][z][i] = geq[x][y][z][i];
+	        k_lb[x][y][z][i] = keq[x][y][z][i];
+	      }
       }
     }
   }
@@ -1029,138 +856,12 @@ void FixLbMulticomponent::init_halo() {
   MPI_Type_commit(&passxf);
   MPI_Type_commit(&passzf);
   MPI_Type_commit(&passyf);
-  //MPI_Type_free(&oneslice);
-
-  //MPI_Type_get_extent(passzf,&lb,&extent);
-  //MPI_Type_size(passzf,&size);
-  //fprintf(stderr,"size=%d extent=%d stride=%d\n",size,extent,subNbx*numvel*subNbz*subNby*extent);
-
-  // // Datatypes to pass the g and geq arrays
-  // MPI_Type_vector(subNbz,numvel,numvel,MPI_DOUBLE,&oneslice);
-  // //MPI_Type_commit(&oneslice);
-  // MPI_Type_create_hvector(subNby,1,numvel*subNbz*extent,oneslice,&slice[0]);
-  // //MPI_Type_vector(1,subNby,subNby,oneslice,&passxf);
-  // //MPI_Type_vector(1,subNby*subNbz*numvel,subNby*subNbz*numvel,MPI_DOUBLE,&passxf);
-  // MPI_Type_create_resized(slice[0],0,subNby*subNbz*numvel*extent,&passxg);
-  // //MPI_Type_create_hvector(2,1,subNby*subNbz*numvel*extent,slice[0],&passxf);
-  // MPI_Type_commit(&passxg);
-
-  // //MPI_Type_get_extent(passxg,&lb,&extent);
-  // //MPI_Type_size(passxg,&size);
-  // //fprintf(stderr,"size=%d extent=%d stride=%d\n",size,extent,subNby*numvel*subNbz*extent);
-
-  // MPI_Type_create_hvector(subNbx-4,1,numvel*subNby*subNbz*extent,oneslice,&slice[1]);
-  // //MPI_Type_vector(subNbx,1,subNby,oneslice,&passyf);
-  // //MPI_Type_vector(subNbx,subNbz*numvel,subNby*subNbz*numvel,MPI_DOUBLE,&passyf);
-  // MPI_Type_create_resized(slice[1],0,subNbz*numvel*extent,&passyg);
-  // //MPI_Type_create_hvector(2,1,subNbz*numvel*extent,slice[1],&passyf);
-  // MPI_Type_commit(&passyg);
-  // MPI_Type_free(&oneslice);
-
-  // //MPI_Type_get_extent(passyg,&lb,&extent);
-  // //MPI_Type_size(passyg,&size);
-  // //fprintf(stderr,"size=%d extent=%d stride=%d\n",size,extent,subNbx*numvel*subNbz*subNby*extent);
-
-  // MPI_Type_vector((subNby-4),numvel,numvel*subNbz,MPI_DOUBLE,&oneslice);
-  // //MPI_Type_commit(&oneslice);
-  // MPI_Type_create_hvector((subNbx-4),1,numvel*subNby*subNbz*extent,oneslice,&slice[2]);
-  // //MPI_Type_vector(subNbx,1,1,oneslice,&passzf);
-  // //MPI_Type_vector(subNbx*subNby,numvel,subNbz*numvel,MPI_DOUBLE,&passzf);
-  // MPI_Type_create_resized(slice[2],0,numvel*extent,&passzg);
-  // //MPI_Type_create_hvector(2,1,numvel*extent,slice[2],&passzf);
-  // MPI_Type_commit(&passzg);
-  // MPI_Type_free(&oneslice);
-
-  // //MPI_Type_get_extent(passzg,&lb,&extent);
-  // //MPI_Type_size(passzg,&size);
-
-  // // Datatypes to pass the k and keq arrays
-  // MPI_Type_vector(subNbz,numvel,numvel,MPI_DOUBLE,&oneslice);
-  // //MPI_Type_commit(&oneslice);
-  // MPI_Type_create_hvector(subNby,1,numvel*subNbz*extent,oneslice,&slice[0]);
-  // //MPI_Type_vector(1,subNby,subNby,oneslice,&passxf);
-  // //MPI_Type_vector(1,subNby*subNbz*numvel,subNby*subNbz*numvel,MPI_DOUBLE,&passxf);
-  // MPI_Type_create_resized(slice[0],0,subNby*subNbz*numvel*extent,&passxk);
-  // //MPI_Type_create_hvector(2,1,subNby*subNbz*numvel*extent,slice[0],&passxf);
-  // MPI_Type_commit(&passxk);
-
-  // //MPI_Type_get_extent(passxk,&lb,&extent);
-  // //MPI_Type_size(passxk,&size);
-  // //fprintf(stderr,"size=%d extent=%d stride=%d\n",size,extent,subNby*numvel*subNbz*extent);
-
-  // MPI_Type_create_hvector(subNbx-4,1,numvel*subNby*subNbz*extent,oneslice,&slice[1]);
-  // //MPI_Type_vector(subNbx,1,subNby,oneslice,&passyf);
-  // //MPI_Type_vector(subNbx,subNbz*numvel,subNby*subNbz*numvel,MPI_DOUBLE,&passyf);
-  // MPI_Type_create_resized(slice[1],0,subNbz*numvel*extent,&passyk);
-  // //MPI_Type_create_hvector(2,1,subNbz*numvel*extent,slice[1],&passyf);
-  // MPI_Type_commit(&passyk);
-  // MPI_Type_free(&oneslice);
-
-  // //MPI_Type_get_extent(passyk,&lb,&extent);
-  // //MPI_Type_size(passyk,&size);
-  // //fprintf(stderr,"size=%d extent=%d stride=%d\n",size,extent,subNbx*numvel*subNbz*subNby*extent);
-
-  // MPI_Type_vector((subNby-4),numvel,numvel*subNbz,MPI_DOUBLE,&oneslice);
-  // //MPI_Type_commit(&oneslice);
-  // MPI_Type_create_hvector((subNbx-4),1,numvel*subNby*subNbz*extent,oneslice,&slice[2]);
-  // //MPI_Type_vector(subNbx,1,1,oneslice,&passzf);
-  // //MPI_Type_vector(subNbx*subNby,numvel,subNbz*numvel,MPI_DOUBLE,&passzf);
-  // MPI_Type_create_resized(slice[2],0,numvel*extent,&passzk);
-  // //MPI_Type_create_hvector(2,1,numvel*extent,slice[2],&passzf);
-  // MPI_Type_commit(&passzk);
-  // MPI_Type_free(&oneslice);
-
-  // //MPI_Type_get_extent(passzk,&lb,&extent);
-  // //MPI_Type_size(passzk,&size);
-
-#if 0
-  int sizes[] = { subNbx+3-2*(halo_extent[0]-1),
-		  subNby+3-2*(halo_extent[1]-1),
-		  subNbz+3-2*(halo_extent[2]-1) };
-  int subsizes[] = { subNbx-2*halo_extent[0],
-		     subNby-2*halo_extent[1],
-		     subNbz-2*halo_extent[2] };
-  int offsets[] = { (subsizes[0])*comm->myloc[0],
-		    (subsizes[1])*comm->myloc[1],
-		    (subsizes[2])*comm->myloc[2] };
-  //subsizes[0] += 1*((offsets[0]+subsizes[0]+1)==Nbx+1);
-  //subsizes[1] += 1*((offsets[1]+subsizes[1]+1)==Nby+1);
-  //subsizes[2] += 1*((offsets[2]+subsizes[2]+1)==Nbz+1);
-  int starts[] = { halo_extent[0], halo_extent[1], halo_extent[2] };
-
-  //fprintf(stderr,"local new: sizes=(%d,%d,%d) subsizes=(%d,%d,%d) starts=(%d,%d,%d) myloc=(%d,%d,%d)\n",sizes[0],sizes[1],sizes[2],subsizes[0],subsizes[1],subsizes[2],starts[0],starts[1],starts[2],comm->myloc[0],comm->myloc[1],comm->myloc[2]);
-
-  MPI_Type_free(&fluid_density_2_mpitype);
-  MPI_Type_free(&fluid_phi_2_mpitype);
-  MPI_Type_free(&fluid_psi_2_mpitype);
-  MPI_Type_free(&fluid_pressure_2_mpitype);
-  MPI_Type_free(&fluid_velocity_2_mpitype);
-
-  MPI_Type_create_subarray(3, sizes, subsizes, starts, MPI_ORDER_FORTRAN, MPI_DOUBLE, &fluid_density_2_mpitype);
-  MPI_Type_create_subarray(3, sizes, subsizes, starts, MPI_ORDER_FORTRAN, MPI_DOUBLE, &fluid_phi_2_mpitype);
-  MPI_Type_create_subarray(3, sizes, subsizes, starts, MPI_ORDER_FORTRAN, MPI_DOUBLE, &fluid_psi_2_mpitype);
-  MPI_Type_create_subarray(3, sizes, subsizes, starts, MPI_ORDER_FORTRAN, MPI_DOUBLE, &fluid_pressure_2_mpitype);
-  MPI_Type_create_subarray(3, sizes, subsizes, starts, MPI_ORDER_FORTRAN, realType3_mpitype, &fluid_velocity_2_mpitype);
-
-  MPI_Type_commit(&fluid_density_2_mpitype);
-  MPI_Type_commit(&fluid_phi_2_mpitype);
-  MPI_Type_commit(&fluid_psi_2_mpitype);
-  MPI_Type_commit(&fluid_pressure_2_mpitype);
-  MPI_Type_commit(&fluid_velocity_2_mpitype);
-#endif
 
 }
 
 
 void FixLbMulticomponent::destroy_halo() {
-
-  // MPI_Type_free(&passxg);
-  // MPI_Type_free(&passyg);
-  // MPI_Type_free(&passzg);
-  // MPI_Type_free(&passxk);
-  // MPI_Type_free(&passyk);
-  // MPI_Type_free(&passzk);
-
+  // MPI datatypes are freed in parent destructor
 }
 
 
@@ -1260,33 +961,33 @@ void FixLbMulticomponent::dump_xdmf(const int step) {
 
     // Write raw data
     {
-      int lhi[3];
-      lhi[0] = subNbx;//+3-2*(halo_extent[0]-1);
-      lhi[1] = subNby;//+3-2*(halo_extent[1]-1);
-      lhi[2] = subNbz;//+3-2*(halo_extent[2]-1);
+      int lbox[3];
+      lbox[0] = subNbx;
+      lbox[1] = subNby;
+      lbox[2] = subNbz;
 
-      const size_t size2 = lhi[0]*lhi[1]*lhi[2];
+      const size_t lvol = lbox[0]*lbox[1]*lbox[2];
 
       // Transpose local arrays to fortran-order for paraview output
-      std::vector<double> density_2_fort (size2);
-      std::vector<double> phi_2_fort (size2);
-      std::vector<double> psi_2_fort (size2);
-      std::vector<double> pressure_2_fort (size2);
-      std::vector<double> velocity_2_fort (size2*3);
+      std::vector<double> density_2_fort (lvol);
+      std::vector<double> phi_2_fort (lvol);
+      std::vector<double> psi_2_fort (lvol);
+      std::vector<double> pressure_2_fort (lvol);
+      std::vector<double> velocity_2_fort (lvol*3);
       int indexf=0;
-      for (int k=0; k<lhi[2]; k++) {
-	for (int j=0; j<lhi[1]; j++) {
-	  for (int i=0; i<lhi[0]; i++) {
-	    indexf = i+lhi[0]*(j+lhi[1]*k);
-	    density_2_fort[indexf]=density_lb[i][j][k];
-	    phi_2_fort[indexf]=phi_lb[i][j][k];
-	    psi_2_fort[indexf]=psi_lb[i][j][k];
-	    pressure_2_fort[indexf]=pressure_lb[i][j][k];
-	    velocity_2_fort[0+3*indexf]=u_lb[i][j][k][0];
-	    velocity_2_fort[1+3*indexf]=u_lb[i][j][k][1];
-	    velocity_2_fort[2+3*indexf]=u_lb[i][j][k][2];
+      for (int k=0; k<lbox[2]; k++) {
+	      for (int j=0; j<lbox[1]; j++) {
+	        for (int i=0; i<lbox[0]; i++) {
+	          indexf = i+lbox[0]*(j+lbox[1]*k);
+	          density_2_fort[indexf]=density_lb[i][j][k];
+	          phi_2_fort[indexf]=phi_lb[i][j][k];
+	          psi_2_fort[indexf]=psi_lb[i][j][k];
+	          pressure_2_fort[indexf]=pressure_lb[i][j][k];
+	          velocity_2_fort[0+3*indexf]=u_lb[i][j][k][0];
+	          velocity_2_fort[1+3*indexf]=u_lb[i][j][k][1];
+	          velocity_2_fort[2+3*indexf]=u_lb[i][j][k][2];
       	  }
-	}
+	      }
       }
 
       MPI_File_write_all(dump_file_handle_raw, &density_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
@@ -1328,8 +1029,6 @@ static MPI_Datatype mpiTypeGlobalWrite(const int local_ghost,
                      global_ghost*!endpoint_lower[1] + global_offset[1],
                      global_ghost*!endpoint_lower[2] + global_offset[2] };
 
-    //fprintf(stderr,"global old: sizes=(%d,%d,%d) subsizes=(%d,%d,%d) starts=(%d,%d,%d)\n",sizes[0],sizes[1],sizes[2],subsizes[0],subsizes[1],subsizes[2],starts[0],starts[1],starts[2]);
-
     // Note Fortran ordering as we switch order for paraview output
     MPI_Type_create_subarray(3, sizes, subsizes, starts, MPI_ORDER_FORTRAN, mpitype, &global_mpitype);
   }
@@ -1366,8 +1065,6 @@ static MPI_Datatype mpiTypeLocalWrite(const int local_ghost,
     int starts[] = { local_ghost - global_ghost*endpoint_lower[0],
                      local_ghost - global_ghost*endpoint_lower[1],
                      local_ghost - global_ghost*endpoint_lower[2] };
-
-    //fprintf(stderr,"local old: sizes=(%d,%d,%d) subsizes=(%d,%d,%d) starts=(%d,%d,%d)\n",sizes[0],sizes[1],sizes[2],subsizes[0],subsizes[1],subsizes[2],starts[0],starts[1],starts[2]);
 
     // Fortran ordering for paraview output
     MPI_Type_create_subarray(3, sizes, subsizes, starts, MPI_ORDER_FORTRAN, mpitype, &local_mpitype);
@@ -1430,9 +1127,6 @@ void FixLbMulticomponent::init_output(void)
   // Local write MPI types for our portion of the global dump file
   fluid_scalar_field_mpitype = mpiTypeLocalWrite(2, fluid_local_n0, fluid_global_o0, 0, fluid_global_n0, MPI_DOUBLE);
   fluid_vector_field_mpitype = mpiTypeLocalWrite(2, fluid_local_n0, fluid_global_o0, 0, fluid_global_n0, realType3_mpitype);
-  // fluid_phi_2_mpitype = mpiTypeLocalWrite(2, fluid_local_n0, fluid_global_o0, 0, fluid_global_n0, MPI_DOUBLE);
-  // fluid_psi_2_mpitype = mpiTypeLocalWrite(2, fluid_local_n0, fluid_global_o0, 0, fluid_global_n0, MPI_DOUBLE);
-  // fluid_pressure_2_mpitype = mpiTypeLocalWrite(2, fluid_local_n0, fluid_global_o0, 0, fluid_global_n0, MPI_DOUBLE);
   
   // Global write MPI type for our portion of the global dump file
   dump_file_mpitype = mpiTypeDumpGlobal_ternary(fluid_local_n0, fluid_global_o0, fluid_global_n0);
@@ -1446,12 +1140,7 @@ void FixLbMulticomponent::init_output(void)
     if ( me == 0 ) {
       dump_file_handle_xdmf = fopen( dump_file_name_xdmf.c_str(), "w");
       if (!dump_file_handle_xdmf) {
-	    std::ostringstream combined;
-
-	    // The message plus the status
-	    combined <<  std::string("unable to truncate/create \"") + dump_file_name_xdmf + std::string("\"");
-
-        error->one(FLERR, combined.str().c_str() );
+        error->one(FLERR, "Unable to truncate/create \"{}\": {}", dump_file_name_xdmf, utils::getsyserror());
       }
       fprintf(dump_file_handle_xdmf,
               "<?xml version=\"1.0\" ?>\n"
@@ -1471,9 +1160,6 @@ void FixLbMulticomponent::init_output(void)
 
 void FixLbMulticomponent::destroy_output() {
 
-  MPI_File_close(&dump_file_handle_raw);
-
-  // MPI_Type_free(&dump_file_mpitype) is done in parent destructor
   MPI_Type_free(&fluid_scalar_field_mpitype);
   MPI_Type_free(&fluid_vector_field_mpitype);
 
@@ -1522,9 +1208,6 @@ void FixLbMulticomponent::init_lattice() {
   memory->create(laplace_rho,subNbx,subNby,subNbz,"FixLbMulticomponent:laplace_rho");
   memory->create(laplace_phi,subNbx,subNby,subNbz,"FixLbMulticomponent:laplace_phi");
   memory->create(laplace_psi,subNbx,subNby,subNbz,"FixLbMulticomponent:laplace_psi");
-
-  //initializeLB();
-  //parametercalc_full();
 
 }
 
@@ -1626,11 +1309,6 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
       C3 = utils::numeric(FLERR, argv[argi+1], false, lmp);
       argi += 2;
     }
-    // else if (strcmp(argv[argi],"radius")==0) {
-    //   if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
-    //   radius = utils::numeric(FLERR, argv[argi+1], false, lmp);
-    //   argi += 2;
-    // }
     else if(strcmp(argv[argi],"dumpxdmf")==0){
       if (argi+3 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
       dump_interval = utils::inumeric(FLERR, argv[argi+1], false, lmp);
