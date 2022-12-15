@@ -66,36 +66,40 @@ void FixLbMulticomponent::end_of_step() {
 
 void FixLbMulticomponent::lb_update() {
 
-#if 1 /* no overlap of communication and computation */
+#if 1
+  // no overlap of communication and computation
   halo_comm();
   update_cube(0,subNbx,0,subNby,0,subNbz);
-#else // the following is not tested and may be buggy[uschille 2022/12/10]
-  // communicate in z direction
+#else // the following is not thoroughly tested as it appeared to be slower [uschille 2022/12/15]
+  // communication and computation can be partially overlapped
+  // some computations at the box boundary are duplicated which could be optimized
+
+  // communicate in z-direction
   halo_comm(2);
   // update inner cube
-  update_cube(2,subNbx-2,2,subNby-2,2,subNbz-2);
+  update_cube(2,subNbx-2, 2,subNby-2, 2,subNbz-2);
   // wait for communication of z-slabs
   halo_wait();
 
-  // communicate in y direction
+  // communicate in y-direction
   halo_comm(1);
   // update z-slabs that are now available
-  update_cube(2,subNbx-2,2,subNby-2,1,2);
-  update_cube(2,subNbx-2,2,subNby-2,subNbx-2,subNbx-1);
+  update_cube(2,subNbx-2, 2,subNby-2, 0,4);
+  update_cube(2,subNbx-2, 2,subNby-2, subNbz-4,subNbz);
   // wait for communication of y-slabs
   halo_wait();
 
   // communicate in x-direction
   halo_comm(0);
   // update y-slabs that are now available
-  update_cube(2,subNbx-2,1,2,1,subNbz-1);
-  update_cube(2,subNbx-2,subNby-2,subNby-1,1,subNbz-1);
+  update_cube(2,subNbx-2, 0,4, 0,subNbz);
+  update_cube(2,subNbx-2, subNby-4,subNby, 0,subNbz);
   // wait for communication of z-slabs
   halo_wait();
 
   // update x-slabs that are now available
-  update_cube(1,2,1,subNby-1,1,subNbz-1);
-  update_cube(subNbx-2,subNbx-1,1,subNby-1,1,subNbz-1);
+  update_cube(0,4, 0,subNby, 0,subNbz);
+  update_cube(subNbx-4,subNbx, 0,subNby, 0,subNbz);
 #endif
 
   /* swap the pointers of the lattice copies */
