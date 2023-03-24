@@ -683,8 +683,10 @@ void FixLbMulticomponent::init_fluid() {
       init_double_emulsion(radius*dx_lb);
       break;
     case FILM:
+      init_film(thickness, C1_film, C2_film);
       break;
     case MIXED_DROPLET:
+      init_mixed_droplet(radius, C1_drop, C2_drop);
       break;
   }
 
@@ -1274,15 +1276,20 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
         argi += 2;
       }
       else if(strcmp(argv[argi],"film")==0){
-        if (argi+1 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
+        if (argi+4 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
+	thickness = utils::numeric(FLERR, argv[argi+1], false, lmp);
+	C1_film = utils::numeric(FLERR, argv[argi+2], false, lmp);
+	C2_film = utils::numeric(FLERR, argv[argi+3], false, lmp);
         init_method = FILM;
-        argi += 1;
+        argi += 4;
       }
       else if(strcmp(argv[argi],"mixed_droplet")==0){
-        if (argi+1 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
+        if (argi+4 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
         radius = utils::numeric(FLERR, argv[argi+1], false, lmp);
+	C1_drop = utils::numeric(FLERR, argv[argi+2], false, lmp);
+	C2_drop = utils::numeric(FLERR, argv[argi+3], false, lmp);
         init_method = MIXED_DROPLET;
-        argi += 1;
+        argi += 4;
       }
       else error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
     }

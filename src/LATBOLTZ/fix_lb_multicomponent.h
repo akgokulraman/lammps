@@ -73,6 +73,9 @@ namespace LAMMPS_NS {
     int seed;
     double C1, C2, C3;
     int radius;
+    double C1_drop, C2_drop;
+    double C1_film, C2_film;
+    double thickness;
 
     double ****g_lb;                                
     double ****gnew;                              
