@@ -1,0 +1,22 @@
+#===========================================================================#
+# Decomposition of a ternary fluid mixture                                  #
+#===========================================================================#
+region fluid   block -100 100 -100 100 -3 3
+create_box     0 fluid
+
+timestep        1.0
+
+#---------------------------------------------------------------------------
+# Create a multicomponent lattice Boltzmann mixture in the simulation domain
+# Use D3Q19 lattice with standard parameters
+#   fluid density = 1.0, fluid viscosity = 1/6, lattice spacing dx=1.0
+#----------------------------------------------------------------------------
+variable C1 equal 0.333333
+variable C2 equal 0.333333
+variable C3 equal 0.333334
+variable tag string ternary_mixture-C1=${C1}_C2=${C2}_C3=${C3}
+variable nsteps equal 1000000
+
+fix mcmp all lb/multicomponent 1 0.166667 1.0 D3Q19 dx 1 dumpxdmf ${nsteps} ${tag} C1 ${C1} C2 ${C2} C3 ${C3} kappa1 0.01 kappa2 0.02 kappa3 0.05 init mixture
+
+run ${nsteps}

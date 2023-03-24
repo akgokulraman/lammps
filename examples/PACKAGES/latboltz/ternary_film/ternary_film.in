@@ -1,0 +1,25 @@
+#===========================================================================#
+# Phase separation of a ternary film                                        #
+#===========================================================================#
+region fluid   block -100 100 -100 100 -3 3
+create_box     0 fluid
+
+timestep       1.0
+
+#---------------------------------------------------------------------------
+# Create a multicomponent lattice Boltzmann mixture in the simulation domain
+# Use D3Q19 lattice with standard parameters
+#   fluid density = 1.0, fluid viscosity = 1/6, lattice spacing dx=1.0
+#----------------------------------------------------------------------------
+variable C1 equal 1.0
+variable C2 equal 0.0
+variable C3 equal 0.0
+variable C1_film equal 0.333333
+variable C2_film equal 0.333333
+variable film_thickness equal 0.5
+variable tag string ternary_film-C1=${C1_film}_C2=${C2_film}
+variable nsteps equal 1000000
+
+fix mcmp all lb/multicomponent 1 0.166667 1.0 D3Q19 dx 1 dumpxdmf ${nsteps} ${tag} C1 ${C1} C2 ${C2} C3 ${C3} kappa1 0.01 kappa2 0.01 kappa3 0.01 init film ${film_thickness} ${C1_film} ${C2_film}
+
+run ${nsteps}
