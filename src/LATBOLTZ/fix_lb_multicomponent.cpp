@@ -1249,6 +1249,11 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
       dump_file_name_raw = std::string(argv[argi+2]) + std::string(".raw");
       argi += 3;
     }
+    else if (strcmp(argv[argi],"seed")==0){
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      seed = utils::inumeric(FLERR, argv[argi+1], false, lmp);
+      argi += 2;
+    }
     else if(strcmp(argv[argi],"init")==0){
       if (argi+1 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
       argi += 1;
