@@ -1217,6 +1217,11 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
       kappa3 = utils::numeric(FLERR, argv[argi+1], false, lmp);
       argi += 2;
     }
+    else if (strcmp(argv[argi],"alpha")==0) {
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      alpha = utils::numeric(FLERR, argv[argi+1], false, lmp);
+      argi += 2;
+    }
     else if (strcmp(argv[argi],"gamma_p")==0) {
       if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
       gamma_p = utils::numeric(FLERR, argv[argi+1], false, lmp);
