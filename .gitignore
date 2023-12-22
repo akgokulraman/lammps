@@ -55,3 +55,8 @@ out/RelWithDebInfo
 out/Release
 out/x86
 out/x64
+
+# jupyter checkpoints
+src/.ipynb_checkpoints        
+src/LATBOLTZ/.ipynb_checkpoints/
+.ipynb_checkpoints/
