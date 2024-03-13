@@ -1,0 +1,24 @@
+#===========================================================================#
+# Decomposition of a ternary fluid droplet                                  #
+#===========================================================================#
+region fluid   block -100 100 -100 100 -3 3
+create_box     0 fluid
+timestep       1.0
+
+#---------------------------------------------------------------------------
+# Create a multicomponent lattice Boltzmann mixture in the simulation domain
+# Use D3Q19 lattice with standard parameters
+#   fluid density = 1.0, fluid viscosity = 1/6, lattice spacing dx=1.0
+#----------------------------------------------------------------------------
+
+#---------------------------------------------------------------------------
+# User must pass the following variables:
+#	C1, C2, dump_frequency, k3, radius, nsteps
+#---------------------------------------------------------------------------
+
+variable tag string mixed_droplet_C1-${C1}_C2-${C2}
+variable c1 equal ${C1}/1000
+variable c2 equal ${C2}/1000
+
+fix mcmp all lb/multicomponent 1 0.166667 1.0 D3Q19 dx 1 dumpxdmf ${dump_frequency} ${tag} kappa1 ${k1} kappa2 ${k1} kappa3 ${k3} init mixed_droplet ${radius} ${c1} ${c2}
+run ${nsteps}
