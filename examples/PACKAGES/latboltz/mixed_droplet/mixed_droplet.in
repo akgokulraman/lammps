@@ -18,7 +18,7 @@ timestep       1.0
 #   fluid density = 1.0, fluid viscosity = 1/6, lattice spacing dx=1.0
 #----------------------------------------------------------------------------
 
-variable tag string mixed_droplet_C1-${C1}_C2-${C2}
+variable tag string mixed_droplet_Pe_phi-${Pe_phi}
 variable c1 equal ${C1}/1000
 variable c2 equal ${C2}/1000
 
