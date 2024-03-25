@@ -1,7 +1,13 @@
 #===========================================================================#
-# Decomposition of a ternary fluid mixture                                  #
+# Decomposition of a ternary fluid mixture under a concentration gradient   #
 #===========================================================================#
-region fluid   block -100 100 -100 100 -3 3
+
+#---------------------------------------------------------------------------
+# User must pass the following variables:
+#	L_box, height, viscosity, dump_frequency, k1, k2, k3, C1, C2, C3, nsteps
+#---------------------------------------------------------------------------
+
+region fluid   block -${L_box} ${L_box} -${L_box} ${L_box} -${height} ${height}
 create_box     0 fluid
 
 timestep        1.0
@@ -11,13 +17,13 @@ timestep        1.0
 # Use D3Q19 lattice with standard parameters
 #   fluid density = 1.0, fluid viscosity = 1/6, lattice spacing dx=1.0
 #----------------------------------------------------------------------------
-variable C1 equal 0.8
-variable C2 equal 0.2
-variable C3 equal 0.0 # binary mixture keeping C3 as zero
-variable tag string binary_mixture-C1=${C1}_C2=${C2}
-variable nsteps equal 100000
-variable dump_steps equal 1000
+variable C1 equal ${C1}
+variable C2 equal ${C2}
+variable C3 equal ${C3} # binary mixture keeping C3 as zero
+variable tag string binary_mixture_C1-${C1}_C2-${C2}
+variable nsteps equal ${nsteps}
+variable dump_frequency equal ${dump_frequency}
 
-fix mcmp all lb/multicomponent 1 0.166667 1.0 D3Q19 dx 1 dumpxdmf ${dump_steps} ${tag} C1 ${C1} C2 ${C2} C3 ${C3} kappa1 0.01 kappa2 0.02 kappa3 0.05 init mixture_conc_gradient
+fix mcmp all lb/multicomponent 1 ${viscosity} 1.0 D3Q19 dx 1 dumpxdmf ${dump_frequency} ${tag} kappa1 ${k1} kappa2 ${k2} kappa3 ${k3} C1 ${C1} C2 ${C2} C3 ${C3} init mixture_conc_gradient
 
 run ${nsteps}
