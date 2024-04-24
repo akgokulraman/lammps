@@ -18,10 +18,6 @@ timestep       1.0
 #   fluid density = 1.0, fluid viscosity = 1/6, lattice spacing dx=1.0
 #----------------------------------------------------------------------------
 
-variable tag string mixed_droplet_Pe_phi-${Pe_phi}
-variable c1 equal ${C1}/1000
-variable c2 equal ${C2}/1000
-
 fix mcmp all lb/multicomponent 1 ${viscosity} 1.0 D3Q19 dx 1 dumpxdmf ${dump_frequency} ${tag} alpha ${alpha} kappa1 ${k1} kappa2 ${k2} kappa3 ${k3} gamma_p ${gamma_phi} gamma_s ${gamma_psi} init mixed_droplet ${diameter} ${c1} ${c2}
 
 run ${nsteps}
