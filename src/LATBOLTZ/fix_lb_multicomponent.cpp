@@ -176,73 +176,99 @@ void FixLbMulticomponent::collide_stream(int x, int y, int z) {
 void FixLbMulticomponent::bounce_back(int x, int y, int z) {
   double cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
   if (cur_z == domain->boxhi[2]) {
-        int top[5], bottom[5];
-
-        int indices_top[5] = {3, 7, 8, 17, 15};
-        int indices_bottom[5] = {4, 10, 9, 16, 18};
-
-      // f
-        for (int i = 0; i < 5; i++) {
-            top[i] = fnew[x][y][z][indices_top[i]];
-            bottom[i] = fnew[x][y][z][indices_bottom[i]];
-        }
-
-        for (int i = 0; i < 5; i++) {
-            fnew[x][y][z][indices_bottom[i]] = top[i];
-        }
-
-      // g
-        for (int i = 0; i < 5; i++) {
-            top[i] = gnew[x][y][z][indices_top[i]];
-        }
-
-        for (int i = 0; i < 5; i++) {
-            gnew[x][y][z][indices_bottom[i]] = top[i];
-        }
-
-      // k
-        for (int i = 0; i < 5; i++) {
-            top[i] = knew[x][y][z][indices_top[i]];
-        }
-
-        for (int i = 0; i < 5; i++) {
-            knew[x][y][z][indices_bottom[i]] = top[i];
-        }
-    }
-
-  if (cur_z == domain->boxlo[2]) {
-      int top[5], bottom[5];
-
-      int indices_top[5] = {3, 7, 8, 17, 15};
-      int indices_bottom[5] = {4, 10, 9, 16, 18};
+    // check if the 'if' condition is working
+    fptr = fopen("condition_check_top.txt", "w");
+    fprintf(fptr, "bounce-back at top", cur_z);
+    fclose(fptr);
+    
+    int top[5], bottom[5];
+    int indices_top[5] = {3, 7, 8, 17, 15};
+    int indices_bottom[5] = {4, 10, 9, 16, 18};
 
     // f
-      for (int i = 0; i < 5; i++) {
-          top[i] = fnew[x][y][z][indices_top[i]];
-          bottom[i] = fnew[x][y][z][indices_bottom[i]];
-      }
+    // for (int i = 0; i < 5; i++) {
+    //     top[i] = fnew[x][y][z][indices_top[i]];
+    //     bottom[i] = fnew[x][y][z][indices_bottom[i]];
+    // }
 
-      for (int i = 0; i < 5; i++) {
-          fnew[x][y][z][indices_top[i]] = bottom[i];
-      }
+    // for (int i = 0; i < 5; i++) {
+    //     fnew[x][y][z][indices_bottom[i]] = top[i];
+    // }
 
     // g
-      for (int i = 0; i < 5; i++) {
-          bottom[i] = gnew[x][y][z][indices_bottom[i]];
-      }
+    // for (int i = 0; i < 5; i++) {
+    //     top[i] = gnew[x][y][z][indices_top[i]];
+    // }
 
-      for (int i = 0; i < 5; i++) {
-          gnew[x][y][z][indices_top[i]] = bottom[i];
-      }
+    // for (int i = 0; i < 5; i++) {
+    //     gnew[x][y][z][indices_bottom[i]] = top[i];
+    // }
 
-    // k
-      for (int i = 0; i < 5; i++) {
-          bottom[i] = knew[x][y][z][indices_bottom[i]];
-      }
+    // // k
+    // for (int i = 0; i < 5; i++) {
+    //     top[i] = knew[x][y][z][indices_top[i]];
+    // }
 
-      for (int i = 0; i < 5; i++) {
-          knew[x][y][z][indices_top[i]] = bottom[i];
-      }
+    // for (int i = 0; i < 5; i++) {
+    //     knew[x][y][z][indices_bottom[i]] = top[i];
+    // }
+
+    fnew[x][y][z][4] = fnew[x][y][z+1][3];
+    fnew[x][y][z][10] = fnew[x+1][y][z+1][7];
+    fnew[x][y][z][9] = fnew[x-1][y][z+1][8];
+    fnew[x][y][z][16] = fnew[x][y-1][z+1][17];
+    fnew[x][y][z][18] = fnew[x][y+1][z+1][15];
+    // ----
+    gnew[x][y][z][4] = gnew[x][y][z+1][3];
+    gnew[x][y][z][10] = gnew[x+1][y][z+1][7];
+    gnew[x][y][z][9] = gnew[x-1][y][z+1][8];
+    gnew[x][y][z][16] = gnew[x][y-1][z+1][17];
+    gnew[x][y][z][18] = gnew[x][y+1][z+1][15];
+    // ----
+    knew[x][y][z][4] = knew[x][y][z+1][3];
+    knew[x][y][z][10] = knew[x+1][y][z+1][7];
+    knew[x][y][z][9] = knew[x-1][y][z+1][8];
+    knew[x][y][z][16] = knew[x][y-1][z+1][17];
+    knew[x][y][z][18] = knew[x][y+1][z+1][15];
+  }
+
+  if (cur_z == domain->boxlo[2]) {
+    // check if the 'if' condition is working
+    fptr = fopen("condition_check_bottom.txt", "w");
+    fprintf(fptr, "bounce-back at bottom", cur_z);
+    fclose(fptr);
+    int top[5], bottom[5];
+    int indices_top[5] = {3, 7, 8, 17, 15};
+    int indices_bottom[5] = {4, 10, 9, 16, 18};
+
+    // // f
+    //   for (int i = 0; i < 5; i++) {
+    //       top[i] = fnew[x][y][z][indices_top[i]];
+    //       bottom[i] = fnew[x][y][z][indices_bottom[i]];
+    //   }
+
+    //   for (int i = 0; i < 5; i++) {
+    //       fnew[x][y][z][indices_top[i]] = bottom[i];
+    //   }
+
+    // // g
+    //   for (int i = 0; i < 5; i++) {
+    //       bottom[i] = gnew[x][y][z][indices_bottom[i]];
+    //   }
+
+    //   for (int i = 0; i < 5; i++) {
+    //       gnew[x][y][z][indices_top[i]] = bottom[i];
+    //   }
+
+    // // k
+    //   for (int i = 0; i < 5; i++) {
+    //       bottom[i] = knew[x][y][z][indices_bottom[i]];
+    //   }
+
+    //   for (int i = 0; i < 5; i++) {
+    //       knew[x][y][z][indices_top[i]] = bottom[i];
+    //   }
+
   }
 }
 
