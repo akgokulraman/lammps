@@ -175,10 +175,14 @@ void FixLbMulticomponent::collide_stream(int x, int y, int z) {
 
 void FixLbMulticomponent::bounce_back(int x, int y, int z) {
   double cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
+  FILE *fptr;
+  // fptr = fopen("condition_check_func.txt", "w");
+  // fprintf(fptr, "bounce-back func: %f", cur_z);
+  // fclose(fptr);
   if (cur_z == domain->boxhi[2]) {
     // check if the 'if' condition is working
-    fptr = fopen("condition_check_top.txt", "w");
-    fprintf(fptr, "bounce-back at top", cur_z);
+    fptr = fopen("condition_check_top.txt", "a");
+    fprintf(fptr, "bounce-back at top: %f", cur_z);
     fclose(fptr);
     
     int top[5], bottom[5];
@@ -234,8 +238,8 @@ void FixLbMulticomponent::bounce_back(int x, int y, int z) {
 
   if (cur_z == domain->boxlo[2]) {
     // check if the 'if' condition is working
-    fptr = fopen("condition_check_bottom.txt", "w");
-    fprintf(fptr, "bounce-back at bottom", cur_z);
+    fptr = fopen("condition_check_bottom.txt", "a");
+    fprintf(fptr, "bounce-back at bottom: %f", cur_z);
     fclose(fptr);
     int top[5], bottom[5];
     int indices_top[5] = {3, 7, 8, 17, 15};
