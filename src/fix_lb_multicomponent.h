@@ -103,12 +103,11 @@ namespace LAMMPS_NS {
     void init_lattice();
     void destroy_lattice();
 
-    enum init_type { MIXTURE, MIXTURE_CONC_GRADIENT, DROPLET, LIQUID_LENS, DOUBLE_EMULSION, FILM, MIXED_DROPLET };
+    enum init_type { MIXTURE, DROPLET, LIQUID_LENS, DOUBLE_EMULSION, FILM, MIXED_DROPLET };
     init_type init_method = MIXTURE;
 
     void init_fluid();
     void init_mixture();
-    void init_mixture_conc_gradient();
     void init_droplet(double radius);
     void init_liquid_lens(double radius);
     void init_double_emulsion(double radius);
@@ -118,6 +117,7 @@ namespace LAMMPS_NS {
     void lb_update();
     void calc_moments_full();
     void collide_stream(int x, int y, int z);
+    void bounce_back(int x, int y, int z);
     void update_cube(int xmin, int xmax, int ymin, int ymax, int zmin, int zmax);
     void update_slab(int x, int ymin, int ymax, int zmin, int zmax);
     void update_column(int x, int y, int zmin, int zmax);
