@@ -189,71 +189,61 @@ void FixLbMulticomponent::bounce_back(int x, int y, int z) {
 
         for (int i = 0; i < 5; i++) {
             fnew[x][y][z][indices_bottom[i]] = top[i];
-            fnew[x][y][z][indices_top[i]] = bottom[i];
         }
 
       // g
         for (int i = 0; i < 5; i++) {
             top[i] = gnew[x][y][z][indices_top[i]];
-            bottom[i] = gnew[x][y][z][indices_bottom[i]];
         }
 
         for (int i = 0; i < 5; i++) {
             gnew[x][y][z][indices_bottom[i]] = top[i];
-            gnew[x][y][z][indices_top[i]] = bottom[i];
         }
 
       // k
         for (int i = 0; i < 5; i++) {
             top[i] = knew[x][y][z][indices_top[i]];
-            bottom[i] = knew[x][y][z][indices_bottom[i]];
         }
 
         for (int i = 0; i < 5; i++) {
             knew[x][y][z][indices_bottom[i]] = top[i];
-            knew[x][y][z][indices_top[i]] = bottom[i];
         }
     }
 
-    if (cur_z == domain->boxlo[2]) {
-        int top[5], bottom[5];
+  if (cur_z == domain->boxlo[2]) {
+      int top[5], bottom[5];
 
-        int indices_top[5] = {3, 7, 8, 17, 15};
-        int indices_bottom[5] = {4, 10, 9, 16, 18};
+      int indices_top[5] = {3, 7, 8, 17, 15};
+      int indices_bottom[5] = {4, 10, 9, 16, 18};
 
-      // f
-        for (int i = 0; i < 5; i++) {
-            top[i] = fnew[x][y][z][indices_top[i]];
-            bottom[i] = fnew[x][y][z][indices_bottom[i]];
-        }
+    // f
+      for (int i = 0; i < 5; i++) {
+          top[i] = fnew[x][y][z][indices_top[i]];
+          bottom[i] = fnew[x][y][z][indices_bottom[i]];
+      }
 
-        for (int i = 0; i < 5; i++) {
-            fnew[x][y][z][indices_bottom[i]] = top[i];
-            fnew[x][y][z][indices_top[i]] = bottom[i];
-        }
+      for (int i = 0; i < 5; i++) {
+          fnew[x][y][z][indices_top[i]] = bottom[i];
+      }
 
-      // g
-        for (int i = 0; i < 5; i++) {
-            top[i] = gnew[x][y][z][indices_top[i]];
-            bottom[i] = gnew[x][y][z][indices_bottom[i]];
-        }
+    // g
+      for (int i = 0; i < 5; i++) {
+          bottom[i] = gnew[x][y][z][indices_bottom[i]];
+      }
 
-        for (int i = 0; i < 5; i++) {
-            gnew[x][y][z][indices_bottom[i]] = top[i];
-            gnew[x][y][z][indices_top[i]] = bottom[i];
-        }
+      for (int i = 0; i < 5; i++) {
+          gnew[x][y][z][indices_top[i]] = bottom[i];
+      }
 
-      // k
-        for (int i = 0; i < 5; i++) {
-            top[i] = knew[x][y][z][indices_top[i]];
-            bottom[i] = knew[x][y][z][indices_bottom[i]];
-        }
+    // k
+      for (int i = 0; i < 5; i++) {
+          bottom[i] = knew[x][y][z][indices_bottom[i]];
+      }
 
-        for (int i = 0; i < 5; i++) {
-            knew[x][y][z][indices_bottom[i]] = top[i];
-            knew[x][y][z][indices_top[i]] = bottom[i];
-        }
-    }
+      for (int i = 0; i < 5; i++) {
+          knew[x][y][z][indices_top[i]] = bottom[i];
+      }
+  }
 }
 
 void FixLbMulticomponent::calc_moments(int x, int y, int z) {
