@@ -183,11 +183,11 @@ void FixLbMulticomponent::bounce_back(int x, int y, int z) {
     // check if the 'if' condition is working
     fptr = fopen("condition_check_top.txt", "a");
     fprintf(fptr, "\nbounce-back at top: %f", cur_z);
-    fprintf(fptr, "\ndomain-boxhi: %f", domain->boxhi[2])
-    fprintf(fptr, "\ndomain-boxlo: %f", domain->boxlo[2])
-    fprintf(fptr, "\ndomain-sublo: %f", domain->sublo[2])
-    fprintf(fptr, "\nhalo_extent: %f", halo_extent[2])
-    fprintf(fptr, "\n-----------------------------------")
+    fprintf(fptr, "\ndomain-boxhi: %f", domain->boxhi[2]);
+    fprintf(fptr, "\ndomain-boxlo: %f", domain->boxlo[2]);
+    fprintf(fptr, "\ndomain-sublo: %f", domain->sublo[2]);
+    fprintf(fptr, "\nhalo_extent: %f", halo_extent[2]);
+    fprintf(fptr, "\n-----------------------------------");
     fclose(fptr);
     
     int top[5], bottom[5];
