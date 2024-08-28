@@ -174,6 +174,7 @@ void FixLbMulticomponent::collide_stream(int x, int y, int z) {
 }
 
 void FixLbMulticomponent::bounce_back(int x, int y, int z) {
+  // Function to implement bounce_back along z direction
   double cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
   FILE *fptr;
   // fptr = fopen("condition_check_func.txt", "w");
@@ -181,14 +182,14 @@ void FixLbMulticomponent::bounce_back(int x, int y, int z) {
   // fclose(fptr);
   if (cur_z == domain->boxhi[2]) {
     // check if the 'if' condition is working
-    fptr = fopen("condition_check_top.txt", "a");
-    fprintf(fptr, "\nbounce-back at top: %f", cur_z);
-    fprintf(fptr, "\ndomain-boxhi: %f", domain->boxhi[2]);
-    fprintf(fptr, "\ndomain-boxlo: %f", domain->boxlo[2]);
-    fprintf(fptr, "\ndomain-sublo: %f", domain->sublo[2]);
-    // fprintf(fptr, "\nhalo_extent: %d", halo_extent[2]);
-    fprintf(fptr, "\n-----------------------------------");
-    fclose(fptr);
+    // fptr = fopen("condition_check_top.txt", "a");
+    // fprintf(fptr, "\nbounce-back at top: %f", cur_z);
+    // fprintf(fptr, "\ndomain-boxhi: %f", domain->boxhi[2]);
+    // fprintf(fptr, "\ndomain-boxlo: %f", domain->boxlo[2]);
+    // fprintf(fptr, "\ndomain-sublo: %f", domain->sublo[2]);
+    // // fprintf(fptr, "\nhalo_extent: %d", halo_extent[2]);
+    // fprintf(fptr, "\n-----------------------------------");
+    // fclose(fptr);
     
     int top[5], bottom[5];
     int indices_top[5] = {3, 7, 8, 17, 15};
@@ -241,14 +242,14 @@ void FixLbMulticomponent::bounce_back(int x, int y, int z) {
     knew[x][y][z][18] = knew[x][y+1][z+1][15];
   }
 
-  // if (cur_z == domain->boxlo[2]) {
+  if (cur_z == domain->boxlo[2]) {
   //   // check if the 'if' condition is working
   //   fptr = fopen("condition_check_bottom.txt", "a");
   //   fprintf(fptr, "bounce-back at bottom: %f", cur_z);
   //   fclose(fptr);
-  //   int top[5], bottom[5];
-  //   int indices_top[5] = {3, 7, 8, 17, 15};
-  //   int indices_bottom[5] = {4, 10, 9, 16, 18};
+    int top[5], bottom[5];
+    int indices_top[5] = {3, 7, 8, 17, 15};
+    int indices_bottom[5] = {4, 10, 9, 16, 18};
 
     // // f
     //   for (int i = 0; i < 5; i++) {
@@ -276,7 +277,25 @@ void FixLbMulticomponent::bounce_back(int x, int y, int z) {
 
     //   for (int i = 0; i < 5; i++) {
     //       knew[x][y][z][indices_top[i]] = bottom[i];
-    //   }
+    // }
+
+    fnew[x][y][z][3] = fnew[x][y][z-1][4];
+    fnew[x][y][z][7] = fnew[x-1][y][z-1][10];
+    fnew[x][y][z][8] = fnew[x+1][y][z-1][9];
+    fnew[x][y][z][17] = fnew[x][y+1][z-1][16];
+    fnew[x][y][z][15] = fnew[x][y-1][z-1][18];
+    // ----
+    gnew[x][y][z][3] = gnew[x][y][z-1][4];
+    gnew[x][y][z][7] = gnew[x-1][y][z-1][10];
+    gnew[x][y][z][8] = gnew[x+1][y][z-1][9];
+    gnew[x][y][z][17] = gnew[x][y+1][z-1][16];
+    gnew[x][y][z][15] = gnew[x][y-1][z-1][18];
+    // ----
+    knew[x][y][z][3] = knew[x][y][z-1][4];
+    knew[x][y][z][7] = knew[x-1][y][z-1][10];
+    knew[x][y][z][8] = knew[x+1][y][z-1][9];
+    knew[x][y][z][17] = knew[x][y+1][z-1][16];
+    knew[x][y][z][15] = knew[x][y-1][z-1][18];
 
   }
 }
