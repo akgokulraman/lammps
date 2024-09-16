@@ -162,6 +162,9 @@ void FixLbMulticomponent::write_site(int x, int y, int z) {
 
 void FixLbMulticomponent::collide_stream(int x, int y, int z) {
   int i, xnew, ynew, znew;
+  double forcing[3] = {0.00000, 0.00000, 0.00000}; // forcing term along x direction
+  double f_w[19] = {0, 0.11111, 0.11111, 0.11111, 0.11111, 0.11111, 0.11111, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777};
+  double F;
   calc_equilibrium(x,y,z);
   for (i=0; i<numvel; ++i) {
     xnew = x + e19[i][0];
@@ -170,6 +173,10 @@ void FixLbMulticomponent::collide_stream(int x, int y, int z) {
     fnew[xnew][ynew][znew][i] = f_lb[x][y][z][i] - (f_lb[x][y][z][i] - feq[x][y][z][i])/tau_r;
     gnew[xnew][ynew][znew][i] = g_lb[x][y][z][i] - (g_lb[x][y][z][i] - geq[x][y][z][i])/tau_p;
     knew[xnew][ynew][znew][i] = k_lb[x][y][z][i] - (k_lb[x][y][z][i] - keq[x][y][z][i])/tau_s;
+    F = f_w[i]*e19[i][0]*forcing[0] + f_w[i]*e19[i][1]*forcing[1] + f_w[i]*e19[i][2]*forcing[2];
+    fnew[xnew][ynew][znew][i] += F;
+    gnew[xnew][ynew][znew][i] += F;
+    knew[xnew][ynew][znew][i] += F;
   }
 }
 
@@ -564,9 +571,51 @@ void FixLbMulticomponent::init_mixture() {
   for (x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
     for (y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
       for (z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
-	      C1_init = C1 + 0.01*random->gaussian();
-	      C2_init = C2 + 0.01*random->gaussian();
+	      C1_init = C1 + 0.001*random->gaussian();
+	      C2_init = C2 + 0.001*random->gaussian();
 	      C3_init = 1.0 - C1_init - C2_init;
+	      rho = densityinit;
+	      phi = densityinit*(C1_init-C2_init);
+	      psi = densityinit*C3_init;
+	      for (i=0; i<numvel; i++) {
+	        f_lb[x][y][z][i] = w_lb19[i]*rho;
+	        g_lb[x][y][z][i] = w_lb19[i]*phi;
+	        k_lb[x][y][z][i] = w_lb19[i]*psi;
+	      }
+	      C1tot += C1_init;
+	      C2tot += C2_init;
+	      C3tot += C3_init;
+      }
+    }
+  }
+}
+
+// phase separated binary system
+void FixLbMulticomponent::init_binary_separated() {
+  double rho, phi, psi;
+  double C1_init, C2_init, C3_init;
+  double C1tot=0., C2tot=0., C3tot=0.;
+  double C1tot_global=0., C2tot_global=0., C3tot_global=0.;
+  double pos[3];
+  int x, y, z, i;
+
+  RanMars *random = new RanMars(lmp,seed + comm->me);
+
+  double box_mid = domain->boxlo[2] + 0.5*domain->zprd;
+
+  for (x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+    for (y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+      for (z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
+        pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
+	      if (pos[2] > box_mid) {
+	        C1_init = 1 + 0.01*random->gaussian();
+	        C2_init = 0;
+	        C3_init = 0;
+	      } else {
+	        C1_init = 0;
+	        C2_init = 1 + 0.01*random->gaussian();
+	        C3_init = 0;
+	      }
 	      rho = densityinit;
 	      phi = densityinit*(C1_init-C2_init);
 	      psi = densityinit*C3_init;
@@ -800,6 +849,9 @@ void FixLbMulticomponent::init_fluid() {
   switch(init_method) {
     case MIXTURE:
       init_mixture();
+      break;
+    case BINARY_SEPARATED:
+      init_binary_separated();
       break;
     case DROPLET:
       init_droplet(radius*dx_lb);
@@ -1393,6 +1445,11 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
       if(strcmp(argv[argi],"mixture")==0) {
         if (argi+1 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
         init_method = MIXTURE;
+        argi += 1;
+      }
+      else if(strcmp(argv[argi],"binary_separated")==0) {
+        if (argi+1 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
+        init_method = BINARY_SEPARATED;
         argi += 1;
       }
       else if(strcmp(argv[argi],"droplet")==0) {
