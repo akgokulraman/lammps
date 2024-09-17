@@ -197,10 +197,6 @@ void FixLbMulticomponent::bounce_back(int x, int y, int z) {
     // // fprintf(fptr, "\nhalo_extent: %d", halo_extent[2]);
     // fprintf(fptr, "\n-----------------------------------");
     // fclose(fptr);
-    
-    int top[5], bottom[5];
-    int indices_top[5] = {3, 7, 8, 17, 15};
-    int indices_bottom[5] = {4, 10, 9, 16, 18};
 
     // f
     // for (int i = 0; i < 5; i++) {
@@ -230,21 +226,21 @@ void FixLbMulticomponent::bounce_back(int x, int y, int z) {
     //     knew[x][y][z][indices_bottom[i]] = top[i];
     // }
 
-    fnew[x][y][z][4] = fnew[x][y][z+1][3];
-    fnew[x][y][z][10] = fnew[x+1][y][z+1][7];
-    fnew[x][y][z][9] = fnew[x-1][y][z+1][8];
+    fnew[x][y][z][6] = fnew[x][y][z+1][5];
+    fnew[x][y][z][14] = fnew[x+1][y][z+1][11];
+    fnew[x][y][z][12] = fnew[x-1][y][z+1][13];
     fnew[x][y][z][16] = fnew[x][y-1][z+1][17];
     fnew[x][y][z][18] = fnew[x][y+1][z+1][15];
     // ----
-    gnew[x][y][z][4] = gnew[x][y][z+1][3];
-    gnew[x][y][z][10] = gnew[x+1][y][z+1][7];
-    gnew[x][y][z][9] = gnew[x-1][y][z+1][8];
+    gnew[x][y][z][6] = gnew[x][y][z+1][5];
+    gnew[x][y][z][14] = gnew[x+1][y][z+1][11];
+    gnew[x][y][z][12] = gnew[x-1][y][z+1][13];
     gnew[x][y][z][16] = gnew[x][y-1][z+1][17];
     gnew[x][y][z][18] = gnew[x][y+1][z+1][15];
     // ----
-    knew[x][y][z][4] = knew[x][y][z+1][3];
-    knew[x][y][z][10] = knew[x+1][y][z+1][7];
-    knew[x][y][z][9] = knew[x-1][y][z+1][8];
+    knew[x][y][z][6] = knew[x][y][z+1][5];
+    knew[x][y][z][14] = knew[x+1][y][z+1][11];
+    knew[x][y][z][12] = knew[x-1][y][z+1][13];
     knew[x][y][z][16] = knew[x][y-1][z+1][17];
     knew[x][y][z][18] = knew[x][y+1][z+1][15];
   }
@@ -286,21 +282,21 @@ void FixLbMulticomponent::bounce_back(int x, int y, int z) {
     //       knew[x][y][z][indices_top[i]] = bottom[i];
     // }
 
-    fnew[x][y][z][3] = fnew[x][y][z-1][4];
-    fnew[x][y][z][7] = fnew[x-1][y][z-1][10];
-    fnew[x][y][z][8] = fnew[x+1][y][z-1][9];
+    fnew[x][y][z][5] = fnew[x][y][z-1][6];
+    fnew[x][y][z][11] = fnew[x-1][y][z-1][14];
+    fnew[x][y][z][13] = fnew[x+1][y][z-1][12];
     fnew[x][y][z][17] = fnew[x][y+1][z-1][16];
     fnew[x][y][z][15] = fnew[x][y-1][z-1][18];
     // ----
-    gnew[x][y][z][3] = gnew[x][y][z-1][4];
-    gnew[x][y][z][7] = gnew[x-1][y][z-1][10];
-    gnew[x][y][z][8] = gnew[x+1][y][z-1][9];
+    gnew[x][y][z][5] = gnew[x][y][z-1][6];
+    gnew[x][y][z][11] = gnew[x-1][y][z-1][14];
+    gnew[x][y][z][13] = gnew[x+1][y][z-1][12];
     gnew[x][y][z][17] = gnew[x][y+1][z-1][16];
     gnew[x][y][z][15] = gnew[x][y-1][z-1][18];
     // ----
-    knew[x][y][z][3] = knew[x][y][z-1][4];
-    knew[x][y][z][7] = knew[x-1][y][z-1][10];
-    knew[x][y][z][8] = knew[x+1][y][z-1][9];
+    knew[x][y][z][5] = knew[x][y][z-1][6];
+    knew[x][y][z][11] = knew[x-1][y][z-1][14];
+    knew[x][y][z][13] = knew[x+1][y][z-1][12];
     knew[x][y][z][17] = knew[x][y+1][z-1][16];
     knew[x][y][z][15] = knew[x][y-1][z-1][18];
 
