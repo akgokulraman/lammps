@@ -162,7 +162,7 @@ void FixLbMulticomponent::write_site(int x, int y, int z) {
 
 void FixLbMulticomponent::collide_stream(int x, int y, int z) {
   int i, xnew, ynew, znew;
-  double forcing[3] = {0.00000, 0.00000, 0.00000}; // forcing term along x direction
+  double forcing[3] = {0.000001, 0.000001, 0.00000}; // forcing term along x direction
   double f_w[19] = {0, 0.11111, 0.11111, 0.11111, 0.11111, 0.11111, 0.11111, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777};
   double F;
   calc_equilibrium(x,y,z);
@@ -176,7 +176,7 @@ void FixLbMulticomponent::collide_stream(int x, int y, int z) {
     F = f_w[i]*e19[i][0]*forcing[0] + f_w[i]*e19[i][1]*forcing[1] + f_w[i]*e19[i][2]*forcing[2];
     fnew[xnew][ynew][znew][i] += F;
     gnew[xnew][ynew][znew][i] += F;
-    knew[xnew][ynew][znew][i] += F;
+    // knew[xnew][ynew][znew][i] += F;
   }
 }
 
@@ -187,7 +187,7 @@ void FixLbMulticomponent::bounce_back(int x, int y, int z) {
   // fptr = fopen("condition_check_func.txt", "w");
   // fprintf(fptr, "bounce-back func: %f", cur_z);
   // fclose(fptr);
-  if (cur_z == domain->boxhi[2]) {
+  if (cur_z == domain->boxhi[2]-1) {
     // check if the 'if' condition is working
     // fptr = fopen("condition_check_top.txt", "a");
     // fprintf(fptr, "\nbounce-back at top: %f", cur_z);
@@ -249,7 +249,7 @@ void FixLbMulticomponent::bounce_back(int x, int y, int z) {
     knew[x][y][z][18] = knew[x][y+1][z+1][15];
   }
 
-  if (cur_z == domain->boxlo[2]) {
+  if (cur_z == domain->boxlo[2]+1) {
   //   // check if the 'if' condition is working
   //   fptr = fopen("condition_check_bottom.txt", "a");
   //   fprintf(fptr, "bounce-back at bottom: %f", cur_z);
