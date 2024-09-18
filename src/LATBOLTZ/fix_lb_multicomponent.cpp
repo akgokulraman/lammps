@@ -162,9 +162,10 @@ void FixLbMulticomponent::write_site(int x, int y, int z) {
 
 void FixLbMulticomponent::collide_stream(int x, int y, int z) {
   int i, xnew, ynew, znew;
-  double forcing[3] = {0.000001, 0.000001, 0.00000}; // forcing term along x direction
+  double forcing[3] = {0.0000001, 0.00000, 0.00000}; // forcing term along x direction
   double f_w[19] = {0, 0.11111, 0.11111, 0.11111, 0.11111, 0.11111, 0.11111, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777};
-  double F;
+  double S_f_prefactor, S_g_prefactor, S_k_prefactor;
+  double S_f, S_g, S_k;
   calc_equilibrium(x,y,z);
   for (i=0; i<numvel; ++i) {
     xnew = x + e19[i][0];
@@ -173,10 +174,17 @@ void FixLbMulticomponent::collide_stream(int x, int y, int z) {
     fnew[xnew][ynew][znew][i] = f_lb[x][y][z][i] - (f_lb[x][y][z][i] - feq[x][y][z][i])/tau_r;
     gnew[xnew][ynew][znew][i] = g_lb[x][y][z][i] - (g_lb[x][y][z][i] - geq[x][y][z][i])/tau_p;
     knew[xnew][ynew][znew][i] = k_lb[x][y][z][i] - (k_lb[x][y][z][i] - keq[x][y][z][i])/tau_s;
-    F = f_w[i]*e19[i][0]*forcing[0] + f_w[i]*e19[i][1]*forcing[1] + f_w[i]*e19[i][2]*forcing[2];
-    fnew[xnew][ynew][znew][i] += F;
-    gnew[xnew][ynew][znew][i] += F;
-    // knew[xnew][ynew][znew][i] += F;
+    // adding force term
+    S_f_prefactor = (feq[x][y][z][i])/(density_lb[x][y][z]*cs2);
+    S_f = (S_f_prefactor)*((e19[i][0]-u_lb[x][y][z][0])*forcing[0] + (e19[i][1]-u_lb[x][y][z][1])*forcing[1] + (e19[i][2]-u_lb[x][y][z][2])*forcing[2]);
+    S_g_prefactor = (geq[x][y][z][i])/(density_lb[x][y][z]*cs2);
+    S_g = (S_g_prefactor)*((e19[i][0]-u_lb[x][y][z][0])*forcing[0] + (e19[i][1]-u_lb[x][y][z][1])*forcing[1] + (e19[i][2]-u_lb[x][y][z][2])*forcing[2]);
+    S_k_prefactor = (keq[x][y][z][i])/(density_lb[x][y][z]*cs2);
+    S_k = (S_k_prefactor)*((e19[i][0]-u_lb[x][y][z][0])*forcing[0] + (e19[i][1]-u_lb[x][y][z][1])*forcing[1] + (e19[i][2]-u_lb[x][y][z][2])*forcing[2]);
+    // S = f_w[i]*e19[i][0]*forcing[0] + f_w[i]*e19[i][1]*forcing[1] + f_w[i]*e19[i][2]*forcing[2];
+    fnew[xnew][ynew][znew][i] += S_f;
+    gnew[xnew][ynew][znew][i] += S_g;
+    knew[xnew][ynew][znew][i] += S_k;
   }
 }
 
@@ -197,108 +205,47 @@ void FixLbMulticomponent::bounce_back(int x, int y, int z) {
     // // fprintf(fptr, "\nhalo_extent: %d", halo_extent[2]);
     // fprintf(fptr, "\n-----------------------------------");
     // fclose(fptr);
-
-    // f
-    // for (int i = 0; i < 5; i++) {
-    //     top[i] = fnew[x][y][z][indices_top[i]];
-    //     bottom[i] = fnew[x][y][z][indices_bottom[i]];
-    // }
-
-    // for (int i = 0; i < 5; i++) {
-    //     fnew[x][y][z][indices_bottom[i]] = top[i];
-    // }
-
-    // g
-    // for (int i = 0; i < 5; i++) {
-    //     top[i] = gnew[x][y][z][indices_top[i]];
-    // }
-
-    // for (int i = 0; i < 5; i++) {
-    //     gnew[x][y][z][indices_bottom[i]] = top[i];
-    // }
-
-    // // k
-    // for (int i = 0; i < 5; i++) {
-    //     top[i] = knew[x][y][z][indices_top[i]];
-    // }
-
-    // for (int i = 0; i < 5; i++) {
-    //     knew[x][y][z][indices_bottom[i]] = top[i];
-    // }
-
-    fnew[x][y][z][6] = fnew[x][y][z+1][5];
-    fnew[x][y][z][14] = fnew[x+1][y][z+1][11];
-    fnew[x][y][z][12] = fnew[x-1][y][z+1][13];
-    fnew[x][y][z][16] = fnew[x][y-1][z+1][17];
-    fnew[x][y][z][18] = fnew[x][y+1][z+1][15];
+    fnew[x][y][z][6] = f_lb[x][y][z+1][5];
+    fnew[x][y][z][14] = f_lb[x+1][y][z+1][11];
+    fnew[x][y][z][12] = f_lb[x-1][y][z+1][13];
+    fnew[x][y][z][16] = f_lb[x][y-1][z+1][17];
+    fnew[x][y][z][18] = f_lb[x][y+1][z+1][15];
     // ----
-    gnew[x][y][z][6] = gnew[x][y][z+1][5];
-    gnew[x][y][z][14] = gnew[x+1][y][z+1][11];
-    gnew[x][y][z][12] = gnew[x-1][y][z+1][13];
-    gnew[x][y][z][16] = gnew[x][y-1][z+1][17];
-    gnew[x][y][z][18] = gnew[x][y+1][z+1][15];
+    gnew[x][y][z][6] = g_lb[x][y][z+1][5];
+    gnew[x][y][z][14] = g_lb[x+1][y][z+1][11];
+    gnew[x][y][z][12] = g_lb[x-1][y][z+1][13];
+    gnew[x][y][z][16] = g_lb[x][y-1][z+1][17];
+    gnew[x][y][z][18] = g_lb[x][y+1][z+1][15];
     // ----
-    knew[x][y][z][6] = knew[x][y][z+1][5];
-    knew[x][y][z][14] = knew[x+1][y][z+1][11];
-    knew[x][y][z][12] = knew[x-1][y][z+1][13];
-    knew[x][y][z][16] = knew[x][y-1][z+1][17];
-    knew[x][y][z][18] = knew[x][y+1][z+1][15];
+    knew[x][y][z][6] = k_lb[x][y][z+1][5];
+    knew[x][y][z][14] = k_lb[x+1][y][z+1][11];
+    knew[x][y][z][12] = k_lb[x-1][y][z+1][13];
+    knew[x][y][z][16] = k_lb[x][y-1][z+1][17];
+    knew[x][y][z][18] = k_lb[x][y+1][z+1][15];
   }
 
   if (cur_z == domain->boxlo[2]+1) {
-  //   // check if the 'if' condition is working
+  // check if the 'if' condition is working
   //   fptr = fopen("condition_check_bottom.txt", "a");
   //   fprintf(fptr, "bounce-back at bottom: %f", cur_z);
   //   fclose(fptr);
-    int top[5], bottom[5];
-    int indices_top[5] = {3, 7, 8, 17, 15};
-    int indices_bottom[5] = {4, 10, 9, 16, 18};
-
-    // // f
-    //   for (int i = 0; i < 5; i++) {
-    //       top[i] = fnew[x][y][z][indices_top[i]];
-    //       bottom[i] = fnew[x][y][z][indices_bottom[i]];
-    //   }
-
-    //   for (int i = 0; i < 5; i++) {
-    //       fnew[x][y][z][indices_top[i]] = bottom[i];
-    //   }
-
-    // // g
-    //   for (int i = 0; i < 5; i++) {
-    //       bottom[i] = gnew[x][y][z][indices_bottom[i]];
-    //   }
-
-    //   for (int i = 0; i < 5; i++) {
-    //       gnew[x][y][z][indices_top[i]] = bottom[i];
-    //   }
-
-    // // k
-    //   for (int i = 0; i < 5; i++) {
-    //       bottom[i] = knew[x][y][z][indices_bottom[i]];
-    //   }
-
-    //   for (int i = 0; i < 5; i++) {
-    //       knew[x][y][z][indices_top[i]] = bottom[i];
-    // }
-
-    fnew[x][y][z][5] = fnew[x][y][z-1][6];
-    fnew[x][y][z][11] = fnew[x-1][y][z-1][14];
-    fnew[x][y][z][13] = fnew[x+1][y][z-1][12];
-    fnew[x][y][z][17] = fnew[x][y+1][z-1][16];
-    fnew[x][y][z][15] = fnew[x][y-1][z-1][18];
+    fnew[x][y][z][5] = f_lb[x][y][z-1][6];
+    fnew[x][y][z][11] = f_lb[x-1][y][z-1][14];
+    fnew[x][y][z][13] = f_lb[x+1][y][z-1][12];
+    fnew[x][y][z][17] = f_lb[x][y+1][z-1][16];
+    fnew[x][y][z][15] = f_lb[x][y-1][z-1][18];
     // ----
-    gnew[x][y][z][5] = gnew[x][y][z-1][6];
-    gnew[x][y][z][11] = gnew[x-1][y][z-1][14];
-    gnew[x][y][z][13] = gnew[x+1][y][z-1][12];
-    gnew[x][y][z][17] = gnew[x][y+1][z-1][16];
-    gnew[x][y][z][15] = gnew[x][y-1][z-1][18];
+    gnew[x][y][z][5] = g_lb[x][y][z-1][6];
+    gnew[x][y][z][11] = g_lb[x-1][y][z-1][14];
+    gnew[x][y][z][13] = g_lb[x+1][y][z-1][12];
+    gnew[x][y][z][17] = g_lb[x][y+1][z-1][16];
+    gnew[x][y][z][15] = g_lb[x][y-1][z-1][18];
     // ----
-    knew[x][y][z][5] = knew[x][y][z-1][6];
-    knew[x][y][z][11] = knew[x-1][y][z-1][14];
-    knew[x][y][z][13] = knew[x+1][y][z-1][12];
-    knew[x][y][z][17] = knew[x][y+1][z-1][16];
-    knew[x][y][z][15] = knew[x][y-1][z-1][18];
+    knew[x][y][z][5] = k_lb[x][y][z-1][6];
+    knew[x][y][z][11] = k_lb[x-1][y][z-1][14];
+    knew[x][y][z][13] = k_lb[x+1][y][z-1][12];
+    knew[x][y][z][17] = k_lb[x][y+1][z-1][16];
+    knew[x][y][z][15] = k_lb[x][y-1][z-1][18];
 
   }
 }
