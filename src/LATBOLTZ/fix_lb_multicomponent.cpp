@@ -157,7 +157,7 @@ void FixLbMulticomponent::read_site(int x, int y, int z) {
 
 void FixLbMulticomponent::write_site(int x, int y, int z) {
   collide_stream(x,y,z);
-  // bounce_back(x,y,z);
+  bounce_back(x,y,z);
 }
 
 void FixLbMulticomponent::collide_stream(int x, int y, int z) {
@@ -267,9 +267,12 @@ void FixLbMulticomponent::calc_moments(int x, int y, int z) {
   density_lb[x][y][z] = rho;
   phi_lb[x][y][z] = phi;
   psi_lb[x][y][z] = psi;
-  u_lb[x][y][z][0] = (j[0] + 0.5*forcing[0])/rho;
-  u_lb[x][y][z][1] = (j[1] + 0.5*forcing[1])/rho;
-  u_lb[x][y][z][2] = (j[2] + 0.5*forcing[2])/rho;
+  u_lb[x][y][z][0] = j[0]/rho;
+  u_lb[x][y][z][1] = j[1]/rho;
+  u_lb[x][y][z][2] = j[2]/rho;
+  u_lb[x][y][z][0] += 0.5*forcing[0]/rho;
+  u_lb[x][y][z][1] += 0.5*forcing[1]/rho;
+  u_lb[x][y][z][2] += 0.5*forcing[2]/rho;
   pressure_lb[x][y][z] = pressure(rho,phi,psi);
   // testing
   // printing values of velocity at particular cooridnates
