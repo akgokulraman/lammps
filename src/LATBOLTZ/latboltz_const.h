@@ -154,6 +154,9 @@ static constexpr double Ng_lb19[19] = {1.,  3.,  3.,        3.,        9. / 2., 
                                    9.,  9.,  9.,        27. / 2.,  27. / 2., 27. / 2., 18.,
                                    18., 18., 162. / 7., 126. / 5., 30.};
 
+// Forcing Term
+static constexpr double forcing[3] = {0.000001, 0.00000, 0.00000}; // forcing term along x direction
+
 // clang-format off
 static constexpr double mg_lb19[19][19] = {
   {    1.,     1.,     1.,     1.,     1.,     1.,     1.,    1.,    1.,    1.,    1.,    1.,    1.,    1.,    1.,    1.,    1.,    1.,    1.},

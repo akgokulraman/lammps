@@ -157,12 +157,11 @@ void FixLbMulticomponent::read_site(int x, int y, int z) {
 
 void FixLbMulticomponent::write_site(int x, int y, int z) {
   collide_stream(x,y,z);
-  bounce_back(x,y,z);
+  // bounce_back(x,y,z);
 }
 
 void FixLbMulticomponent::collide_stream(int x, int y, int z) {
   int i, xnew, ynew, znew;
-  double forcing[3] = {0.0000001, 0.00000, 0.00000}; // forcing term along x direction
   double f_w[19] = {0, 0.11111, 0.11111, 0.11111, 0.11111, 0.11111, 0.11111, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777};
   double S_f_prefactor, S_g_prefactor, S_k_prefactor;
   double S_f, S_g, S_k;
@@ -173,7 +172,7 @@ void FixLbMulticomponent::collide_stream(int x, int y, int z) {
     znew = z + e19[i][2];
     fnew[xnew][ynew][znew][i] = f_lb[x][y][z][i] - (f_lb[x][y][z][i] - feq[x][y][z][i])/tau_r;
     gnew[xnew][ynew][znew][i] = g_lb[x][y][z][i] - (g_lb[x][y][z][i] - geq[x][y][z][i])/tau_p;
-    knew[xnew][ynew][znew][i] = k_lb[x][y][z][i] - (k_lb[x][y][z][i] - keq[x][y][z][i])/tau_s;
+    knew[xnew][ynew][znew][i] = k_lb[x][y][ z][i] - (k_lb[x][y][z][i] - keq[x][y][z][i])/tau_s;
     // adding force term
     S_f_prefactor = (feq[x][y][z][i])/(density_lb[x][y][z]*cs2);
     S_f = (S_f_prefactor)*((e19[i][0]-u_lb[x][y][z][0])*forcing[0] + (e19[i][1]-u_lb[x][y][z][1])*forcing[1] + (e19[i][2]-u_lb[x][y][z][2])*forcing[2]);
@@ -182,9 +181,9 @@ void FixLbMulticomponent::collide_stream(int x, int y, int z) {
     S_k_prefactor = (keq[x][y][z][i])/(density_lb[x][y][z]*cs2);
     S_k = (S_k_prefactor)*((e19[i][0]-u_lb[x][y][z][0])*forcing[0] + (e19[i][1]-u_lb[x][y][z][1])*forcing[1] + (e19[i][2]-u_lb[x][y][z][2])*forcing[2]);
     // S = f_w[i]*e19[i][0]*forcing[0] + f_w[i]*e19[i][1]*forcing[1] + f_w[i]*e19[i][2]*forcing[2];
-    fnew[xnew][ynew][znew][i] += S_f;
-    gnew[xnew][ynew][znew][i] += S_g;
-    knew[xnew][ynew][znew][i] += S_k;
+    fnew[xnew][ynew][znew][i] += S_f*(1-0.5/tau_r);
+    // gnew[xnew][ynew][znew][i] += S_g*(1-0.5/tau_p);
+    // knew[xnew][ynew][znew][i] += S_k*(1-0.5/tau_s);
   }
 }
 
@@ -268,10 +267,27 @@ void FixLbMulticomponent::calc_moments(int x, int y, int z) {
   density_lb[x][y][z] = rho;
   phi_lb[x][y][z] = phi;
   psi_lb[x][y][z] = psi;
-  u_lb[x][y][z][0] = j[0]/rho;
-  u_lb[x][y][z][1] = j[1]/rho;
-  u_lb[x][y][z][2] = j[2]/rho;
+  u_lb[x][y][z][0] = (j[0] + 0.5*forcing[0])/rho;
+  u_lb[x][y][z][1] = (j[1] + 0.5*forcing[1])/rho;
+  u_lb[x][y][z][2] = (j[2] + 0.5*forcing[2])/rho;
   pressure_lb[x][y][z] = pressure(rho,phi,psi);
+  // testing
+  // printing values of velocity at particular cooridnates
+  FILE *fptr;
+  int mid_x = domain->boxhi[0] / 2;
+  int mid_y = domain->boxhi[1] / 2;
+  int mid_z = domain->boxhi[2] / 2;
+  if((x==mid_x) && (y==mid_y) && (z==mid_z)){
+    fptr = fopen("u.txt", "a");
+    fprintf(fptr, "%f, %f, %f\n", u_lb[x][y][z][0], u_lb[x][y][z][1], u_lb[x][y][z][2]);
+    fclose(fptr);
+    fptr = fopen("j.txt", "a");
+    fprintf(fptr, "%f, %f, %f\n", j[0], j[1], j[2]);
+    fclose(fptr);
+    fptr = fopen("F.txt", "a");
+    fprintf(fptr, "%f, %f, %f\n", forcing[0], forcing[1], forcing[2]);
+    fclose(fptr);
+  }
 }
 
 void FixLbMulticomponent::calc_equilibrium(int x, int y, int z) {
