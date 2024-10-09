@@ -114,6 +114,7 @@ namespace LAMMPS_NS {
     void init_double_emulsion(double radius);
     void init_film(double thickness, double C1, double C2);
     void init_mixed_droplet(double radius, double C1, double C2);
+    void user_communication(const char *msg);
 
     void lb_update();
     void calc_moments_full();
@@ -126,6 +127,7 @@ namespace LAMMPS_NS {
     void read_column(int x,int y, int zmin, int zmax);
     void read_site(int x, int y, int z);
     void write_site(int x, int y, int z);
+    void final_bounce_back();
 
     void calc_moments(int x, int y, int z);
     void calc_chemical_potentials(int x, int y, int z);

@@ -40,6 +40,7 @@
 #include "random_mars.h"
 
 using namespace LAMMPS_NS;
+int stopper = 0;
 
 static const char cite_fix_lbmulticomponent[] =
     "fix lb/multicomponent command: doi:\n\n"
@@ -102,6 +103,7 @@ void FixLbMulticomponent::lb_update() {
   update_cube(subNbx-4,subNbx, 0,subNby, 0,subNbz);
 #endif
 
+  final_bounce_back();
   /* swap the pointers of the lattice copies */
   std::swap(f_lb,fnew);
   std::swap(g_lb,gnew);
@@ -146,9 +148,35 @@ void FixLbMulticomponent::read_slab(int x, int ymin, int ymax, int zmin, int zma
 
 void FixLbMulticomponent::read_column(int x, int y, int zmin, int zmax) {
   int z;
+  FILE *fptr;
+  float bxhi = domain->boxhi[2];
+  float bxlo = domain->boxlo[2];
+  float sbhi = domain->subhi[2];
+  float sblo = domain->sublo[2];
+  if(stopper == 0){
+    fptr = fopen("zcoordinates.txt", "a");    
+    fprintf(fptr, "sublo: %f, subhi: %f ,", sblo,sbhi);
+    fprintf(fptr, "halo_index: %d ",halo_extent[2]);
+    fprintf(fptr, "sublo: %f, subhi: %f \n--------------------------------------------------------------\n,",bxhi,bxlo);
+    // fprintf(fptr, "sublo: %f, subhi: %f, halo_index: %d, box_hi: %f, box_lo: %f\n--------------------------------------------------------------\n", sblo,sbhi,halo_extent[2],bxhi,bxlo);
+    fclose(fptr);
+  }
   for (z=zmin; z<zmax; ++z) {
+    if(stopper == 0){
+      fptr = fopen("zcoordinates.txt", "a");  
+      int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;  
+      fprintf(fptr, "z: %d, cur_z: %d, halo_index: %d,",z,cur_z,halo_extent[2]);
+      fprintf(fptr, " box_hi: %f, box_lo: %f\n",bxhi,bxlo);
+      fclose(fptr);
+    }
     read_site(x,y,z);
   }
+  if(stopper == 0){
+      fptr = fopen("zcoordinates.txt", "a");    
+      fprintf(fptr, "--------------------------------------------------------------\nupper boundary: %f, lower boundary: %f\n", bxhi-1.0,bxlo+1.0);
+      fclose(fptr);
+    }
+  stopper = 1;
 }
 
 void FixLbMulticomponent::read_site(int x, int y, int z) {
@@ -156,8 +184,7 @@ void FixLbMulticomponent::read_site(int x, int y, int z) {
 }
 
 void FixLbMulticomponent::write_site(int x, int y, int z) {
-  collide_stream(x,y,z);
-  bounce_back(x,y,z);
+  // bounce_back(x,y,z);
 }
 
 void FixLbMulticomponent::collide_stream(int x, int y, int z) {
@@ -189,11 +216,11 @@ void FixLbMulticomponent::collide_stream(int x, int y, int z) {
 
 void FixLbMulticomponent::bounce_back(int x, int y, int z) {
   // Function to implement bounce_back along z direction
-  double cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
+  int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
   FILE *fptr;
-  // fptr = fopen("condition_check_func.txt", "w");
-  // fprintf(fptr, "bounce-back func: %f", cur_z);
-  // fclose(fptr);
+  fptr = fopen("zcoordinates.txt", "a");
+  fprintf(fptr, "\nz_index: %d", cur_z);
+  fclose(fptr);
   if (cur_z == domain->boxhi[2]-1) {
     // check if the 'if' condition is working
     // fptr = fopen("condition_check_top.txt", "a");
@@ -246,6 +273,56 @@ void FixLbMulticomponent::bounce_back(int x, int y, int z) {
     knew[x][y][z][17] = k_lb[x][y+1][z-1][16];
     knew[x][y][z][15] = k_lb[x][y-1][z-1][18];
 
+  }
+}
+
+void FixLbMulticomponent::final_bounce_back() {
+  FILE *fptr;
+  fptr = fopen("checker.txt", "a");
+  fprintf(fptr, "check");
+  fclose(fptr);
+  for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+    for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+      // bounce back at top
+      int z_top = domain->boxhi[2]-1;
+      fnew[x][y][z_top-1][6] = fnew[x][y][z_top][5];
+      fnew[x][y][z_top-1][14] = fnew[x+1][y][z_top][11];
+      fnew[x][y][z_top-1][12] = fnew[x-1][y][z_top][13];
+      fnew[x][y][z_top-1][16] = fnew[x][y-1][z_top][17];
+      fnew[x][y][z_top-1][18] = fnew[x][y+1][z_top][15];
+      // ----
+      gnew[x][y][z_top-1][6] = gnew[x][y][z_top][5];
+      gnew[x][y][z_top-1][14] = gnew[x+1][y][z_top][11];
+      gnew[x][y][z_top-1][12] = gnew[x-1][y][z_top][13];
+      gnew[x][y][z_top-1][16] = gnew[x][y-1][z_top][17];
+      gnew[x][y][z_top-1][18] = gnew[x][y+1][z_top][15];
+      // ----
+      knew[x][y][z_top-1][6] = knew[x][y][z_top][5];
+      knew[x][y][z_top-1][14] = knew[x+1][y][z_top][11];
+      knew[x][y][z_top-1][12] = knew[x-1][y][z_top][13];
+      knew[x][y][z_top-1][16] = knew[x][y-1][z_top][17];
+      knew[x][y][z_top-1][18] = knew[x][y+1][z_top][15];
+
+      // bounce back at bottom
+      int z_bot = domain->boxlo[2];
+      fnew[x][y][z_bot+1][5] = fnew[x][y][z_bot][6];
+      fnew[x][y][z_bot+1][11] = fnew[x-1][y][z_bot][14];
+      fnew[x][y][z_bot+1][13] = fnew[x+1][y][z_bot][12];
+      fnew[x][y][z_bot+1][17] = fnew[x][y+1][z_bot][16];
+      fnew[x][y][z_bot+1][15] = fnew[x][y-1][z_bot][18];
+      // ----
+      gnew[x][y][z_bot+1][5] = fnew[x][y][z_bot][6];
+      gnew[x][y][z_bot+1][11] = fnew[x-1][y][z_bot][14];
+      gnew[x][y][z_bot+1][13] = fnew[x+1][y][z_bot][12];
+      gnew[x][y][z_bot+1][17] = fnew[x][y+1][z_bot][16];
+      gnew[x][y][z_bot+1][15] = fnew[x][y-1][z_bot][18];
+      // ----
+      knew[x][y][z_bot+1][5] = fnew[x][y][z_bot][6];
+      knew[x][y][z_bot+1][11] = fnew[x-1][y][z_bot][14];
+      knew[x][y][z_bot+1][13] = fnew[x+1][y][z_bot][12];
+      knew[x][y][z_bot+1][17] = fnew[x][y+1][z_bot][16];
+      knew[x][y][z_bot+1][15] = fnew[x][y-1][z_bot][18];
+    }
   }
 }
 
@@ -938,12 +1015,22 @@ void FixLbMulticomponent::destroy_halo() {
   // MPI datatypes are freed in parent destructor
 }
 
+// void FixLbMulticomponent::user_communication(const char *msg) {
+//   FILE *fptr;
+//   fptr = fopen("user_comm.txt", "a");
+//   fprintf(fptr, "%s", msg);
+//   fprintf(fptr, "sublo: %d, subhi: %d, halo_index: %d, box_hi: %d, box_lo: %d\n--------------------------------------------------------------\n", domain->sublo[2],domain->subhi[2],halo_extent[2],domain->boxhi[2],domain->boxlo[2]);
+//   fclose(fptr);
+// }
 
 void FixLbMulticomponent::dump_xdmf(const int step) {
   if ( dump_interval && step % dump_interval == 0 ) {
     calc_moments_full();
     // Write XDMF grid entry for time step
     if ( me == 0 ) {
+      char msg[100];
+      snprintf(msg, sizeof(msg), "timestep %d\n", step);
+      // user_communication(msg);
       long int block = (long int)fluid_global_n0[0]*fluid_global_n0[1]*fluid_global_n0[2]*sizeof(MPI_DOUBLE);
       long int offset = (step/dump_interval)*block*(4+3);  /* This should be changed to account for dumps actually written.  This offset could malfunction on a restart. */
       double time = update->ntimestep*dt_lb;
