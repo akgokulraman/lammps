@@ -101,7 +101,7 @@ void FixLbMulticomponent::lb_update() {
   update_cube(0,4, 0,subNby, 0,subNbz);
   update_cube(subNbx-4,subNbx, 0,subNby, 0,subNbz);
 #endif
-
+  final_bounce_back();
   /* swap the pointers of the lattice copies */
   std::swap(f_lb,fnew);
   std::swap(g_lb,gnew);
@@ -157,7 +157,7 @@ void FixLbMulticomponent::read_site(int x, int y, int z) {
 
 void FixLbMulticomponent::write_site(int x, int y, int z) {
   collide_stream(x,y,z);
-  bounce_back(x,y,z);
+  // bounce_back(x,y,z);
 }
 
 void FixLbMulticomponent::collide_stream(int x, int y, int z) {
@@ -189,64 +189,128 @@ void FixLbMulticomponent::collide_stream(int x, int y, int z) {
 
 void FixLbMulticomponent::bounce_back(int x, int y, int z) {
   // Function to implement bounce_back along z direction
-  double cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
-  FILE *fptr;
-  // fptr = fopen("condition_check_func.txt", "w");
-  // fprintf(fptr, "bounce-back func: %f", cur_z);
-  // fclose(fptr);
+  int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
   if (cur_z == domain->boxhi[2]-1) {
-    // check if the 'if' condition is working
-    // fptr = fopen("condition_check_top.txt", "a");
-    // fprintf(fptr, "\nbounce-back at top: %f", cur_z);
-    // fprintf(fptr, "\ndomain-boxhi: %f", domain->boxhi[2]);
-    // fprintf(fptr, "\ndomain-boxlo: %f", domain->boxlo[2]);
-    // fprintf(fptr, "\ndomain-sublo: %f", domain->sublo[2]);
-    // // fprintf(fptr, "\nhalo_extent: %d", halo_extent[2]);
-    // fprintf(fptr, "\n-----------------------------------");
-    // fclose(fptr);
-    fnew[x][y][z][6] = f_lb[x][y][z+1][5];
-    fnew[x][y][z][14] = f_lb[x+1][y][z+1][11];
-    fnew[x][y][z][12] = f_lb[x-1][y][z+1][13];
-    fnew[x][y][z][16] = f_lb[x][y-1][z+1][17];
-    fnew[x][y][z][18] = f_lb[x][y+1][z+1][15];
+    fnew[x][y][z-1][6] = f_lb[x][y][z-1][5];
+    fnew[x][y][z-1][14] = f_lb[x][y][z-1][11];
+    fnew[x][y][z-1][12] = f_lb[x][y][z-1][13];
+    fnew[x][y][z-1][16] = f_lb[x][y][z-1][17];
+    fnew[x][y][z-1][18] = f_lb[x][y][z-1][15];
     // ----
-    gnew[x][y][z][6] = g_lb[x][y][z+1][5];
-    gnew[x][y][z][14] = g_lb[x+1][y][z+1][11];
-    gnew[x][y][z][12] = g_lb[x-1][y][z+1][13];
-    gnew[x][y][z][16] = g_lb[x][y-1][z+1][17];
-    gnew[x][y][z][18] = g_lb[x][y+1][z+1][15];
+    gnew[x][y][z-1][6] = g_lb[x][y][z-1][5];
+    gnew[x][y][z-1][14] = g_lb[x][y][z-1][11];
+    gnew[x][y][z-1][12] = g_lb[x][y][z-1][13];
+    gnew[x][y][z-1][16] = g_lb[x][y][z-1][17];
+    gnew[x][y][z-1][18] = g_lb[x][y][z-1][15];
     // ----
-    knew[x][y][z][6] = k_lb[x][y][z+1][5];
-    knew[x][y][z][14] = k_lb[x+1][y][z+1][11];
-    knew[x][y][z][12] = k_lb[x-1][y][z+1][13];
-    knew[x][y][z][16] = k_lb[x][y-1][z+1][17];
-    knew[x][y][z][18] = k_lb[x][y+1][z+1][15];
+    knew[x][y][z-1][6] = k_lb[x][y][z-1][5];
+    knew[x][y][z-1][14] = k_lb[x][y][z-1][11];
+    knew[x][y][z-1][12] = k_lb[x][y][z-1][13];
+    knew[x][y][z-1][16] = k_lb[x][y][z-1][17];
+    knew[x][y][z-1][18] = k_lb[x][y][z-1][15];
   }
 
   if (cur_z == domain->boxlo[2]+1) {
-  // check if the 'if' condition is working
-  //   fptr = fopen("condition_check_bottom.txt", "a");
-  //   fprintf(fptr, "bounce-back at bottom: %f", cur_z);
-  //   fclose(fptr);
-    fnew[x][y][z][5] = f_lb[x][y][z-1][6];
-    fnew[x][y][z][11] = f_lb[x-1][y][z-1][14];
-    fnew[x][y][z][13] = f_lb[x+1][y][z-1][12];
-    fnew[x][y][z][17] = f_lb[x][y+1][z-1][16];
-    fnew[x][y][z][15] = f_lb[x][y-1][z-1][18];
+    fnew[x][y][z][5] = f_lb[x][y][z][6];
+    fnew[x][y][z][11] = f_lb[x][y][z][14];
+    fnew[x][y][z][13] = f_lb[x][y][z][12];
+    fnew[x][y][z][17] = f_lb[x][y][z][16];
+    fnew[x][y][z][15] = f_lb[x][y][z][18];
     // ----
-    gnew[x][y][z][5] = g_lb[x][y][z-1][6];
-    gnew[x][y][z][11] = g_lb[x-1][y][z-1][14];
-    gnew[x][y][z][13] = g_lb[x+1][y][z-1][12];
-    gnew[x][y][z][17] = g_lb[x][y+1][z-1][16];
-    gnew[x][y][z][15] = g_lb[x][y-1][z-1][18];
+    gnew[x][y][z][5] = g_lb[x][y][z][6];
+    gnew[x][y][z][11] = g_lb[x][y][z][14];
+    gnew[x][y][z][13] = g_lb[x][y][z][12];
+    gnew[x][y][z][17] = g_lb[x][y][z][16];
+    gnew[x][y][z][15] = g_lb[x][y][z][18];
     // ----
-    knew[x][y][z][5] = k_lb[x][y][z-1][6];
-    knew[x][y][z][11] = k_lb[x-1][y][z-1][14];
-    knew[x][y][z][13] = k_lb[x+1][y][z-1][12];
-    knew[x][y][z][17] = k_lb[x][y+1][z-1][16];
-    knew[x][y][z][15] = k_lb[x][y-1][z-1][18];
-
+    knew[x][y][z][5] = k_lb[x][y][z][6];
+    knew[x][y][z][11] = k_lb[x][y][z][14];
+    knew[x][y][z][13] = k_lb[x][y][z][12];
+    knew[x][y][z][17] = k_lb[x][y][z][16];
+    knew[x][y][z][15] = k_lb[x][y][z][18];
   }
+}
+
+void FixLbMulticomponent::final_bounce_back() {
+  int z_top = domain->boxhi[2]-1;
+  int z_bot = domain->boxlo[2];
+  for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++){
+    int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
+    if(cur_z == z_top){
+      for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+        for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+          // bounce back at top
+          fnew[x][y][z-1][6] = fnew[x][y][z][5];
+          fnew[x][y][z-1][14] = fnew[x+1][y][z][11];
+          fnew[x][y][z-1][12] = fnew[x-1][y][z][13];
+          fnew[x][y][z-1][16] = fnew[x][y-1][z][17];
+          fnew[x][y][z-1][18] = fnew[x][y+1][z][15];
+          // ----
+          gnew[x][y][z-1][6] = gnew[x][y][z][5];
+          gnew[x][y][z-1][14] = gnew[x+1][y][z][11];
+          gnew[x][y][z-1][12] = gnew[x-1][y][z][13];
+          gnew[x][y][z-1][16] = gnew[x][y-1][z][17];
+          gnew[x][y][z-1][18] = gnew[x][y+1][z][15];
+          // ----
+          knew[x][y][z-1][6] = knew[x][y][z][5];
+          knew[x][y][z-1][14] = knew[x+1][y][z][11];
+          knew[x][y][z-1][12] = knew[x-1][y][z][13];
+          knew[x][y][z-1][16] = knew[x][y-1][z][17];
+          knew[x][y][z-1][18] = knew[x][y+1][z][15];
+        }
+      }   
+      // for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+      //   for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+      //     calc_moments(x, y, z-1);
+      //   }
+      // }
+      // for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+      //   for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+      //     calc_chemical_potentials(x, y, z-1);
+      //   }
+      // }
+    }
+    if(cur_z == z_bot){
+      for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+        for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+          // bounce back at bottom
+          fnew[x][y][z+1][5] = fnew[x][y][z][6];
+          fnew[x][y][z+1][11] = fnew[x-1][y][z][14];
+          fnew[x][y][z+1][13] = fnew[x+1][y][z][12];
+          fnew[x][y][z+1][17] = fnew[x][y+1][z][16];
+          fnew[x][y][z+1][15] = fnew[x][y-1][z][18];
+          // ----
+          gnew[x][y][z+1][5] = gnew[x][y][z][6];
+          gnew[x][y][z+1][11] = gnew[x-1][y][z][14];
+          gnew[x][y][z+1][13] = gnew[x+1][y][z][12];
+          gnew[x][y][z+1][17] = gnew[x][y+1][z][16];
+          gnew[x][y][z+1][15] = gnew[x][y-1][z][18];
+          // ----
+          knew[x][y][z+1][5] = knew[x][y][z][6];
+          knew[x][y][z+1][11] = knew[x-1][y][z][14];
+          knew[x][y][z+1][13] = knew[x+1][y][z][12];
+          knew[x][y][z+1][17] = knew[x][y+1][z][16];
+          knew[x][y][z+1][15] = knew[x][y-1][z][18];
+        }
+      }
+      // for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+      //   for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+      //     calc_moments(x, y, z+1);
+      //   }
+      // }
+      // for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+      //   for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+      //     calc_chemical_potentials(x, y, z+1);
+      //   }
+      // }   
+    }
+    // for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+    //   for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+    //     calc_chemical_potentials(x, y, z);
+    //     calc_moments(x, y, z);
+    //   }
+    // } 
+  } 
 }
 
 void FixLbMulticomponent::calc_moments(int x, int y, int z) {
