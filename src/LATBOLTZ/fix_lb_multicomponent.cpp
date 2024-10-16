@@ -47,10 +47,12 @@ static const char cite_fix_lbmulticomponent[] =
     "  author = {G. Raman, J.P. Andrews, U.D. Schiller},\n"
     "  title = {Implementation of a Ternary Lattice Boltzmann Model in LAMMPS},\n"
     "  journal = {Comp.~Phys.~Comm.},\n"
-    "  year =    2023,\n"
-    "  volume = ,\n"
-    "  pages = {}\n"
+    "  year =    2024,\n"
+    "  volume = 294,\n"
+    "  pages = {108898}\n"
     "}\n\n";
+
+int forcing_term_output = 0;
 
 int FixLbMulticomponent::setmask() {
   return FixConst::INITIAL_INTEGRATE | FixConst::END_OF_STEP;
@@ -110,6 +112,13 @@ void FixLbMulticomponent::lb_update() {
 }
 
 void FixLbMulticomponent::update_cube(int xmin, int xmax, int ymin, int ymax, int zmin, int zmax) {
+  if(forcing_term_output == 0){
+    FILE *fptr;
+    fptr = fopen("forcing_term.txt", "w");
+    fprintf(fptr, "%.10lf %.10lf %.10lf\n",forcing[0], forcing[1], forcing[2]);
+    fclose(fptr);
+    forcing_term_output = 1;
+  }
   int x;
   read_slab(xmin,ymin,ymax,zmin,zmax);
   read_slab(xmin+1,ymin,ymax,zmin,zmax);
@@ -356,8 +365,35 @@ void FixLbMulticomponent::calc_moments(int x, int y, int z) {
     fclose(fptr);
   }
 }
-
+void FixLbMulticomponent::correcting_phase(int x, int y, int z) {
+  int z_top = domain->boxhi[2]-1;
+  int z_bot = domain->boxlo[2];
+  for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++){
+    int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
+    if(cur_z == z_top){
+      for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+        for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+          // top solid node
+          density_lb[x][y][z] = density_lb[x][y][z-2];
+          phi_lb[x][y][z] = phi_lb[x][y][z-2];
+          psi_lb[x][y][z] = psi_lb[x][y][z-2];
+        }
+      }   
+    }
+    if(cur_z == z_bot){
+      for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+        for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+          // top solid node
+          density_lb[x][y][z] = density_lb[x][y][z+2];
+          phi_lb[x][y][z] = phi_lb[x][y][z+2];
+          psi_lb[x][y][z] = psi_lb[x][y][z+2];
+        }
+      }   
+    }
+  } 
+}
 void FixLbMulticomponent::calc_equilibrium(int x, int y, int z) {
+  correcting_phase(x,y,z);
   calc_gradient_laplacian(x,y,z, density_lb, density_gradient, laplace_rho);
   calc_gradient_laplacian(x,y,z, phi_lb, phi_gradient, laplace_phi);
   calc_gradient_laplacian(x,y,z, psi_lb, psi_gradient, laplace_psi);
@@ -1068,45 +1104,6 @@ void FixLbMulticomponent::dump_xdmf(const int step) {
               fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
               dump_file_name_raw.c_str());
       fprintf(dump_file_handle_xdmf,
-              "        <Attribute Name=\"mu_rho\">\n"
-              "          <DataItem ItemType=\"Function\" Function=\"$0 * %f\" Dimensions=\"%d %d %d\">\n"
-              "            <DataItem Precision=\"%zd\" Format=\"Binary\" Seek=\"%ld\" Dimensions=\"%d %d %d\">\n"
-              "              %s\n"
-              "            </DataItem>\n"
-              "          </DataItem>\n"
-              "        </Attribute>\n\n",
-              dm_lb/(dx_lb*dx_lb*dx_lb),
-              fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
-              sizeof(MPI_DOUBLE), offset,
-              fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
-              dump_file_name_raw.c_str());
-      fprintf(dump_file_handle_xdmf,
-              "        <Attribute Name=\"mu_phi\">\n"
-              "          <DataItem ItemType=\"Function\" Function=\"$0 * %f\" Dimensions=\"%d %d %d\">\n"
-              "            <DataItem Precision=\"%zd\" Format=\"Binary\" Seek=\"%ld\" Dimensions=\"%d %d %d\">\n"
-              "              %s\n"
-              "            </DataItem>\n"
-              "          </DataItem>\n"
-              "        </Attribute>\n\n",
-              dm_lb/(dx_lb*dx_lb*dx_lb),
-              fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
-              sizeof(MPI_DOUBLE), offset,
-              fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
-              dump_file_name_raw.c_str());
-      fprintf(dump_file_handle_xdmf,
-              "        <Attribute Name=\"mu_psi\">\n"
-              "          <DataItem ItemType=\"Function\" Function=\"$0 * %f\" Dimensions=\"%d %d %d\">\n"
-              "            <DataItem Precision=\"%zd\" Format=\"Binary\" Seek=\"%ld\" Dimensions=\"%d %d %d\">\n"
-              "              %s\n"
-              "            </DataItem>\n"
-              "          </DataItem>\n"
-              "        </Attribute>\n\n",
-              dm_lb/(dx_lb*dx_lb*dx_lb),
-              fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
-              sizeof(MPI_DOUBLE), offset,
-              fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
-              dump_file_name_raw.c_str());
-      fprintf(dump_file_handle_xdmf,
               "        <Attribute Name=\"pressure\">\n"
               "          <DataItem ItemType=\"Function\" Function=\"$0 * %f\" Dimensions=\"%d %d %d\">\n"
               "            <DataItem Precision=\"%zd\" Format=\"Binary\" Seek=\"%ld\" Dimensions=\"%d %d %d\">\n"
@@ -1159,9 +1156,6 @@ void FixLbMulticomponent::dump_xdmf(const int step) {
 	          density_2_fort[indexf]=density_lb[i][j][k];
 	          phi_2_fort[indexf]=phi_lb[i][j][k];
 	          psi_2_fort[indexf]=psi_lb[i][j][k];
-	          mu_rho_2_fort[indexf]=mu_rho[i][j][k];
-	          mu_phi_2_fort[indexf]=mu_phi[i][j][k];
-            mu_psi_2_fort[indexf]=mu_psi[i][j][k];
 	          pressure_2_fort[indexf]=pressure_lb[i][j][k];
 	          velocity_2_fort[0+3*indexf]=u_lb[i][j][k][0];
 	          velocity_2_fort[1+3*indexf]=u_lb[i][j][k][1];
@@ -1173,9 +1167,6 @@ void FixLbMulticomponent::dump_xdmf(const int step) {
       MPI_File_write_all(dump_file_handle_raw, &density_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
       MPI_File_write_all(dump_file_handle_raw, &phi_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
       MPI_File_write_all(dump_file_handle_raw, &psi_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
-      MPI_File_write_all(dump_file_handle_raw, &mu_rho_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
-      MPI_File_write_all(dump_file_handle_raw, &mu_phi_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
-      MPI_File_write_all(dump_file_handle_raw, &mu_psi_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
       MPI_File_write_all(dump_file_handle_raw, &pressure_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
       MPI_File_write_all(dump_file_handle_raw, &velocity_2_fort[0], 1, fluid_vector_field_mpitype, MPI_STATUS_IGNORE);
       
