@@ -1068,6 +1068,45 @@ void FixLbMulticomponent::dump_xdmf(const int step) {
               fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
               dump_file_name_raw.c_str());
       fprintf(dump_file_handle_xdmf,
+              "        <Attribute Name=\"mu_rho\">\n"
+              "          <DataItem ItemType=\"Function\" Function=\"$0 * %f\" Dimensions=\"%d %d %d\">\n"
+              "            <DataItem Precision=\"%zd\" Format=\"Binary\" Seek=\"%ld\" Dimensions=\"%d %d %d\">\n"
+              "              %s\n"
+              "            </DataItem>\n"
+              "          </DataItem>\n"
+              "        </Attribute>\n\n",
+              dm_lb/(dx_lb*dx_lb*dx_lb),
+              fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
+              sizeof(MPI_DOUBLE), offset,
+              fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
+              dump_file_name_raw.c_str());
+      fprintf(dump_file_handle_xdmf,
+              "        <Attribute Name=\"mu_phi\">\n"
+              "          <DataItem ItemType=\"Function\" Function=\"$0 * %f\" Dimensions=\"%d %d %d\">\n"
+              "            <DataItem Precision=\"%zd\" Format=\"Binary\" Seek=\"%ld\" Dimensions=\"%d %d %d\">\n"
+              "              %s\n"
+              "            </DataItem>\n"
+              "          </DataItem>\n"
+              "        </Attribute>\n\n",
+              dm_lb/(dx_lb*dx_lb*dx_lb),
+              fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
+              sizeof(MPI_DOUBLE), offset,
+              fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
+              dump_file_name_raw.c_str());
+      fprintf(dump_file_handle_xdmf,
+              "        <Attribute Name=\"mu_psi\">\n"
+              "          <DataItem ItemType=\"Function\" Function=\"$0 * %f\" Dimensions=\"%d %d %d\">\n"
+              "            <DataItem Precision=\"%zd\" Format=\"Binary\" Seek=\"%ld\" Dimensions=\"%d %d %d\">\n"
+              "              %s\n"
+              "            </DataItem>\n"
+              "          </DataItem>\n"
+              "        </Attribute>\n\n",
+              dm_lb/(dx_lb*dx_lb*dx_lb),
+              fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
+              sizeof(MPI_DOUBLE), offset,
+              fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
+              dump_file_name_raw.c_str());
+      fprintf(dump_file_handle_xdmf,
               "        <Attribute Name=\"pressure\">\n"
               "          <DataItem ItemType=\"Function\" Function=\"$0 * %f\" Dimensions=\"%d %d %d\">\n"
               "            <DataItem Precision=\"%zd\" Format=\"Binary\" Seek=\"%ld\" Dimensions=\"%d %d %d\">\n"
@@ -1120,6 +1159,9 @@ void FixLbMulticomponent::dump_xdmf(const int step) {
 	          density_2_fort[indexf]=density_lb[i][j][k];
 	          phi_2_fort[indexf]=phi_lb[i][j][k];
 	          psi_2_fort[indexf]=psi_lb[i][j][k];
+	          mu_rho_2_fort[indexf]=mu_rho[i][j][k];
+	          mu_phi_2_fort[indexf]=mu_phi[i][j][k];
+            mu_psi_2_fort[indexf]=mu_psi[i][j][k];
 	          pressure_2_fort[indexf]=pressure_lb[i][j][k];
 	          velocity_2_fort[0+3*indexf]=u_lb[i][j][k][0];
 	          velocity_2_fort[1+3*indexf]=u_lb[i][j][k][1];
@@ -1131,6 +1173,9 @@ void FixLbMulticomponent::dump_xdmf(const int step) {
       MPI_File_write_all(dump_file_handle_raw, &density_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
       MPI_File_write_all(dump_file_handle_raw, &phi_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
       MPI_File_write_all(dump_file_handle_raw, &psi_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
+      MPI_File_write_all(dump_file_handle_raw, &mu_rho_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
+      MPI_File_write_all(dump_file_handle_raw, &mu_phi_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
+      MPI_File_write_all(dump_file_handle_raw, &mu_psi_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
       MPI_File_write_all(dump_file_handle_raw, &pressure_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
       MPI_File_write_all(dump_file_handle_raw, &velocity_2_fort[0], 1, fluid_vector_field_mpitype, MPI_STATUS_IGNORE);
       
