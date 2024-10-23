@@ -374,9 +374,9 @@ void FixLbMulticomponent::correcting_phase(int x, int y, int z) {
       for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
         for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
           // top solid node
-          density_lb[x][y][z] = density_lb[x][y][z-2];
-          phi_lb[x][y][z] = phi_lb[x][y][z-2];
-          psi_lb[x][y][z] = psi_lb[x][y][z-2];
+          density_lb[x][y][z] = density_lb[x][y][z-1];
+          phi_lb[x][y][z] = phi_lb[x][y][z-1];
+          psi_lb[x][y][z] = psi_lb[x][y][z-1];
         }
       }   
     }
@@ -384,9 +384,9 @@ void FixLbMulticomponent::correcting_phase(int x, int y, int z) {
       for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
         for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
           // top solid node
-          density_lb[x][y][z] = density_lb[x][y][z+2];
-          phi_lb[x][y][z] = phi_lb[x][y][z+2];
-          psi_lb[x][y][z] = psi_lb[x][y][z+2];
+          density_lb[x][y][z] = density_lb[x][y][z+1];
+          phi_lb[x][y][z] = phi_lb[x][y][z+1];
+          psi_lb[x][y][z] = psi_lb[x][y][z+1];
         }
       }   
     }
@@ -798,6 +798,43 @@ void FixLbMulticomponent::init_double_emulsion(double radius) {
 
 }
 
+// double emulsion droplet of C1 and C2 surrounded by C3
+void FixLbMulticomponent::init_semi_droplet(double radius, double C1, double C2) {
+  double rho=1.0, C1_init, C2_init, C3_init, phi, psi;
+  double pos[3], r2;
+  int x, y, z, i;
+  int cent_pos[3] = {int((domain->boxlo[0]+domain->boxhi[0])/2), int((domain->boxlo[1]+domain->boxhi[1])/2), int(domain->boxlo[2])};
+  RanMars *random = new RanMars(lmp,seed + comm->me);
+  for (x=0; x<subNbx; x++) {
+    pos[0] = domain->sublo[0] + (x-halo_extent[0])*dx_lb;
+    for (y=0; y<subNby; y++) {
+      pos[1] = domain->sublo[1] + (y-halo_extent[1])*dx_lb;
+      for (z=0; z<subNbz; z++) {
+	      pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
+	      r2 = (pos[0]-cent_pos[0])*(pos[0]-cent_pos[0])+(pos[1]-cent_pos[1])*(pos[1]-cent_pos[1])+(pos[2]-cent_pos[2])*(pos[2]-cent_pos[2]);
+	      if (r2 > radius*radius) {
+          C1_init = 0.0;
+          C2_init = 0.0;
+          C3_init = 1.0;
+	      }  else {
+	        C1_init = 1;
+	        C2_init = 0;
+	        C3_init = 1.0 - C1_init - C2_init;
+	      }
+        rho = densityinit;
+	      phi = densityinit*(C1_init-C2_init);
+	      psi = densityinit*C3_init;
+	      for (i=0; i<numvel; i++) {
+	        f_lb[x][y][z][i] = w_lb19[i]*rho*densityinit;
+	        g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
+	        k_lb[x][y][z][i] = w_lb19[i]*psi*densityinit;
+	      }
+      }
+    }
+  }
+  delete(random);
+}
+
 
 void FixLbMulticomponent::init_film(double thickness, double C1_film, double C2_film) {
   double rho, phi, psi;
@@ -929,6 +966,9 @@ void FixLbMulticomponent::init_fluid() {
       break;
     case MIXED_DROPLET:
       init_mixed_droplet(radius, C1_drop, C2_drop);
+      break;
+    case SEMI_DROPLET:
+      init_semi_droplet(radius, C1_drop, C2_drop);
       break;
   }
 
@@ -1534,18 +1574,26 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
       }
       else if(strcmp(argv[argi],"film")==0){
         if (argi+4 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
-	thickness = utils::numeric(FLERR, argv[argi+1], false, lmp);
-	C1_film = utils::numeric(FLERR, argv[argi+2], false, lmp);
-	C2_film = utils::numeric(FLERR, argv[argi+3], false, lmp);
+        thickness = utils::numeric(FLERR, argv[argi+1], false, lmp);
+        C1_film = utils::numeric(FLERR, argv[argi+2], false, lmp);
+        C2_film = utils::numeric(FLERR, argv[argi+3], false, lmp);
         init_method = FILM;
         argi += 4;
       }
       else if(strcmp(argv[argi],"mixed_droplet")==0){
         if (argi+4 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
         radius = utils::numeric(FLERR, argv[argi+1], false, lmp);
-	C1_drop = utils::numeric(FLERR, argv[argi+2], false, lmp);
-	C2_drop = utils::numeric(FLERR, argv[argi+3], false, lmp);
+        C1_drop = utils::numeric(FLERR, argv[argi+2], false, lmp);
+        C2_drop = utils::numeric(FLERR, argv[argi+3], false, lmp);
         init_method = MIXED_DROPLET;
+        argi += 4;
+      }
+      else if(strcmp(argv[argi],"semi_droplet")==0){
+        if (argi+4 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
+        radius = utils::numeric(FLERR, argv[argi+1], false, lmp);
+        C1_drop = utils::numeric(FLERR, argv[argi+2], false, lmp);
+        C2_drop = utils::numeric(FLERR, argv[argi+3], false, lmp);
+        init_method = SEMI_DROPLET;
         argi += 4;
       }
       else error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
