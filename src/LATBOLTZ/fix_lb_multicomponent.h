@@ -67,6 +67,7 @@ namespace LAMMPS_NS {
     double tau_r, tau_p, tau_s;
     double gamma_p, gamma_s;
     double kappa1, kappa2, kappa3;
+    double h1, h2, h3;
     double kappa_rr, kappa_pp, kappa_ss, kappa_rp, kappa_ps, kappa_rs;
     double alpha;
 
@@ -98,7 +99,9 @@ namespace LAMMPS_NS {
     double ***mu_rho;
     double ***mu_phi;
     double ***mu_psi;
-    
+
+    double ***surface_density_lb, ***surface_phi_lb, ***surface_psi_lb; // 3D arrays for gradients at each node
+
     void init_parameters(int, char **);
     void init_lattice();
     void destroy_lattice();
@@ -126,9 +129,10 @@ namespace LAMMPS_NS {
     void read_column(int x,int y, int zmin, int zmax);
     void read_site(int x, int y, int z);
     void write_site(int x, int y, int z);
-    void apply_bounce_back();
-    // void apply_bounce_back(int x, int y, int z);
-    void rho_phi_psi_switch(int x, int y, int z);
+    void apply_bounce_back(); // BB_BC
+    void rho_phi_psi_switch(int x, int y, int z); // Switching
+    void update_surface_gradients(int x, int y, int z); //Surface thermodynamics
+    // double ***grad_rho, ***grad_phi, ***grad_psi;  // 3D arrays for gradients at each node
 
     void calc_moments(int x, int y, int z);
     void calc_chemical_potentials(int x, int y, int z);
@@ -137,7 +141,6 @@ namespace LAMMPS_NS {
     void calc_geq(int x, int y, int z);
     void calc_keq(int x, int y, int z);
     void calc_gradient_laplacian(int x, int y, int z, double ***field, double ****gradient, double ***laplacian);
-    void update_surface_gradients(int x, int y, int z);
     
     void calc_rho_gradients(int x, int y, int z);
     void calc_phi_gradients(int x, int y, int z);
@@ -166,3 +169,4 @@ namespace LAMMPS_NS {
 }
 #endif
 #endif
+
