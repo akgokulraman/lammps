@@ -139,7 +139,7 @@ static constexpr int bbl[33][16] = {
 };
 
 // Forcing Term
-static constexpr double forcing[3] = {0.000001, 0.00000, 0.00000}; // forcing term
+static constexpr double forcing[3] = {0.00000, 0.00000, 0.00000}; // forcing term
 
 //clang-format on
 
