@@ -69,6 +69,7 @@ void FixLbMulticomponent::end_of_step() {
 }
 
 void FixLbMulticomponent::lb_update() {
+  std::cout << "Hi Accessed lb_update " << std::endl;
 
 #if 1
   // no overlap of communication and computation
@@ -107,7 +108,7 @@ void FixLbMulticomponent::lb_update() {
 #endif
 
   apply_bounce_back();
-    
+
   /* swap the pointers of the lattice copies */
   std::swap(f_lb,fnew);
   std::swap(g_lb,gnew);
@@ -129,7 +130,7 @@ void save_output_to_file(const std::string& output_string, const std::string& fi
   // Close the file after writing is done
   outfile.close();
   // Optionally, print a confirmation message
-  std::cout << "Output saved to '" << filename << ".txt'" << std::endl;
+  // std::cout << "Output saved to '" << filename << ".txt'" << std::endl;
 }
 
 void FixLbMulticomponent::update_cube(int xmin, int xmax, int ymin, int ymax, int zmin, int zmax) {
@@ -183,10 +184,12 @@ void FixLbMulticomponent::write_site(int x, int y, int z) {
 }
 
 void FixLbMulticomponent::collide_stream(int x, int y, int z) {
+  // std::cout << "Hi Accessed collide_stream " << std::endl;
+
   int i, xnew, ynew, znew;
-  double f_w[19] = {0, 0.11111, 0.11111, 0.11111, 0.11111, 0.11111, 0.11111, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777};
-  double S_f_prefactor, S_g_prefactor, S_k_prefactor;
-  double S_f, S_g, S_k;
+  // double f_w[19] = {0, 0.11111, 0.11111, 0.11111, 0.11111, 0.11111, 0.11111, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777};
+  // double S_f_prefactor, S_g_prefactor, S_k_prefactor;
+  // double S_f, S_g, S_k;
   calc_equilibrium(x,y,z);
   for (i=0; i<numvel; ++i) {
     xnew = x + e19[i][0];
@@ -200,14 +203,14 @@ void FixLbMulticomponent::collide_stream(int x, int y, int z) {
     knew[xnew][ynew][znew][i] = k_lb[x][y][z][i] - (k_lb[x][y][z][i] - keq[x][y][z][i])/tau_s;
 
     // adding force term
-    S_f_prefactor = (feq[x][y][z][i])/(density_lb[x][y][z]*cs2);
-    S_f = (S_f_prefactor)*((e19[i][0]-u_lb[x][y][z][0])*forcing[0] + (e19[i][1]-u_lb[x][y][z][1])*forcing[1] + (e19[i][2]-u_lb[x][y][z][2])*forcing[2]);
-    S_g_prefactor = (geq[x][y][z][i])/(density_lb[x][y][z]*cs2);
-    S_g = (S_g_prefactor)*((e19[i][0]-u_lb[x][y][z][0])*forcing[0] + (e19[i][1]-u_lb[x][y][z][1])*forcing[1] + (e19[i][2]-u_lb[x][y][z][2])*forcing[2]);
-    S_k_prefactor = (keq[x][y][z][i])/(density_lb[x][y][z]*cs2);
-    S_k = (S_k_prefactor)*((e19[i][0]-u_lb[x][y][z][0])*forcing[0] + (e19[i][1]-u_lb[x][y][z][1])*forcing[1] + (e19[i][2]-u_lb[x][y][z][2])*forcing[2]);
+    // S_f_prefactor = (feq[x][y][z][i])/(density_lb[x][y][z]*cs2);
+    // S_f = (S_f_prefactor)*((e19[i][0]-u_lb[x][y][z][0])*forcing[0] + (e19[i][1]-u_lb[x][y][z][1])*forcing[1] + (e19[i][2]-u_lb[x][y][z][2])*forcing[2]);
+    // S_g_prefactor = (geq[x][y][z][i])/(density_lb[x][y][z]*cs2);
+    // S_g = (S_g_prefactor)*((e19[i][0]-u_lb[x][y][z][0])*forcing[0] + (e19[i][1]-u_lb[x][y][z][1])*forcing[1] + (e19[i][2]-u_lb[x][y][z][2])*forcing[2]);
+    // S_k_prefactor = (keq[x][y][z][i])/(density_lb[x][y][z]*cs2);
+    // S_k = (S_k_prefactor)*((e19[i][0]-u_lb[x][y][z][0])*forcing[0] + (e19[i][1]-u_lb[x][y][z][1])*forcing[1] + (e19[i][2]-u_lb[x][y][z][2])*forcing[2]);
     // S = f_w[i]*e19[i][0]*forcing[0] + f_w[i]*e19[i][1]*forcing[1] + f_w[i]*e19[i][2]*forcing[2];
-    fnew[xnew][ynew][znew][i] += S_f*(1-0.5/tau_r);
+    // fnew[xnew][ynew][znew][i] += S_f*(1-0.5/tau_r);
     // gnew[xnew][ynew][znew][i] += S_g*(1-0.5/tau_p);
     // knew[xnew][ynew][znew][i] += S_k*(1-0.5/tau_s);
   }
@@ -223,9 +226,7 @@ void FixLbMulticomponent::apply_bounce_back() {
       for (int x = halo_extent[0]; x < subNbx - halo_extent[0]; x++) {
         for (int z = halo_extent[2]; z < subNbz - halo_extent[2]; z++) {
           // Top boundary
-          std::cout << "bb_y_top = " << bb_y_top << std::endl;
-          std::cout << " / " << std::endl;
-          std::cout << "/ " << std::endl;
+          // std::cout << "bb_y_top = " << bb_y_top << std::endl;
           fnew[x][y - 1][z][4] = fnew[x][y][z][2];
           gnew[x][y - 1][z][4] = gnew[x][y][z][2];
           knew[x][y - 1][z][4] = knew[x][y][z][2];
@@ -252,9 +253,7 @@ void FixLbMulticomponent::apply_bounce_back() {
       for (int x = halo_extent[0]; x < subNbx - halo_extent[0]; x++) {
         for (int z = halo_extent[2]; z < subNbz - halo_extent[2]; z++) {
         // Bottom boundary
-          std::cout << "bb_y_bottom = " << bb_y_bottom << std::endl;
-          std::cout << " / " << std::endl;
-          std::cout << "/ " << std::endl;
+          // std::cout << "bb_y_bottom = " << bb_y_bottom << std::endl;
           fnew[x][y + 1][z][2] = fnew[x][y][z][4];
           gnew[x][y + 1][z][2] = gnew[x][y][z][4];
           knew[x][y + 1][z][2] = knew[x][y][z][4];
@@ -281,6 +280,8 @@ void FixLbMulticomponent::apply_bounce_back() {
 }
 
 void FixLbMulticomponent::calc_moments(int x, int y, int z) {
+  // std::cout << "Hi Accessed calc_moments " << std::endl;
+
   double rho, phi, psi, j[3], fi, gi, ki;
   int i;
   rho = phi = psi = j[0] = j[1] = j[2] = 0.0;
@@ -310,50 +311,75 @@ void FixLbMulticomponent::calc_moments(int x, int y, int z) {
   u_lb[x][y][z][1] = j[1]/rho;
   u_lb[x][y][z][2] = j[2]/rho;
 
-  u_lb[x][y][z][0] += 0.5*forcing[0]/rho;
-  u_lb[x][y][z][1] += 0.5*forcing[1]/rho;
-  u_lb[x][y][z][2] += 0.5*forcing[2]/rho;
+  // u_lb[x][y][z][0] += 0.5*forcing[0]/rho;
+  // u_lb[x][y][z][1] += 0.5*forcing[1]/rho;
+  // u_lb[x][y][z][2] += 0.5*forcing[2]/rho;
 
   // Calculate pressure based on rho, phi, and psi
-  pressure_lb[x][y][z] = pressure(rho,phi,psi);
+  pressure_lb[x][y][z] = pressure(rho, phi, psi);
 }
 
 void FixLbMulticomponent::rho_phi_psi_switch(int x, int y, int z) {
+  
+  // std::stringstream my_output1;
+
   // Define the coordinates for the last fluid node and the node two steps inside the boundary
   int y_top = domain->boxhi[1] - 1;
-  int y_top_adjacent = y_top - 2;  // Two nodes away from the last fluid node at the top
-
   int y_bottom = domain->boxlo[1];
-  int y_bottom_adjacent = y_bottom + 2;  // Two nodes away from the last fluid node at the bottom
-  
-  int swap_y = domain->sublo[1] + (y - halo_extent[1])*dx_lb; //coordinate of y
-  // Check if the current node is on the top y-boundary
-  if (swap_y == y_top) {
-    // Loop over the entire x-z plane
-    for (int x = halo_extent[0]; x < subNbx - halo_extent[0]; ++x) {
-      for (int z = halo_extent[2]; z < subNbz - halo_extent[2]; ++z) {
-        // Copy values from two nodes inward to the last fluid node at the top boundary
-        density_lb[x][y_top][z] = density_lb[x][y_top_adjacent][z];
-        phi_lb[x][y_top][z] = phi_lb[x][y_top_adjacent][z];
-        psi_lb[x][y_top][z] = psi_lb[x][y_top_adjacent][z];
+
+  // double alpha2 = alpha * alpha;  // alpha^2
+  // double h1 = -0.0002; h2 = 0.0001; h3 = 0.0001; // interaction parameter with the surface
+  // double kappa1 = 0.001; kappa2 = 0.001; kappa3 = 0.001;
+  // double H1 = (h1 / (alpha2 * kappa1));  // h1 should be provided or calculated based on the system
+  // double H2 = (h2 / (alpha2 * kappa2));  // h2 should be provided or calculated based on the system
+  // double H3 = (h3 / (alpha2 * kappa3));  // h3 should be provided or calculated based on the system
+  for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++){
+
+    int swap_y = domain->sublo[1] + (y - halo_extent[1])*dx_lb; //coordinate of y
+    // Check if the current node is on the top y-boundary
+    if (swap_y == y_top) {
+      // Loop over the entire x-z plane
+      for (int x = halo_extent[0]; x < subNbx - halo_extent[0]; x++) {
+        for (int z = halo_extent[2]; z < subNbz - halo_extent[2]; z++) {
+          // Copy values from two nodes inward to the last fluid node at the top boundary
+          density_lb[x][y][z] = density_lb[x][y - 1][z];
+          phi_lb[x][y][z] = phi_lb[x][y - 1][z];
+          psi_lb[x][y][z] = psi_lb[x][y - 1][z];
+          // density_lb[x][y][z] = density_lb[x][y - 1][z] - H1 - H2 - H3;
+          // phi_lb[x][y][z] = phi_lb[x][y - 1][z] - H1 + H2;
+          // psi_lb[x][y][z] = psi_lb[x][y - 1][z] - H3;
+        }
       }
+      // my_output1 << "density_lb at the top now is = " << density_lb[x][y][z] << "\n"
+      //         << "phi_lb at the top now is = " << phi_lb[x][y][z] << "\n"
+      //         << "psi_lb at the top now is = " << psi_lb[x][y][z] << "\n";
+    }
+    // Check if the current node is on the bottom y-boundary
+    if (swap_y == y_bottom) {
+      // Loop over the entire x-z plane
+      for (int x = halo_extent[0]; x < subNbx - halo_extent[0]; x++) {
+        for (int z = halo_extent[2]; z < subNbz - halo_extent[2]; z++) {
+          // Copy values from two nodes inward to the last fluid node at the bottom boundary
+          density_lb[x][y][z] = density_lb[x][y + 1][z];
+          phi_lb[x][y][z] = phi_lb[x][y + 1][z];
+          psi_lb[x][y][z] = psi_lb[x][y + 1][z];
+          // density_lb[x][y][z] = density_lb[x][y + 1][z] - H1 - H2 - H3;
+          // phi_lb[x][y][z] = phi_lb[x][y + 1][z] - H1 + H2;
+          // psi_lb[x][y][z] = psi_lb[x][y + 1][z] - H3;
+        }
+      }
+      // my_output1 << "density_lb at the bottom now is = " << density_lb[x][y][z] << "\n"
+      //             << "phi_lb at the top now is = " << phi_lb[x][y][z] << "\n"
+      //             << "psi_lb at the top now is = " << psi_lb[x][y][z] << "\n";
     }
   }
-  // Check if the current node is on the bottom y-boundary
-  if (swap_y == y_bottom) {
-    // Loop over the entire x-z plane
-    for (int x = halo_extent[0]; x < subNbx - halo_extent[0]; ++x) {
-      for (int z = halo_extent[2]; z < subNbz - halo_extent[2]; ++z) {
-        // Copy values from two nodes inward to the last fluid node at the bottom boundary
-        density_lb[x][y_bottom][z] = density_lb[x][y_bottom_adjacent][z];
-        phi_lb[x][y_bottom][z] = phi_lb[x][y_bottom_adjacent][z];
-        psi_lb[x][y_bottom][z] = psi_lb[x][y_bottom_adjacent][z];
-      }
-    }
-  }
+  // std::string file_name = "rho_phi_psi_switch_output";
+  // save_output_to_file(my_output1.str(), file_name);
 }
 
 void FixLbMulticomponent::calc_equilibrium(int x, int y, int z) {
+  // std::cout << "Hi Accessed calc_equilibrium " << std::endl;
+
   rho_phi_psi_switch(x, y, z);
   calc_gradient_laplacian(x,y,z, density_lb, density_gradient, laplace_rho);
   calc_gradient_laplacian(x,y,z, phi_lb, phi_gradient, laplace_phi);
@@ -365,6 +391,8 @@ void FixLbMulticomponent::calc_equilibrium(int x, int y, int z) {
 }
 
 void FixLbMulticomponent::calc_gradient_laplacian(int x, int y, int z, double ***field, double ****gradient, double ***laplacian) {
+  // std::cout << "Hi Accessed calc_gradient_laplacian " << std::endl;
+
   int i, xp, yp, zp, dir;
 
   // Initialize the Laplacian at the point (x, y, z) to 0
@@ -390,7 +418,45 @@ void FixLbMulticomponent::calc_gradient_laplacian(int x, int y, int z, double **
   }
 }
 
+// void FixLbMulticomponent::update_surface_gradients(int x, int y, int z) {
+//   // std::cout << "Hi Accessed update_surface_gradients " << std::endl;
+//   int grad_y = domain->sublo[1] + (y - halo_extent[1]) * dx_lb;
+
+//   // Parameters for surface thermodynamics
+//   // double alpha2 = alpha * alpha;  // alpha^2
+//   // double h1 = alpha2 * kappa1;  // h1 should be provided or calculated based on the system
+//   // double h2 = alpha2 * kappa2;  // h2 should be provided or calculated based on the system
+//   // double h3 = alpha2 * kappa3;  // h3 should be provided or calculated based on the system
+
+//   if(grad_y == domain->boxhi[1] - 1 || grad_y == domain->boxlo[1]){
+//     surface_density_lb[x][grad_y][z] = density_lb[x][grad_y][z];
+//     surface_phi_lb[x][grad_y][z] = phi_lb[x][grad_y][z];
+//     surface_psi_lb[x][grad_y][z] = psi_lb[x][grad_y][z];
+
+//     // Optionally, you can print the values for debugging
+//     std::cout << "Copied density_lb = " << density_lb[x][grad_y][z] 
+//               << " at x,y,z = (" << x << "," << grad_y << "," << z << ")"
+//               << " to surface_density_lb = " << surface_density_lb[x][grad_y][z] 
+//               << " at x,y,z = (" << x << "," << grad_y << "," << z << ")" 
+//               << std::endl;
+
+//     std::cout << "Copied phi_lb = " << phi_lb[x][grad_y][z] 
+//               << " at x,y,z = (" << x << "," << grad_y << "," << z << ")"
+//               << " to surface_phi_lb = " << surface_phi_lb[x][grad_y][z] 
+//               << " at x,y,z = (" << x << "," << grad_y << "," << z << ")" 
+//               << std::endl;
+
+//     std::cout << "Copied psi_lb = " << psi_lb[x][grad_y][z] 
+//               << " at x,y,z = (" << x << "," << grad_y << "," << z << ")"
+//               << " to surface_psi_lb = " << surface_psi_lb[x][grad_y][z] 
+//               << " at x,y,z = (" << x << "," << grad_y << "," << z << ")" 
+//               << std::endl;
+//   }
+// }
+
 double FixLbMulticomponent::pressure(double rho, double phi, double psi) {
+  // std::cout << "Hi Accessed pressure " << std::endl;
+
   const double rho2 = rho*rho;
   const double rho3 = rho2*rho;
   const double rho4 = rho3*rho;
@@ -864,37 +930,33 @@ void FixLbMulticomponent::init_film(double thickness, double C1_film, double C2_
 
 }
 
-// mixed droplet of component C1 and C2 within pure C3
+// mixed droplet of component C1 and C2 within pure C3, with droplet as a dome on the y=domain->boxlo[1] boundary
 void FixLbMulticomponent::init_mixed_droplet(double radius, double C1, double C2) {
-  double rho=1.0, C1_init, C2_init, C3_init, phi, psi;
-  double C1tot=0., C2tot=0., C3tot=0.;
-  double C1tot_global=0., C2tot_global=0., C3tot_global=0.;
-  double pos[3], r2;
-  int x, y, z, i;
-  double xc=0, yc=domain->boxlo[1], zc=0;
   
   std::stringstream my_output;
 
+  double rho=1.0, C1_init, C2_init, C3_init, phi, psi;
+  double pos[3], r2;
+  int x, y, z, i;
+  int cent_pos[3] = {int((domain->boxlo[0]+domain->boxhi[0])/2), int((domain->boxlo[1]+domain->boxhi[1])/2), int(domain->boxlo[2])};
   RanMars *random = new RanMars(lmp,seed + comm->me);
-
   for (x=0; x<subNbx; x++) {
     pos[0] = domain->sublo[0] + (x-halo_extent[0])*dx_lb;
     for (y=0; y<subNby; y++) {
       pos[1] = domain->sublo[1] + (y-halo_extent[1])*dx_lb;
       for (z=0; z<subNbz; z++) {
-      	pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
-      	r2 = ((pos[0]-xc)*(pos[0]-xc))+((pos[1]-yc)*(pos[1]-yc))+((pos[2]-zc)*(pos[2]-zc));
-
-      	if (r2 < radius*radius) {
-	        C1_init = C1 + 0.01*random->gaussian();
-	        C2_init = 1. - C1_init;
-          C3_init = 0.0;
-	      } else {
+	      pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
+	      r2 = (pos[0]-cent_pos[0])*(pos[0]-cent_pos[0])+(pos[1]-cent_pos[1])*(pos[1]-cent_pos[1])+(pos[2]-cent_pos[2])*(pos[2]-cent_pos[2]);
+	      if (r2 > radius*radius) {
           C1_init = 0.0;
           C2_init = 0.0;
           C3_init = 1.0;
+	      }  else {
+	        C1_init = 0.999999;
+	        C2_init = 0.000001;
+	        C3_init = 1.0 - C1_init - C2_init;
 	      }
-	      rho = densityinit;
+        rho = densityinit;
 	      phi = densityinit*(C1_init-C2_init);
 	      psi = densityinit*C3_init;
 	      for (i=0; i<numvel; i++) {
@@ -902,9 +964,6 @@ void FixLbMulticomponent::init_mixed_droplet(double radius, double C1, double C2
 	        g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
 	        k_lb[x][y][z][i] = w_lb19[i]*psi*densityinit;
 	      }
-	      C1tot += C1_init;
-	      C2tot += C2_init;
-	      C3tot += C3_init;
 
         my_output << "this is pos[0] " << pos[0] <<"\n"
 	                   "this is pos[1] " << pos[1] <<"\n"
@@ -921,14 +980,6 @@ void FixLbMulticomponent::init_mixed_droplet(double radius, double C1, double C2
   std::string file_name = "mixed_droplet_output";
   // Call the function to save the string to a file with the specified name
   save_output_to_file(my_output.str(), file_name);
-  
-  MPI_Reduce(&C1tot,&C1tot_global,1,MPI_DOUBLE,MPI_SUM,0,world);
-  MPI_Reduce(&C2tot,&C2tot_global,1,MPI_DOUBLE,MPI_SUM,0,world);
-  MPI_Reduce(&C3tot,&C3tot_global,1,MPI_DOUBLE,MPI_SUM,0,world);
-  double vol = Nbx*Nby*Nbz;
-  if(comm->me==0){
-    error->message(FLERR,"Initialized mixed droplet with <C1> = {:f}, <C2> = {:f}, <C3> = {:f}",C1tot_global/vol,C2tot_global/vol,C3tot_global/vol);
-  }
 
   delete(random);
 
@@ -1088,22 +1139,6 @@ void FixLbMulticomponent::dump_xdmf(const int step) {
               fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
               domain->boxlo[2], domain->boxlo[1], domain->boxlo[0],
               dx_lb, dx_lb, dx_lb);
-
-      // Add the chemical potential attribute   
-      // fprintf(dump_file_handle_xdmf, 
-      //         "        <Attribute Name=\"mu_phi\">\n"
-      //         "          <DataItem ItemType=\"Function\" Function=\"$0 * %f\" Dimensions=\"%d %d %d\">\n"
-      //         "            <DataItem Precision=\"%zd\" Format=\"Binary\" Seek=\"%ld\" Dimensions=\"%d %d %d\">\n"
-      //         "              %s\n"
-      //         "            </DataItem>\n"
-      //         "          </DataItem>\n"
-      //         "        </Attribute>\n\n",
-      //         dm_lb/(dx_lb*dx_lb*dx_lb),
-      //         fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
-      //         sizeof(MPI_DOUBLE), offset + block * 4,  // Offset updated for mu_phi position
-      //         fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
-      //         dump_file_name_raw.c_str());
-      
       // Existing attributes (density, phi, psi, pressure, velocity)...
       fprintf(dump_file_handle_xdmf,
               "        <Attribute Name=\"density\">\n"
@@ -1170,6 +1205,48 @@ void FixLbMulticomponent::dump_xdmf(const int step) {
               sizeof(MPI_DOUBLE), offset+block*4,
               fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
               dump_file_name_raw.c_str());
+
+      // Add the surface gradients    
+      // fprintf(dump_file_handle_xdmf,
+      //         "        <Attribute Name=\"surface_density\">\n"
+      //         "          <DataItem ItemType=\"Function\" Function=\"$0 * %f\" Dimensions=\"%d %d %d\">\n"
+      //         "            <DataItem Precision=\"%zd\" Format=\"Binary\" Seek=\"%ld\" Dimensions=\"%d %d %d\">\n"
+      //         "              %s\n"
+      //         "            </DataItem>\n"
+      //         "          </DataItem>\n"
+      //         "        </Attribute>\n\n",
+      //         dm_lb/(dx_lb*dx_lb*dx_lb),
+      //         fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
+      //         sizeof(MPI_DOUBLE), offset + block * 5,  // Use block * 5 for surface_density
+      //         fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
+      //         dump_file_name_raw.c_str());
+      // fprintf(dump_file_handle_xdmf,
+      //         "        <Attribute Name=\"surface_phi\">\n"
+      //         "          <DataItem ItemType=\"Function\" Function=\"$0 * %f\" Dimensions=\"%d %d %d\">\n"
+      //         "            <DataItem Precision=\"%zd\" Format=\"Binary\" Seek=\"%ld\" Dimensions=\"%d %d %d\">\n"
+      //         "              %s\n"
+      //         "            </DataItem>\n"
+      //         "          </DataItem>\n"
+      //         "        </Attribute>\n\n",
+      //         dm_lb/(dx_lb*dx_lb*dx_lb),
+      //         fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
+      //         sizeof(MPI_DOUBLE), offset + block * 6,  // Use block * 6 for surface_phi
+      //         fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
+      //         dump_file_name_raw.c_str());
+      // fprintf(dump_file_handle_xdmf,
+      //         "        <Attribute Name=\"surface_psi\">\n"
+      //         "          <DataItem ItemType=\"Function\" Function=\"$0 * %f\" Dimensions=\"%d %d %d\">\n"
+      //         "            <DataItem Precision=\"%zd\" Format=\"Binary\" Seek=\"%ld\" Dimensions=\"%d %d %d\">\n"
+      //         "              %s\n"
+      //         "            </DataItem>\n"
+      //         "          </DataItem>\n"
+      //         "        </Attribute>\n\n",
+      //         dm_lb/(dx_lb*dx_lb*dx_lb),
+      //         fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
+      //         sizeof(MPI_DOUBLE), offset + block * 7,  // Use block * 7 for surface_psi
+      //         fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
+      //         dump_file_name_raw.c_str());
+      
       fprintf(dump_file_handle_xdmf,
               "      </Grid>\n\n");
     }
@@ -1184,8 +1261,11 @@ void FixLbMulticomponent::dump_xdmf(const int step) {
 
       // Transpose local arrays to fortran-order for paraview output
       std::vector<double> density_2_fort (lvol);
+      // std::vector<double> surface_density_2_fort (lvol); // create a Fortran-order compatible vector for surface_density_lb
       std::vector<double> phi_2_fort (lvol);
+      // std::vector<double> surface_phi_2_fort (lvol); // create a Fortran-order compatible vector for phi_density_lb
       std::vector<double> psi_2_fort (lvol);
+      // std::vector<double> surface_psi_2_fort (lvol); // create a Fortran-order compatible vector for psi_density_lb
       std::vector<double> pressure_2_fort (lvol);
       std::vector<double> velocity_2_fort (lvol*3);
       // std::vector<double> mu_phi_2_fort(lvol);
@@ -1197,8 +1277,11 @@ void FixLbMulticomponent::dump_xdmf(const int step) {
 	          indexf = i+lbox[0]*(j+lbox[1]*k);
             // mu_phi_2_fort[indexf] = mu_phi_lb[i][j][k]; // Allocate storage for the chemical potential field
 	          density_2_fort[indexf]=density_lb[i][j][k];
+	          // surface_density_2_fort[indexf]=surface_density_lb[i][j][k]; // populate surface_density_2_fort with data from surface_density_lb
 	          phi_2_fort[indexf]=phi_lb[i][j][k];
+	          // surface_phi_2_fort[indexf]=surface_phi_lb[i][j][k]; // populate surface_density_2_fort with data from phi_density_lb
 	          psi_2_fort[indexf]=psi_lb[i][j][k];
+	          // surface_psi_2_fort[indexf]=surface_psi_lb[i][j][k]; // populate surface_density_2_fort with data from psi_density_lb
 	          pressure_2_fort[indexf]=pressure_lb[i][j][k];
 	          velocity_2_fort[0+3*indexf]=u_lb[i][j][k][0];
 	          velocity_2_fort[1+3*indexf]=u_lb[i][j][k][1];
@@ -1208,8 +1291,11 @@ void FixLbMulticomponent::dump_xdmf(const int step) {
       }
 
       MPI_File_write_all(dump_file_handle_raw, &density_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
+      // MPI_File_write_all(dump_file_handle_raw, &surface_density_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE); // add an MPI write operation for surface_density_lb
       MPI_File_write_all(dump_file_handle_raw, &phi_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
+      // MPI_File_write_all(dump_file_handle_raw, &surface_phi_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE); // add an MPI write operation for surface_phi_lb
       MPI_File_write_all(dump_file_handle_raw, &psi_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
+      // MPI_File_write_all(dump_file_handle_raw, &surface_psi_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE); // add an MPI write operation for surface_psi_lb
       MPI_File_write_all(dump_file_handle_raw, &pressure_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
       MPI_File_write_all(dump_file_handle_raw, &velocity_2_fort[0], 1, fluid_vector_field_mpitype, MPI_STATUS_IGNORE);
       
@@ -1424,7 +1510,10 @@ void FixLbMulticomponent::init_lattice() {
   memory->create(laplace_rho,subNbx,subNby,subNbz,"FixLbMulticomponent:laplace_rho");
   memory->create(laplace_phi,subNbx,subNby,subNbz,"FixLbMulticomponent:laplace_phi");
   memory->create(laplace_psi,subNbx,subNby,subNbz,"FixLbMulticomponent:laplace_psi");
-
+  
+  // memory->create(surface_density_lb,subNbx,subNby,subNbz,"FixLbMulticomponent:surface_density_lb"); // added for update_surface_gradient()
+  // memory->create(surface_phi_lb,subNbx,subNby,subNbz,"FixLbMulticomponent:surface_phi_lb"); // added for update_surface_gradient()
+  // memory->create(surface_psi_lb,subNbx,subNby,subNbz,"FixLbMulticomponent:surface_psi_lb"); // added for update_surface_gradient()
 }
 
 void FixLbMulticomponent::destroy_lattice() {
@@ -1450,6 +1539,9 @@ void FixLbMulticomponent::destroy_lattice() {
   memory->destroy(laplace_phi);
   memory->destroy(laplace_rho);
   memory->destroy(laplace_psi);
+  // memory->destroy(surface_density_lb); // added for update_surface_gradient()
+  // memory->destroy(surface_phi_lb); // added for update_surface_gradient()
+  // memory->destroy(surface_psi_lb); // added for update_surface_gradient()
 
 }
 
@@ -1464,6 +1556,7 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
   kappa1 = 0.01; kappa2 = 0.01, kappa3 = 0.01; // surface tensions
   tau_r = 1.0; tau_p = 1.0; tau_s = 0.666667;  // relaxation times
   gamma_p = 1.0; gamma_s = 1.0;                // mobility coefficients
+  // h1 = 0.0001; h2 = 0.0001; h3 = 0.0001;           // interaction parameter with the surface
   init_method = MIXTURE;                       // initialization
 
   // parse optional parameters
@@ -1497,6 +1590,21 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
     else if (strcmp(argv[argi],"kappa3")==0) {
       if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
       kappa3 = utils::numeric(FLERR, argv[argi+1], false, lmp);
+      argi += 2;
+    }
+    else if (strcmp(argv[argi],"h1")==0) {
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      kappa2 = utils::numeric(FLERR, argv[argi+1], false, lmp);
+      argi += 2;
+    }
+    else if (strcmp(argv[argi],"h2")==0) {
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      kappa2 = utils::numeric(FLERR, argv[argi+1], false, lmp);
+      argi += 2;
+    }
+    else if (strcmp(argv[argi],"h3")==0) {
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      kappa2 = utils::numeric(FLERR, argv[argi+1], false, lmp);
       argi += 2;
     }
     else if (strcmp(argv[argi],"alpha")==0) {
