@@ -610,16 +610,6 @@ void FixLbMulticomponent::calc_keq(int x, int y, int z) {
   keq[x][y][z][0] = psi - sumk;
 }
 
-void FixLbMulticomponent::calc_moments_full() {
-  for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
-    for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
-      for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
-        calc_moments(x,y,z);
-      }
-    }
-  }
-}
-
 // homogeneous mixture of C1, C2, and C3 with random concentration fluctuations
 void FixLbMulticomponent::init_mixture() {
   double rho, phi, psi;
@@ -1081,7 +1071,6 @@ void FixLbMulticomponent::destroy_halo() {
 
 void FixLbMulticomponent::dump_xdmf(const int step) {
   if ( dump_interval && step % dump_interval == 0 ) {
-    calc_moments_full();
     // Write XDMF grid entry for time step
     if ( me == 0 ) {
       long int block = (long int)fluid_global_n0[0]*fluid_global_n0[1]*fluid_global_n0[2]*sizeof(MPI_DOUBLE);
