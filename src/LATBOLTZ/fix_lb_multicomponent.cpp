@@ -103,7 +103,7 @@ void FixLbMulticomponent::lb_update() {
   update_cube(0,4, 0,subNby, 0,subNbz);
   update_cube(subNbx-4,subNbx, 0,subNby, 0,subNbz);
 #endif
-  final_bounce_back();
+  // final_bounce_back();
   /* swap the pointers of the lattice copies */
   std::swap(f_lb,fnew);
   std::swap(g_lb,gnew);
@@ -241,6 +241,7 @@ void FixLbMulticomponent::bounce_back(int x, int y, int z) {
 }
 
 void FixLbMulticomponent::final_bounce_back() {
+  bool movingBoundary = false;
   int z_top = domain->boxhi[2]-1;
   int z_bot = domain->boxlo[2];
   for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++){
@@ -266,6 +267,15 @@ void FixLbMulticomponent::final_bounce_back() {
           knew[x][y][z-1][12] = knew[x-1][y][z][13];
           knew[x][y][z-1][16] = knew[x][y-1][z][17];
           knew[x][y][z-1][18] = knew[x][y+1][z][15];
+          if(movingBoundary == true){
+            std::vector<int> forward_dir = {5, 11, 13, 17, 15};
+            std::vector<int> reverse_dir = {6, 14, 12, 16, 18};
+            for (size_t pos = 0; pos < forward_dir.size(); ++pos) {
+                int i = forward_dir[pos];
+                double dot_prd = e19[i][0] * slab_top_vel[0] + e19[i][1] * slab_top_vel[1] + e19[i][2] * slab_top_vel[2];
+                fnew[x][y][z - 1][reverse_dir[pos]] -= 2 * w_lb19[i] * 1 * (dot_prd / cs2);
+            }           
+          }
         }
       }   
       // for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
@@ -393,7 +403,7 @@ void FixLbMulticomponent::correcting_phase(int x, int y, int z) {
   } 
 }
 void FixLbMulticomponent::calc_equilibrium(int x, int y, int z) {
-  correcting_phase(x,y,z);
+  // correcting_phase(x,y,z);
   calc_gradient_laplacian(x,y,z, density_lb, density_gradient, laplace_rho);
   calc_gradient_laplacian(x,y,z, phi_lb, phi_gradient, laplace_phi);
   calc_gradient_laplacian(x,y,z, psi_lb, psi_gradient, laplace_psi);
