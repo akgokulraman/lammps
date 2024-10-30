@@ -241,6 +241,7 @@ void FixLbMulticomponent::bounce_back(int x, int y, int z) {
 }
 
 void FixLbMulticomponent::final_bounce_back() {
+  bool movingBoundary = true;
   int z_top = domain->boxhi[2]-1;
   int z_bot = domain->boxlo[2];
   for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++){
@@ -266,6 +267,15 @@ void FixLbMulticomponent::final_bounce_back() {
           knew[x][y][z-1][12] = knew[x-1][y][z][13];
           knew[x][y][z-1][16] = knew[x][y-1][z][17];
           knew[x][y][z-1][18] = knew[x][y+1][z][15];
+          if(movingBoundary == true){
+            std::vector<int> forward_dir = {5, 11, 13, 17, 15};
+            std::vector<int> reverse_dir = {6, 14, 12, 16, 18};
+            for (size_t pos = 0; pos < forward_dir.size(); ++pos) {
+                int i = forward_dir[pos];
+                double dot_prd = e19[i][0] * slab_top_vel[0] + e19[i][1] * slab_top_vel[1] + e19[i][2] * slab_top_vel[2];
+                fnew[x][y][z - 1][reverse_dir[pos]] -= 2 * w_lb19[i] * 1 * (dot_prd / cs2);
+            }           
+          }
         }
       }   
     }
@@ -634,35 +644,67 @@ void FixLbMulticomponent::init_binary_separated() {
   double C1tot_global=0., C2tot_global=0., C3tot_global=0.;
   double pos[3];
   int x, y, z, i;
+  bool z_separated = false;
 
   RanMars *random = new RanMars(lmp,seed + comm->me);
 
-  double box_mid = domain->boxlo[2] + 0.5*domain->zprd;
-
-  for (x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
-    for (y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
-      for (z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
-        pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
-	      if (pos[2] > box_mid) {
-	        C1_init = 1 + 0.01*random->gaussian();
-	        C2_init = 0;
-	        C3_init = 0;
-	      } else {
-	        C1_init = 0;
-	        C2_init = 1 + 0.01*random->gaussian();
-	        C3_init = 0;
-	      }
-	      rho = densityinit;
-	      phi = densityinit*(C1_init-C2_init);
-	      psi = densityinit*C3_init;
-	      for (i=0; i<numvel; i++) {
-	        f_lb[x][y][z][i] = w_lb19[i]*rho;
-	        g_lb[x][y][z][i] = w_lb19[i]*phi;
-	        k_lb[x][y][z][i] = w_lb19[i]*psi;
-	      }
-	      C1tot += C1_init;
-	      C2tot += C2_init;
-	      C3tot += C3_init;
+  double box_mid_z = domain->boxlo[2] + 0.5*domain->zprd;
+  double box_mid_x = domain->boxlo[0] + 0.5*domain->xprd;
+  if(z_separated == true){
+    for (x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+      for (y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+        for (z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
+          pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
+          if (pos[2] > box_mid_z) {
+            C1_init = 1 + 0.01*random->gaussian();
+            C2_init = 0;
+            C3_init = 0;
+          } else {
+            C1_init = 0;
+            C2_init = 1 + 0.01*random->gaussian();
+            C3_init = 0;
+          }
+          rho = densityinit;
+          phi = densityinit*(C1_init-C2_init);
+          psi = densityinit*C3_init;
+          for (i=0; i<numvel; i++) {
+            f_lb[x][y][z][i] = w_lb19[i]*rho;
+            g_lb[x][y][z][i] = w_lb19[i]*phi;
+            k_lb[x][y][z][i] = w_lb19[i]*psi;
+          }
+          C1tot += C1_init;
+          C2tot += C2_init;
+          C3tot += C3_init;
+        }
+      }
+    }
+  }
+  else{
+    for (z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
+      for (y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+        for (x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+          pos[0] = domain->sublo[0] + (x-halo_extent[0])*dx_lb;
+          if (pos[0] > box_mid_x) {
+            C1_init = 1 + 0.01*random->gaussian();
+            C2_init = 0;
+            C3_init = 0;
+          } else {
+            C1_init = 0;
+            C2_init = 1 + 0.01*random->gaussian();
+            C3_init = 0;
+          }
+          rho = densityinit;
+          phi = densityinit*(C1_init-C2_init);
+          psi = densityinit*C3_init;
+          for (i=0; i<numvel; i++) {
+            f_lb[x][y][z][i] = w_lb19[i]*rho;
+            g_lb[x][y][z][i] = w_lb19[i]*phi;
+            k_lb[x][y][z][i] = w_lb19[i]*psi;
+          }
+          C1tot += C1_init;
+          C2tot += C2_init;
+          C3tot += C3_init;
+        }
       }
     }
   }
