@@ -52,7 +52,6 @@ static const char cite_fix_lbmulticomponent[] =
     "  pages = {108898}\n"
     "}\n\n";
 
-int forcing_term_output = 0;
 
 int FixLbMulticomponent::setmask() {
   return FixConst::INITIAL_INTEGRATE | FixConst::END_OF_STEP;
@@ -112,13 +111,6 @@ void FixLbMulticomponent::lb_update() {
 }
 
 void FixLbMulticomponent::update_cube(int xmin, int xmax, int ymin, int ymax, int zmin, int zmax) {
-  if(forcing_term_output == 0){
-    FILE *fptr;
-    fptr = fopen("forcing_term.txt", "w");
-    fprintf(fptr, "%.10lf %.10lf %.10lf\n",forcing[0], forcing[1], forcing[2]);
-    fclose(fptr);
-    forcing_term_output = 1;
-  }
   int x;
   read_slab(xmin,ymin,ymax,zmin,zmax);
   read_slab(xmin+1,ymin,ymax,zmin,zmax);
@@ -174,7 +166,9 @@ void FixLbMulticomponent::collide_stream(int x, int y, int z) {
   double f_w[19] = {0, 0.11111, 0.11111, 0.11111, 0.11111, 0.11111, 0.11111, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777};
   double S_f_prefactor, S_g_prefactor, S_k_prefactor;
   double S_f, S_g, S_k;
+  double forcing[3] = {force_x, force_y,force_z};
   calc_equilibrium(x,y,z);
+  
   for (i=0; i<numvel; ++i) {
     xnew = x + e19[i][0];
     ynew = y + e19[i][1];
@@ -241,6 +235,7 @@ void FixLbMulticomponent::bounce_back(int x, int y, int z) {
 }
 
 void FixLbMulticomponent::final_bounce_back() {
+  bool movingBoundary = true;
   int z_top = domain->boxhi[2]-1;
   int z_bot = domain->boxlo[2];
   for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++){
@@ -266,6 +261,17 @@ void FixLbMulticomponent::final_bounce_back() {
           knew[x][y][z-1][12] = knew[x-1][y][z][13];
           knew[x][y][z-1][16] = knew[x][y-1][z][17];
           knew[x][y][z-1][18] = knew[x][y+1][z][15];
+          if(movingBoundary == true){
+            double slab_top_vel[3] = {u_x_top, u_y_top, u_z_top};
+            std::vector<int> forward_dir = {5, 11, 13, 17, 15};
+            std::vector<int> reverse_dir = {6, 14, 12, 16, 18};
+            for (size_t pos = 0; pos < forward_dir.size(); ++pos) {
+                int i = forward_dir[pos];
+                double dot_prd = e19[i][0] * slab_top_vel[0] + e19[i][1] * slab_top_vel[1] + e19[i][2] * slab_top_vel[2];
+                // fnew[x][y][z-1][reverse_dir[pos]] -= 2 * w_lb19[i] * 1 * (dot_prd / cs2);
+                fnew[x][y][z-1][reverse_dir[pos]] = f_lb[x][y][z-1][forward_dir[pos]] -2 * w_lb19[i] * 1 * (dot_prd / cs2);
+            }           
+          }
         }
       }   
     }
@@ -290,6 +296,16 @@ void FixLbMulticomponent::final_bounce_back() {
           knew[x][y][z+1][13] = knew[x+1][y][z][12];
           knew[x][y][z+1][17] = knew[x][y+1][z][16];
           knew[x][y][z+1][15] = knew[x][y-1][z][18];
+          if(movingBoundary == true){
+            double slab_bot_vel[3] = {u_x_bot, u_y_bot, u_z_bot};
+            std::vector<int> forward_dir = {6, 14, 12, 16, 18};
+            std::vector<int> reverse_dir = {5, 11, 13, 17, 15};
+            for (size_t pos = 0; pos < forward_dir.size(); ++pos) {
+                int i = forward_dir[pos];
+                double dot_prd = e19[i][0] * slab_bot_vel[0] + e19[i][1] * slab_bot_vel[1] + e19[i][2] * slab_bot_vel[2];
+                fnew[x][y][z+1][reverse_dir[pos]] -= 2 * w_lb19[i] * 1 * (dot_prd / cs2);
+            }
+          }
         }
       }   
     }
@@ -300,6 +316,7 @@ void FixLbMulticomponent::calc_moments(int x, int y, int z) {
   double rho, phi, psi, j[3], fi, gi, ki;
   int i;
   rho = phi = psi = j[0] = j[1] = j[2] = 0.0;
+  double forcing[3] = {force_x, force_y,force_z};
   for (i=0; i<numvel; ++i) {
     fi = f_lb[x][y][z][i];
     gi = g_lb[x][y][z][i];
@@ -321,23 +338,6 @@ void FixLbMulticomponent::calc_moments(int x, int y, int z) {
   u_lb[x][y][z][1] += 0.5*forcing[1]/rho;
   u_lb[x][y][z][2] += 0.5*forcing[2]/rho;
   pressure_lb[x][y][z] = pressure(rho,phi,psi);
-  // testing
-  // printing values of velocity at particular cooridnates
-  FILE *fptr;
-  int mid_x = domain->boxhi[0] / 2;
-  int mid_y = domain->boxhi[1] / 2;
-  int mid_z = domain->boxhi[2] / 2;
-  if((x==mid_x) && (y==mid_y) && (z==mid_z)){
-    fptr = fopen("u.txt", "a");
-    fprintf(fptr, "%f, %f, %f\n", u_lb[x][y][z][0], u_lb[x][y][z][1], u_lb[x][y][z][2]);
-    fclose(fptr);
-    fptr = fopen("j.txt", "a");
-    fprintf(fptr, "%f, %f, %f\n", j[0], j[1], j[2]);
-    fclose(fptr);
-    fptr = fopen("F.txt", "a");
-    fprintf(fptr, "%f, %f, %f\n", forcing[0], forcing[1], forcing[2]);
-    fclose(fptr);
-  }
 }
 void FixLbMulticomponent::correcting_phase(int x, int y, int z) {
   int z_top = domain->boxhi[2]-1;
@@ -634,35 +634,67 @@ void FixLbMulticomponent::init_binary_separated() {
   double C1tot_global=0., C2tot_global=0., C3tot_global=0.;
   double pos[3];
   int x, y, z, i;
+  bool z_separated = true;
 
   RanMars *random = new RanMars(lmp,seed + comm->me);
 
-  double box_mid = domain->boxlo[2] + 0.5*domain->zprd;
-
-  for (x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
-    for (y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
-      for (z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
-        pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
-	      if (pos[2] > box_mid) {
-	        C1_init = 1 + 0.01*random->gaussian();
-	        C2_init = 0;
-	        C3_init = 0;
-	      } else {
-	        C1_init = 0;
-	        C2_init = 1 + 0.01*random->gaussian();
-	        C3_init = 0;
-	      }
-	      rho = densityinit;
-	      phi = densityinit*(C1_init-C2_init);
-	      psi = densityinit*C3_init;
-	      for (i=0; i<numvel; i++) {
-	        f_lb[x][y][z][i] = w_lb19[i]*rho;
-	        g_lb[x][y][z][i] = w_lb19[i]*phi;
-	        k_lb[x][y][z][i] = w_lb19[i]*psi;
-	      }
-	      C1tot += C1_init;
-	      C2tot += C2_init;
-	      C3tot += C3_init;
+  double box_mid_z = domain->boxlo[2] + 0.5*domain->zprd;
+  double box_mid_x = domain->boxlo[0] + 0.5*domain->xprd;
+  if(z_separated == true){
+    for (x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+      for (y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+        for (z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
+          pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
+          if (pos[2] > box_mid_z) {
+            C1_init = 1 + 0.01*random->gaussian();
+            C2_init = 0;
+            C3_init = 0;
+          } else {
+            C1_init = 0;
+            C2_init = 1 + 0.01*random->gaussian();
+            C3_init = 0;
+          }
+          rho = densityinit;
+          phi = densityinit*(C1_init-C2_init);
+          psi = densityinit*C3_init;
+          for (i=0; i<numvel; i++) {
+            f_lb[x][y][z][i] = w_lb19[i]*rho;
+            g_lb[x][y][z][i] = w_lb19[i]*phi;
+            k_lb[x][y][z][i] = w_lb19[i]*psi;
+          }
+          C1tot += C1_init;
+          C2tot += C2_init;
+          C3tot += C3_init;
+        }
+      }
+    }
+  }
+  else{
+    for (z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
+      for (y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+        for (x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+          pos[0] = domain->sublo[0] + (x-halo_extent[0])*dx_lb;
+          if (pos[0] > box_mid_x) {
+            C1_init = 1 + 0.01*random->gaussian();
+            C2_init = 0;
+            C3_init = 0;
+          } else {
+            C1_init = 0;
+            C2_init = 1 + 0.01*random->gaussian();
+            C3_init = 0;
+          }
+          rho = densityinit;
+          phi = densityinit*(C1_init-C2_init);
+          psi = densityinit*C3_init;
+          for (i=0; i<numvel; i++) {
+            f_lb[x][y][z][i] = w_lb19[i]*rho;
+            g_lb[x][y][z][i] = w_lb19[i]*phi;
+            k_lb[x][y][z][i] = w_lb19[i]*psi;
+          }
+          C1tot += C1_init;
+          C2tot += C2_init;
+          C3tot += C3_init;
+        }
       }
     }
   }
@@ -1513,6 +1545,51 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
     else if (strcmp(argv[argi],"seed")==0){
       if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
       seed = utils::inumeric(FLERR, argv[argi+1], false, lmp);
+      argi += 2;
+    }
+    else if (strcmp(argv[argi],"u_x_top")==0) {
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      u_x_top = utils::numeric(FLERR, argv[argi+1], false, lmp);
+      argi += 2;
+    }
+    else if (strcmp(argv[argi],"u_y_top")==0) {
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      u_y_top = utils::numeric(FLERR, argv[argi+1], false, lmp);
+      argi += 2;
+    }
+    else if (strcmp(argv[argi],"u_z_top")==0) {
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      u_z_top = utils::numeric(FLERR, argv[argi+1], false, lmp);
+      argi += 2;
+    }
+    else if (strcmp(argv[argi],"u_x_bot")==0) {
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      u_x_bot = utils::numeric(FLERR, argv[argi+1], false, lmp);
+      argi += 2;
+    }
+    else if (strcmp(argv[argi],"u_y_bot")==0) {
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      u_y_bot = utils::numeric(FLERR, argv[argi+1], false, lmp);
+      argi += 2;
+    }
+    else if (strcmp(argv[argi],"u_z_bot")==0) {
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      u_z_bot = utils::numeric(FLERR, argv[argi+1], false, lmp);
+      argi += 2;
+    }
+    else if (strcmp(argv[argi],"force_x")==0) {
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      force_x = utils::numeric(FLERR, argv[argi+1], false, lmp);
+      argi += 2;
+    }
+    else if (strcmp(argv[argi],"force_y")==0) {
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      force_y = utils::numeric(FLERR, argv[argi+1], false, lmp);
+      argi += 2;
+    }
+    else if (strcmp(argv[argi],"force_z")==0) {
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      force_z = utils::numeric(FLERR, argv[argi+1], false, lmp);
       argi += 2;
     }
     else if(strcmp(argv[argi],"init")==0){

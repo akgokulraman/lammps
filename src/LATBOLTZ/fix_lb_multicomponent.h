@@ -76,6 +76,9 @@ namespace LAMMPS_NS {
     double C1_drop, C2_drop;
     double C1_film, C2_film;
     double thickness;
+    double u_x_top, u_y_top, u_z_top;
+    double u_x_bot, u_y_bot, u_z_bot;
+    double force_x, force_y, force_z;
 
     double ****g_lb;                                
     double ****gnew;                              

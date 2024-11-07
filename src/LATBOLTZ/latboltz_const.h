@@ -155,9 +155,11 @@ static constexpr double Ng_lb19[19] = {1.,  3.,  3.,        3.,        9. / 2., 
                                    18., 18., 162. / 7., 126. / 5., 30.};
 
 // Forcing Term
-static constexpr double forcing[3] = {0.0000000, 0.00000, 0.00000}; // forcing term along x direction
+// static constexpr double forcing[3] = {0.0000000, 0.00000, 0.00000}; // forcing term along x direction
 // slab velocity for moving boundary
-static constexpr double slab_top_vel[3] = {0.0000001, 0.00000, 0.00000}; // forcing term along x direction
+// static constexpr double slab_top_vel[3] = {0.0000001, 0.00000, 0.00000}; // along x direction
+// slab velocity for moving boundary
+// static constexpr double slab_bot_vel[3] = {-0.0000001, 0.00000, 0.00000}; // along x direction
 
 // clang-format off
 static constexpr double mg_lb19[19][19] = {
