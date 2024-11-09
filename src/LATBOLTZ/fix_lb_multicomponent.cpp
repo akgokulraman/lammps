@@ -740,29 +740,66 @@ void FixLbMulticomponent::init_liquid_lens(double radius) {
   double rho=1.0, phi, psi;
   double pos[3], r2;
   int x, y, z, i;
-
-  for (x=0; x<subNbx; x++) {
-    pos[0] = domain->sublo[0] + (x-halo_extent[0])*dx_lb;
-    for (y=0; y<subNby; y++) {
-      pos[1] = domain->sublo[1] + (y-halo_extent[1])*dx_lb;
-      for (z=0; z<subNbz; z++) {
-	      pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
-	      r2 = pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2];
-	      if (r2 < radius*radius) {
-	        phi = 0.0;
-	        psi = 1.0;
-	      } else if (pos[2] > 0) {
-	        phi = 1.0;
-	        psi = 0.0;
-	      } else {
-	        phi = -1.0;
-	        psi = 0.0;
-	      }
-	      for (i=0; i<numvel; i++) {
-	        f_lb[x][y][z][i] = w_lb19[i]*rho*densityinit;
-	        g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
-	        k_lb[x][y][z][i] = w_lb19[i]*psi*densityinit;
-	      }
+  bool droplet = false;
+  if(droplet == false){
+    for (x=0; x<subNbx; x++) {
+      pos[0] = domain->sublo[0] + (x-halo_extent[0])*dx_lb;
+      for (y=0; y<subNby; y++) {
+        pos[1] = domain->sublo[1] + (y-halo_extent[1])*dx_lb;
+        for (z=0; z<subNbz; z++) {
+          pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
+          r2 = pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2];
+          if (r2 < radius*radius) {
+            phi = 0.0;
+            psi = 1.0;
+          } else if (pos[2] > 0) {
+            phi = 1.0;
+            psi = 0.0;
+          } else {
+            phi = -1.0;
+            psi = 0.0;
+          }
+          for (i=0; i<numvel; i++) {
+            f_lb[x][y][z][i] = w_lb19[i]*rho*densityinit;
+            g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
+            k_lb[x][y][z][i] = w_lb19[i]*psi*densityinit;
+          }
+        }
+      }
+    }
+  }
+  else{
+    // double box_mid_z = domain->boxlo[2] + 0.5*domain->zprd;
+    double box_mid_z = domain->boxlo[2] + 0.5*domain->zprd;
+    double box_mid_y = domain->boxlo[1] + 0.5*domain->yprd;
+    double box_mid_x = domain->boxlo[0] + 0.5*domain->xprd;
+    for (x=0; x<subNbx; x++) {
+      pos[0] = domain->sublo[0] + (x-halo_extent[0])*dx_lb;
+      for (y=0; y<subNby; y++) {
+        pos[1] = domain->sublo[1] + (y-halo_extent[1])*dx_lb;
+        for (z=0; z<subNbz; z++) {
+          pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
+          r2 = (pos[0]-box_mid_x)*(pos[0]-box_mid_x)+(pos[1]-box_mid_y)*(pos[1]-box_mid_y)+(pos[2]-box_mid_z)*(pos[2]-box_mid_z);
+          if (r2 <= radius*radius) {
+            phi = 0.0;
+            psi = 1.0;
+          } 
+          else {
+            if (pos[2] > 0) {
+              phi = 1.0;
+              psi = 0.0;
+            }
+            else {
+              phi = -1.0;
+              psi = 0.0;
+            }
+          }
+          for (i=0; i<numvel; i++) {
+            f_lb[x][y][z][i] = w_lb19[i]*rho*densityinit;
+            g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
+            k_lb[x][y][z][i] = w_lb19[i]*psi*densityinit;
+          }
+        }
       }
     }
   }
