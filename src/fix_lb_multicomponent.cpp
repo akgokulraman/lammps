@@ -634,7 +634,7 @@ void FixLbMulticomponent::init_binary_separated() {
   double C1tot_global=0., C2tot_global=0., C3tot_global=0.;
   double pos[3];
   int x, y, z, i;
-  bool z_separated = true;
+  bool z_separated = false;
 
   RanMars *random = new RanMars(lmp,seed + comm->me);
 
@@ -670,30 +670,63 @@ void FixLbMulticomponent::init_binary_separated() {
     }
   }
   else{
-    for (z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
-      for (y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
-        for (x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
-          pos[0] = domain->sublo[0] + (x-halo_extent[0])*dx_lb;
-          if (pos[0] > box_mid_x) {
-            C1_init = 1 + 0.01*random->gaussian();
-            C2_init = 0;
-            C3_init = 0;
-          } else {
-            C1_init = 0;
-            C2_init = 1 + 0.01*random->gaussian();
-            C3_init = 0;
+    bool binary_fluids_boundary = false;
+    if(binary_fluids_boundary == true){
+      for (z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
+        for (y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+          for (x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+            pos[0] = domain->sublo[0] + (x-halo_extent[0])*dx_lb;
+            if (pos[0] > box_mid_x) {
+              C1_init = 1 + 0.01*random->gaussian();
+              C2_init = 0;
+              C3_init = 0;
+            } else {
+              C1_init = 0;
+              C2_init = 1 + 0.01*random->gaussian();
+              C3_init = 0;
+            }
+            rho = densityinit;
+            phi = densityinit*(C1_init-C2_init);
+            psi = densityinit*C3_init;
+            for (i=0; i<numvel; i++) {
+              f_lb[x][y][z][i] = w_lb19[i]*rho;
+              g_lb[x][y][z][i] = w_lb19[i]*phi;
+              k_lb[x][y][z][i] = w_lb19[i]*psi;
+            }
+            C1tot += C1_init;
+            C2tot += C2_init;
+            C3tot += C3_init;
           }
-          rho = densityinit;
-          phi = densityinit*(C1_init-C2_init);
-          psi = densityinit*C3_init;
-          for (i=0; i<numvel; i++) {
-            f_lb[x][y][z][i] = w_lb19[i]*rho;
-            g_lb[x][y][z][i] = w_lb19[i]*phi;
-            k_lb[x][y][z][i] = w_lb19[i]*psi;
+        }
+      }
+    }
+    else{
+      for (z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
+        for (y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+          for (x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+            pos[0] = domain->sublo[0] + (x-halo_extent[0])*dx_lb;
+            if ((pos[0] < domain->boxlo[0] + 0.25*domain->xprd) || (pos[0] > domain->boxlo[0] + 0.75*domain->xprd)) {
+              C1_init = 1 + 0.01*random->gaussian();
+              C2_init = 0;
+              C3_init = 0;
+            } 
+            else {
+              C1_init = 0;
+              C2_init = 1 + 0.01*random->gaussian();
+              C3_init = 0;
+            }
+            rho = densityinit;
+            phi = densityinit*(C1_init-C2_init);
+            psi = densityinit*C3_init;
+            for (i=0; i<numvel; i++) {
+              f_lb[x][y][z][i] = w_lb19[i]*rho;
+              g_lb[x][y][z][i] = w_lb19[i]*phi;
+              k_lb[x][y][z][i] = w_lb19[i]*psi;
+            }
+            C1tot += C1_init;
+            C2tot += C2_init;
+            C3tot += C3_init;
           }
-          C1tot += C1_init;
-          C2tot += C2_init;
-          C3tot += C3_init;
         }
       }
     }
