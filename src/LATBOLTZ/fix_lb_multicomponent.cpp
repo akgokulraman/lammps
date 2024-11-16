@@ -268,8 +268,8 @@ void FixLbMulticomponent::final_bounce_back() {
             for (size_t pos = 0; pos < forward_dir.size(); ++pos) {
                 int i = forward_dir[pos];
                 double dot_prd = e19[i][0] * slab_top_vel[0] + e19[i][1] * slab_top_vel[1] + e19[i][2] * slab_top_vel[2];
-                // fnew[x][y][z-1][reverse_dir[pos]] -= 2 * w_lb19[i] * 1 * (dot_prd / cs2);
-                fnew[x][y][z-1][reverse_dir[pos]] = f_lb[x][y][z-1][forward_dir[pos]] -2 * w_lb19[i] * 1 * (dot_prd / cs2);
+                fnew[x][y][z-1][reverse_dir[pos]] -= 2 * w_lb19[i] * 1 * (dot_prd / cs2);
+                // fnew[x][y][z-1][reverse_dir[pos]] = f_lb[x][y][z-1][forward_dir[pos]] -2 * w_lb19[i] * 1 * (dot_prd / cs2);
             }           
           }
         }
@@ -582,16 +582,6 @@ void FixLbMulticomponent::calc_keq(int x, int y, int z) {
     sumk += ki;
   }
   keq[x][y][z][0] = psi - sumk;
-}
-
-void FixLbMulticomponent::calc_moments_full() {
-  for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
-    for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
-      for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
-        calc_moments(x,y,z);
-      }
-    }
-  }
 }
 
 // homogeneous mixture of C1, C2, and C3 with random concentration fluctuations
@@ -1157,7 +1147,6 @@ void FixLbMulticomponent::destroy_halo() {
 
 void FixLbMulticomponent::dump_xdmf(const int step) {
   if ( dump_interval && step % dump_interval == 0 ) {
-    calc_moments_full();
     // Write XDMF grid entry for time step
     if ( me == 0 ) {
       long int block = (long int)fluid_global_n0[0]*fluid_global_n0[1]*fluid_global_n0[2]*sizeof(MPI_DOUBLE);
