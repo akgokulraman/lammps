@@ -52,7 +52,7 @@ static const char cite_fix_lbmulticomponent[] =
     "  pages = {108898}\n"
     "}\n\n";
 
-
+int time_g = -1;
 int FixLbMulticomponent::setmask() {
   return FixConst::INITIAL_INTEGRATE | FixConst::END_OF_STEP;
 }
@@ -62,6 +62,10 @@ void FixLbMulticomponent::initial_integrate(int vflag) {
 }
 
 void FixLbMulticomponent::end_of_step() {
+  // FILE *fptr;
+  // fptr = fopen("end_of_step.txt", "a");
+  // fprintf(fptr, "time_g:%d, time:%f\n", time_g, update->ntimestep);
+  // fclose(fptr);
   dump_xdmf(update->ntimestep);
 }
 
@@ -357,7 +361,7 @@ void FixLbMulticomponent::correcting_phase(int x, int y, int z) {
     if(cur_z == z_bot){
       for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
         for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
-          // top solid node
+          // bot solid node
           density_lb[x][y][z] = density_lb[x][y][z+1];
           phi_lb[x][y][z] = phi_lb[x][y][z+1];
           psi_lb[x][y][z] = psi_lb[x][y][z+1];
@@ -1144,15 +1148,32 @@ void FixLbMulticomponent::destroy_halo() {
   // MPI datatypes are freed in parent destructor
 }
 
+void FixLbMulticomponent::calc_moments_full() {
+  for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+    for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+      for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
+        calc_moments(x,y,z);
+      }
+    }
+  }
+}
 
 void FixLbMulticomponent::dump_xdmf(const int step) {
+  if (step == 0){
+    calc_moments_full();
+  }
   if ( dump_interval && step % dump_interval == 0 ) {
     // Write XDMF grid entry for time step
     if ( me == 0 ) {
       long int block = (long int)fluid_global_n0[0]*fluid_global_n0[1]*fluid_global_n0[2]*sizeof(MPI_DOUBLE);
       long int offset = (step/dump_interval)*block*(4+3);  /* This should be changed to account for dumps actually written.  This offset could malfunction on a restart. */
       double time = update->ntimestep*dt_lb;
-
+      FILE *fptr;
+      fptr = fopen("dump_interval.txt", "a");
+      fprintf(fptr, "step:%d, time:%f\n", step, time);
+      fclose(fptr);
+      time_g = step;
+       
       fprintf(dump_file_handle_xdmf,
               "      <Grid Name=\"%d\">\n"
               "        <Time Value=\"%f\"/>\n\n"
@@ -1239,43 +1260,43 @@ void FixLbMulticomponent::dump_xdmf(const int step) {
     }
 
     // Write raw data
-    {
-      int lbox[3];
-      lbox[0] = subNbx;
-      lbox[1] = subNby;
-      lbox[2] = subNbz;
+    
+    int lbox[3];
+    lbox[0] = subNbx;
+    lbox[1] = subNby;
+    lbox[2] = subNbz;
 
-      const size_t lvol = lbox[0]*lbox[1]*lbox[2];
+    const size_t lvol = lbox[0]*lbox[1]*lbox[2];
 
-      // Transpose local arrays to fortran-order for paraview output
-      std::vector<double> density_2_fort (lvol);
-      std::vector<double> phi_2_fort (lvol);
-      std::vector<double> psi_2_fort (lvol);
-      std::vector<double> pressure_2_fort (lvol);
-      std::vector<double> velocity_2_fort (lvol*3);
-      int indexf=0;
-      for (int k=0; k<lbox[2]; k++) {
-	      for (int j=0; j<lbox[1]; j++) {
-	        for (int i=0; i<lbox[0]; i++) {
-	          indexf = i+lbox[0]*(j+lbox[1]*k);
-	          density_2_fort[indexf]=density_lb[i][j][k];
-	          phi_2_fort[indexf]=phi_lb[i][j][k];
-	          psi_2_fort[indexf]=psi_lb[i][j][k];
-	          pressure_2_fort[indexf]=pressure_lb[i][j][k];
-	          velocity_2_fort[0+3*indexf]=u_lb[i][j][k][0];
-	          velocity_2_fort[1+3*indexf]=u_lb[i][j][k][1];
-	          velocity_2_fort[2+3*indexf]=u_lb[i][j][k][2];
-      	  }
-	      }
+    // Transpose local arrays to fortran-order for paraview output
+    std::vector<double> density_2_fort (lvol);
+    std::vector<double> phi_2_fort (lvol);
+    std::vector<double> psi_2_fort (lvol);
+    std::vector<double> pressure_2_fort (lvol);
+    std::vector<double> velocity_2_fort (lvol*3);
+    int indexf=0;
+    for (int k=0; k<lbox[2]; k++) {
+      for (int j=0; j<lbox[1]; j++) {
+        for (int i=0; i<lbox[0]; i++) {
+          indexf = i+lbox[0]*(j+lbox[1]*k);
+          density_2_fort[indexf]=density_lb[i][j][k];
+          phi_2_fort[indexf]=phi_lb[i][j][k];
+          psi_2_fort[indexf]=psi_lb[i][j][k];
+          pressure_2_fort[indexf]=pressure_lb[i][j][k];
+          velocity_2_fort[0+3*indexf]=u_lb[i][j][k][0];
+          velocity_2_fort[1+3*indexf]=u_lb[i][j][k][1];
+          velocity_2_fort[2+3*indexf]=u_lb[i][j][k][2];
+        }
       }
-
-      MPI_File_write_all(dump_file_handle_raw, &density_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
-      MPI_File_write_all(dump_file_handle_raw, &phi_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
-      MPI_File_write_all(dump_file_handle_raw, &psi_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
-      MPI_File_write_all(dump_file_handle_raw, &pressure_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
-      MPI_File_write_all(dump_file_handle_raw, &velocity_2_fort[0], 1, fluid_vector_field_mpitype, MPI_STATUS_IGNORE);
-      
     }
+
+    MPI_File_write_all(dump_file_handle_raw, &density_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
+    MPI_File_write_all(dump_file_handle_raw, &phi_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
+    MPI_File_write_all(dump_file_handle_raw, &psi_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
+    MPI_File_write_all(dump_file_handle_raw, &pressure_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
+    MPI_File_write_all(dump_file_handle_raw, &velocity_2_fort[0], 1, fluid_vector_field_mpitype, MPI_STATUS_IGNORE);
+      
+    
   }
 }
 
@@ -1416,6 +1437,10 @@ void FixLbMulticomponent::init_output(void)
 
   // Output
   if ( dump_interval ) {
+    // FILE *fptr;
+    // fptr = fopen("dump_interval.txt", "a");
+    // fprintf(fptr, "%d\n", dump_interval);
+    // fclose(fptr);
     if ( me == 0 ) {
       dump_file_handle_xdmf = fopen( dump_file_name_xdmf.c_str(), "w");
       if (!dump_file_handle_xdmf) {
