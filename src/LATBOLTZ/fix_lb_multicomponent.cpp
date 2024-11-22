@@ -27,7 +27,7 @@
    [4] Swift et al., Phys. Rev. E 54, 5041 (1996)
        https://doi.org/10.1103/PhysRevE.54.5041
 ------------------------------------------------------------------------- */
-
+#include <time.h>
 #include "fix_lb_multicomponent.h"
 #include "latboltz_const.h"
 
@@ -1159,8 +1159,11 @@ void FixLbMulticomponent::calc_moments_full() {
 }
 
 void FixLbMulticomponent::dump_xdmf(const int step) {
+  clock_t start, end;
+  double cpu_time_used;
   if (step == 0){
     calc_moments_full();
+    start = clock(); // start measuring the time
   }
   if ( dump_interval && step % dump_interval == 0 ) {
     // Write XDMF grid entry for time step
@@ -1168,12 +1171,16 @@ void FixLbMulticomponent::dump_xdmf(const int step) {
       long int block = (long int)fluid_global_n0[0]*fluid_global_n0[1]*fluid_global_n0[2]*sizeof(MPI_DOUBLE);
       long int offset = (step/dump_interval)*block*(4+3);  /* This should be changed to account for dumps actually written.  This offset could malfunction on a restart. */
       double time = update->ntimestep*dt_lb;
+
+      time_g = step;
+      // measure time elapsed from t = 0
+      end = clock();
+      cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
       FILE *fptr;
       fptr = fopen("dump_interval.txt", "a");
-      fprintf(fptr, "step:%d, time:%f\n", step, time);
+      fprintf(fptr, "step: %d, elapsed time: %f\n", step, cpu_time_used);
       fclose(fptr);
-      time_g = step;
-       
+
       fprintf(dump_file_handle_xdmf,
               "      <Grid Name=\"%d\">\n"
               "        <Time Value=\"%f\"/>\n\n"
