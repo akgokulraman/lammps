@@ -99,29 +99,28 @@ namespace LAMMPS_NS {
     double ***mu_rho;
     double ***mu_phi;
     double ***mu_psi;
-
-    double ***surface_density_lb, ***surface_phi_lb, ***surface_psi_lb; // 3D arrays for gradients at each node
-
+    
     void init_parameters(int, char **);
     void init_lattice();
     void destroy_lattice();
 
-    enum init_type { MIXTURE, BINARY_MIXTURE, SINGLE, DROPLET, LIQUID_LENS, DOUBLE_EMULSION, FILM, MIXED_DROPLET };
+    enum init_type { MIXTURE, BINARY_SEPARATED, DROPLET, LIQUID_LENS, DOUBLE_EMULSION, FILM, MIXED_DROPLET, SEMI_DROPLET };
     init_type init_method = MIXTURE;
 
     void init_fluid();
     void init_mixture();
-    void init_binary_mixture();
-    void init_single();
+    void init_binary_separated();
     void init_droplet(double radius);
     void init_liquid_lens(double radius);
     void init_double_emulsion(double radius);
     void init_film(double thickness, double C1, double C2);
     void init_mixed_droplet(double radius, double C1, double C2);
+    void init_semi_droplet(double radius, double C1, double C2);
 
     void lb_update();
     void calc_moments_full();
     void collide_stream(int x, int y, int z);
+    void bounce_back(int x, int y, int z);
     void update_cube(int xmin, int xmax, int ymin, int ymax, int zmin, int zmax);
     void update_slab(int x, int ymin, int ymax, int zmin, int zmax);
     void update_column(int x, int y, int zmin, int zmax);
@@ -129,23 +128,20 @@ namespace LAMMPS_NS {
     void read_column(int x,int y, int zmin, int zmax);
     void read_site(int x, int y, int z);
     void write_site(int x, int y, int z);
-    void apply_bounce_back(); // BB_BC
-    void rho_phi_psi_switch(int x, int y, int z); // Switching
-    void update_surface_gradients(int x, int y, int z); //Surface thermodynamics
-    // double ***grad_rho, ***grad_phi, ***grad_psi;  // 3D arrays for gradients at each node
 
     void calc_moments(int x, int y, int z);
     void calc_chemical_potentials(int x, int y, int z);
+    void Neumann_BC(int x, int y, int z);
     void calc_equilibrium(int x, int y, int z);
     void calc_feq(int x, int y, int z);
     void calc_geq(int x, int y, int z);
     void calc_keq(int x, int y, int z);
     void calc_gradient_laplacian(int x, int y, int z, double ***field, double ****gradient, double ***laplacian);
-    
     void calc_rho_gradients(int x, int y, int z);
     void calc_phi_gradients(int x, int y, int z);
     void calc_psi_gradients(int x, int y, int z);
     double pressure(double rho, double phi, double psi);
+    void final_bounce_back();
 
     static const int numrequests = 12;
     MPI_Request requests[numrequests];
@@ -169,4 +165,3 @@ namespace LAMMPS_NS {
 }
 #endif
 #endif
-
