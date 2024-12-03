@@ -137,10 +137,6 @@ static constexpr int bbl[33][16] = {
   { 6,  2,  7,  8, 12,  9, 11,      0,  1,  3,  4,  5,  6, 10, 13, 14},
   { 6,  4,  9, 10, 13,  8, 14,      0,  1,  2,  3,  5,  6,  7, 11, 12}
 };
-
-// Forcing Term
-static constexpr double forcing[3] = {0.00000, 0.00000, 0.00000}; // forcing term
-
 //clang-format on
 
 // 19-velocity lattice propogation vectors
@@ -157,6 +153,9 @@ static constexpr double w_lb19[19] = {1. / 3.,  1. / 18., 1. / 18., 1. / 18., 1.
 static constexpr double Ng_lb19[19] = {1.,  3.,  3.,        3.,        9. / 2.,  9. / 2.,  9. / 2.,
                                    9.,  9.,  9.,        27. / 2.,  27. / 2., 27. / 2., 18.,
                                    18., 18., 162. / 7., 126. / 5., 30.};
+
+// Forcing Term
+static constexpr double forcing[3] = {0.000001, 0.00000, 0.00000}; // forcing term along x direction
 
 // clang-format off
 static constexpr double mg_lb19[19][19] = {
