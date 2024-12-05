@@ -811,8 +811,8 @@ void FixLbMulticomponent::init_semi_droplet(double radius, double C1, double C2)
           C2_init = 0.0;
           C3_init = 1.0;
 	      }  else {
-	        C1_init = 1.0;
-	        C2_init = 0.0;
+	        C1_init = C1 + 0.01*random->gaussian();;
+	        C2_init = 1.0 - C1_init;
 	        C3_init = 1.0 - C1_init - C2_init;
 	      }
         rho = densityinit;
