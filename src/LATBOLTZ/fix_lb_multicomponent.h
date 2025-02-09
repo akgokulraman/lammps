@@ -104,23 +104,24 @@ namespace LAMMPS_NS {
     void init_lattice();
     void destroy_lattice();
 
-    enum init_type { MIXTURE, BINARY_SEPARATED, DROPLET, LIQUID_LENS, DOUBLE_EMULSION, FILM, MIXED_DROPLET, SEMI_DROPLET };
+    enum init_type { MIXTURE, BINARY_SEPARATED, DROPLET, LIQUID_LENS, DOUBLE_EMULSION, FILM, THREE_REGIONS, SEMI_MIXED_DROPLET, MIXED_DROPLET};
     init_type init_method = MIXTURE;
 
     void init_fluid();
     void init_mixture();
     void init_binary_separated();
+    void init_single();
     void init_droplet(double radius);
     void init_liquid_lens(double radius);
     void init_double_emulsion(double radius);
     void init_film(double thickness, double C1, double C2);
+    void init_three_regions();
+    void init_semi_mixed_droplet(double radius, double C1, double C2);
     void init_mixed_droplet(double radius, double C1, double C2);
-    void init_semi_droplet(double radius, double C1, double C2);
 
     void lb_update();
     void calc_moments_full();
     void collide_stream(int x, int y, int z);
-    void bounce_back(int x, int y, int z);
     void update_cube(int xmin, int xmax, int ymin, int ymax, int zmin, int zmax);
     void update_slab(int x, int ymin, int ymax, int zmin, int zmax);
     void update_column(int x, int y, int zmin, int zmax);
@@ -128,10 +129,12 @@ namespace LAMMPS_NS {
     void read_column(int x,int y, int zmin, int zmax);
     void read_site(int x, int y, int z);
     void write_site(int x, int y, int z);
+    void bounce_back();
+    void Neumann_BC(int x, int y, int z);
+    //void Neumann_BC();
 
     void calc_moments(int x, int y, int z);
     void calc_chemical_potentials(int x, int y, int z);
-    void Neumann_BC(int x, int y, int z);
     void calc_equilibrium(int x, int y, int z);
     void calc_feq(int x, int y, int z);
     void calc_geq(int x, int y, int z);
@@ -141,7 +144,6 @@ namespace LAMMPS_NS {
     void calc_phi_gradients(int x, int y, int z);
     void calc_psi_gradients(int x, int y, int z);
     double pressure(double rho, double phi, double psi);
-    void final_bounce_back();
 
     static const int numrequests = 12;
     MPI_Request requests[numrequests];
