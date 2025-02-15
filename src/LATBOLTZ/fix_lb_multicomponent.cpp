@@ -53,6 +53,7 @@ static const char cite_fix_lbmulticomponent[] =
     "}\n\n";
 
 int time_g = -1;
+bool movingBoundary = false;
 int FixLbMulticomponent::setmask() {
   return FixConst::INITIAL_INTEGRATE | FixConst::END_OF_STEP;
 }
@@ -239,7 +240,9 @@ void FixLbMulticomponent::bounce_back(int x, int y, int z) {
 }
 
 void FixLbMulticomponent::final_bounce_back() {
-  bool movingBoundary = true;
+  if(update->ntimestep*dt_lb>timestep_movingBoundary_start){
+    movingBoundary = true;
+  }
   int z_top = domain->boxhi[2]-1;
   int z_bot = domain->boxlo[2];
   for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++){
@@ -346,6 +349,21 @@ void FixLbMulticomponent::calc_moments(int x, int y, int z) {
   u_lb[x][y][z][1] += 0.5*forcing[1]/rho;
   u_lb[x][y][z][2] += 0.5*forcing[2]/rho;
   pressure_lb[x][y][z] = pressure(rho,phi,psi);
+
+  // correcting_phase - to correct corners
+  int z_top = domain->boxhi[2]-1;
+  int z_bot = domain->boxlo[2];
+  int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
+  if(cur_z == z_top){
+    density_lb[x][y][z] = density_lb[x][y][z-1];
+    phi_lb[x][y][z] = phi_lb[x][y][z-1];
+    psi_lb[x][y][z] = psi_lb[x][y][z-1]; 
+  }
+  if(cur_z == z_bot+1){
+    density_lb[x][y][z-1] = density_lb[x][y][z];
+    phi_lb[x][y][z-1] = phi_lb[x][y][z];
+    psi_lb[x][y][z-1] = psi_lb[x][y][z]; 
+  }
 }
 void FixLbMulticomponent::correcting_phase(int x, int y, int z) {
   int z_top = domain->boxhi[2]-1;
@@ -356,14 +374,14 @@ void FixLbMulticomponent::correcting_phase(int x, int y, int z) {
     phi_lb[x][y][z+1] = phi_lb[x][y][z];
     psi_lb[x][y][z+1] = psi_lb[x][y][z]; 
   }
-  if(cur_z == z_bot+1){
-    density_lb[x][y][z-1] = density_lb[x][y][z];
-    phi_lb[x][y][z-1] = phi_lb[x][y][z];
-    psi_lb[x][y][z-1] = psi_lb[x][y][z]; 
+  if(cur_z == z_bot){
+    density_lb[x][y][z] = density_lb[x][y][z+1];
+    phi_lb[x][y][z] = phi_lb[x][y][z+1];
+    psi_lb[x][y][z] = psi_lb[x][y][z+1]; 
   }
 }
 void FixLbMulticomponent::calc_equilibrium(int x, int y, int z) {
-  correcting_phase(x,y,z);
+  // correcting_phase(x,y,z);
   calc_gradient_laplacian(x,y,z, density_lb, density_gradient, laplace_rho);
   calc_gradient_laplacian(x,y,z, phi_lb, phi_gradient, laplace_phi);
   calc_gradient_laplacian(x,y,z, psi_lb, psi_gradient, laplace_psi);
@@ -1151,27 +1169,13 @@ void FixLbMulticomponent::calc_moments_full() {
 }
 
 void FixLbMulticomponent::dump_xdmf(const int step) {
-  clock_t start, end;
-  double cpu_time_used;
-  if (step == 0){
-    calc_moments_full();
-    start = clock(); // start measuring the time
-  }
   if ( dump_interval && step % dump_interval == 0 ) {
+    calc_moments_full();
     // Write XDMF grid entry for time step
     if ( me == 0 ) {
       long int block = (long int)fluid_global_n0[0]*fluid_global_n0[1]*fluid_global_n0[2]*sizeof(MPI_DOUBLE);
       long int offset = (step/dump_interval)*block*(4+3);  /* This should be changed to account for dumps actually written.  This offset could malfunction on a restart. */
       double time = update->ntimestep*dt_lb;
-
-      time_g = step;
-      // measure time elapsed from t = 0
-      end = clock();
-      cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-      FILE *fptr;
-      fptr = fopen("dump_interval.txt", "a");
-      fprintf(fptr, "step: %d, elapsed time: %f\n", step, cpu_time_used);
-      fclose(fptr);
 
       fprintf(dump_file_handle_xdmf,
               "      <Grid Name=\"%d\">\n"
@@ -1259,43 +1263,43 @@ void FixLbMulticomponent::dump_xdmf(const int step) {
     }
 
     // Write raw data
-    
-    int lbox[3];
-    lbox[0] = subNbx;
-    lbox[1] = subNby;
-    lbox[2] = subNbz;
+    {
+      int lbox[3];
+      lbox[0] = subNbx;
+      lbox[1] = subNby;
+      lbox[2] = subNbz;
 
-    const size_t lvol = lbox[0]*lbox[1]*lbox[2];
+      const size_t lvol = lbox[0]*lbox[1]*lbox[2];
 
-    // Transpose local arrays to fortran-order for paraview output
-    std::vector<double> density_2_fort (lvol);
-    std::vector<double> phi_2_fort (lvol);
-    std::vector<double> psi_2_fort (lvol);
-    std::vector<double> pressure_2_fort (lvol);
-    std::vector<double> velocity_2_fort (lvol*3);
-    int indexf=0;
-    for (int k=0; k<lbox[2]; k++) {
-      for (int j=0; j<lbox[1]; j++) {
-        for (int i=0; i<lbox[0]; i++) {
-          indexf = i+lbox[0]*(j+lbox[1]*k);
-          density_2_fort[indexf]=density_lb[i][j][k];
-          phi_2_fort[indexf]=phi_lb[i][j][k];
-          psi_2_fort[indexf]=psi_lb[i][j][k];
-          pressure_2_fort[indexf]=pressure_lb[i][j][k];
-          velocity_2_fort[0+3*indexf]=u_lb[i][j][k][0];
-          velocity_2_fort[1+3*indexf]=u_lb[i][j][k][1];
-          velocity_2_fort[2+3*indexf]=u_lb[i][j][k][2];
-        }
+      // Transpose local arrays to fortran-order for paraview output
+      std::vector<double> density_2_fort (lvol);
+      std::vector<double> phi_2_fort (lvol);
+      std::vector<double> psi_2_fort (lvol);
+      std::vector<double> pressure_2_fort (lvol);
+      std::vector<double> velocity_2_fort (lvol*3);
+      int indexf=0;
+      for (int k=0; k<lbox[2]; k++) {
+	      for (int j=0; j<lbox[1]; j++) {
+	        for (int i=0; i<lbox[0]; i++) {
+	          indexf = i+lbox[0]*(j+lbox[1]*k);
+	          density_2_fort[indexf]=density_lb[i][j][k];
+	          phi_2_fort[indexf]=phi_lb[i][j][k];
+	          psi_2_fort[indexf]=psi_lb[i][j][k];
+	          pressure_2_fort[indexf]=pressure_lb[i][j][k];
+	          velocity_2_fort[0+3*indexf]=u_lb[i][j][k][0];
+	          velocity_2_fort[1+3*indexf]=u_lb[i][j][k][1];
+	          velocity_2_fort[2+3*indexf]=u_lb[i][j][k][2];
+      	  }
+	      }
       }
-    }
 
-    MPI_File_write_all(dump_file_handle_raw, &density_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
-    MPI_File_write_all(dump_file_handle_raw, &phi_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
-    MPI_File_write_all(dump_file_handle_raw, &psi_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
-    MPI_File_write_all(dump_file_handle_raw, &pressure_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
-    MPI_File_write_all(dump_file_handle_raw, &velocity_2_fort[0], 1, fluid_vector_field_mpitype, MPI_STATUS_IGNORE);
+      MPI_File_write_all(dump_file_handle_raw, &density_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
+      MPI_File_write_all(dump_file_handle_raw, &phi_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
+      MPI_File_write_all(dump_file_handle_raw, &psi_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
+      MPI_File_write_all(dump_file_handle_raw, &pressure_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
+      MPI_File_write_all(dump_file_handle_raw, &velocity_2_fort[0], 1, fluid_vector_field_mpitype, MPI_STATUS_IGNORE);
       
-    
+    }
   }
 }
 
@@ -1673,6 +1677,11 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
     else if (strcmp(argv[argi],"force_z")==0) {
       if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
       force_z = utils::numeric(FLERR, argv[argi+1], false, lmp);
+      argi += 2;
+    }
+    else if (strcmp(argv[argi],"timestep_movingBoundary_start")==0) {
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      timestep_movingBoundary_start = utils::numeric(FLERR, argv[argi+1], false, lmp);
       argi += 2;
     }
     else if(strcmp(argv[argi],"init")==0){
