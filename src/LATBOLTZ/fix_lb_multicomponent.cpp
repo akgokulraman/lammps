@@ -53,7 +53,7 @@ static const char cite_fix_lbmulticomponent[] =
     "}\n\n";
 
 int time_g = -1;
-bool movingBoundary = false;
+bool movingBoundary = true;
 int FixLbMulticomponent::setmask() {
   return FixConst::INITIAL_INTEGRATE | FixConst::END_OF_STEP;
 }
@@ -134,13 +134,42 @@ void FixLbMulticomponent::update_slab(int x, int ymin, int ymax, int zmin, int z
 }
 
 void FixLbMulticomponent::update_column(int x, int y, int zmin, int zmax) {
-  int z;
+  int z, cur_z;
+  int z_top = domain->boxhi[2]-1;
+  int z_bot = domain->boxlo[2];
   read_site(x,y,zmin);
   read_site(x,y,zmin+1);
-  for (z=zmin+2; z<zmax; ++z) {
+  // for (z=zmin+2; z<zmax; z++) {
+  //   read_site(x,y,z);
+  //   write_site(x-1,y-1,z-1);
+  // }
+  read_site(x,y,zmin+2);
+  write_site(x-1,y-1,zmin+1);
+  read_site(x,y,zmin+3);
+
+  // correcting_phase - bottom
+  cur_z = domain->sublo[2] + (zmin+2-halo_extent[2])*dx_lb;
+  if(cur_z == z_bot){
+    density_lb[x][y][z] = density_lb[x][y][z+1];
+    phi_lb[x][y][z] = phi_lb[x][y][z+1];
+    psi_lb[x][y][z] = psi_lb[x][y][z+1]; 
+  }
+  write_site(x-1,y-1,zmin+2);
+
+  for (z=zmin+4; z<zmax-1; z++) {
     read_site(x,y,z);
     write_site(x-1,y-1,z-1);
   }
+  
+  // correcting_phase - top
+  read_site(x,y,zmax-1);
+  cur_z = domain->sublo[2] + (zmax-1-halo_extent[2])*dx_lb;
+  if(cur_z == z_top){
+    density_lb[x][y][z] = density_lb[x][y][z-1];
+    phi_lb[x][y][z] = phi_lb[x][y][z-1];
+    psi_lb[x][y][z] = psi_lb[x][y][z-1]; 
+  }
+  write_site(x-1,y-1,zmax-2);
 }
 
 void FixLbMulticomponent::read_slab(int x, int ymin, int ymax, int zmin, int zmax) {
@@ -195,133 +224,176 @@ void FixLbMulticomponent::collide_stream(int x, int y, int z) {
   }
 }
 
-void FixLbMulticomponent::bounce_back(int x, int y, int z) {
-  // Function to implement bounce_back along z direction
-  int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
-  if (cur_z == domain->boxhi[2]-2) {
-    fnew[x][y][z][6] = f_lb[x][y][z][5];
-    fnew[x][y][z][14] = f_lb[x][y][z][11];
-    fnew[x][y][z][12] = f_lb[x][y][z][13];
-    fnew[x][y][z][16] = f_lb[x][y][z][17];
-    fnew[x][y][z][18] = f_lb[x][y][z][15];
-    // ----
-    gnew[x][y][z][6] = g_lb[x][y][z][5];
-    gnew[x][y][z][14] = g_lb[x][y][z][11];
-    gnew[x][y][z][12] = g_lb[x][y][z][13];
-    gnew[x][y][z][16] = g_lb[x][y][z][17];
-    gnew[x][y][z][18] = g_lb[x][y][z][15];
-    // ----
-    knew[x][y][z][6] = k_lb[x][y][z][5];
-    knew[x][y][z][14] = k_lb[x][y][z][11];
-    knew[x][y][z][12] = k_lb[x][y][z][13];
-    knew[x][y][z][16] = k_lb[x][y][z][17];
-    knew[x][y][z][18] = k_lb[x][y][z][15];
-  }
+// void FixLbMulticomponent::bounce_back(int x, int y, int z) {
+//   // Function to implement bounce_back along z direction
+//   int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
+//   if (cur_z == domain->boxhi[2]-2) {
+//     fnew[x][y][z][6] = f_lb[x][y][z][5];
+//     fnew[x][y][z][14] = f_lb[x][y][z][11];
+//     fnew[x][y][z][12] = f_lb[x][y][z][13];
+//     fnew[x][y][z][16] = f_lb[x][y][z][17];
+//     fnew[x][y][z][18] = f_lb[x][y][z][15];
+//     // ----
+//     gnew[x][y][z][6] = g_lb[x][y][z][5];
+//     gnew[x][y][z][14] = g_lb[x][y][z][11];
+//     gnew[x][y][z][12] = g_lb[x][y][z][13];
+//     gnew[x][y][z][16] = g_lb[x][y][z][17];
+//     gnew[x][y][z][18] = g_lb[x][y][z][15];
+//     // ----
+//     knew[x][y][z][6] = k_lb[x][y][z][5];
+//     knew[x][y][z][14] = k_lb[x][y][z][11];
+//     knew[x][y][z][12] = k_lb[x][y][z][13];
+//     knew[x][y][z][16] = k_lb[x][y][z][17];
+//     knew[x][y][z][18] = k_lb[x][y][z][15];
+//   }
 
-  if (cur_z == domain->boxlo[2]+1) {
-    fnew[x][y][z][5] = f_lb[x][y][z][6];
-    fnew[x][y][z][11] = f_lb[x][y][z][14];
-    fnew[x][y][z][13] = f_lb[x][y][z][12];
-    fnew[x][y][z][17] = f_lb[x][y][z][16];
-    fnew[x][y][z][15] = f_lb[x][y][z][18];
-    // ----
-    gnew[x][y][z][5] = g_lb[x][y][z][6];
-    gnew[x][y][z][11] = g_lb[x][y][z][14];
-    gnew[x][y][z][13] = g_lb[x][y][z][12];
-    gnew[x][y][z][17] = g_lb[x][y][z][16];
-    gnew[x][y][z][15] = g_lb[x][y][z][18];
-    // ----
-    knew[x][y][z][5] = k_lb[x][y][z][6];
-    knew[x][y][z][11] = k_lb[x][y][z][14];
-    knew[x][y][z][13] = k_lb[x][y][z][12];
-    knew[x][y][z][17] = k_lb[x][y][z][16];
-    knew[x][y][z][15] = k_lb[x][y][z][18];
-  }
-}
-
+//   if (cur_z == domain->boxlo[2]+1) {
+//     fnew[x][y][z][5] = f_lb[x][y][z][6];
+//     fnew[x][y][z][11] = f_lb[x][y][z][14];
+//     fnew[x][y][z][13] = f_lb[x][y][z][12];
+//     fnew[x][y][z][17] = f_lb[x][y][z][16];
+//     fnew[x][y][z][15] = f_lb[x][y][z][18];
+//     // ----
+//     gnew[x][y][z][5] = g_lb[x][y][z][6];
+//     gnew[x][y][z][11] = g_lb[x][y][z][14];
+//     gnew[x][y][z][13] = g_lb[x][y][z][12];
+//     gnew[x][y][z][17] = g_lb[x][y][z][16];
+//     gnew[x][y][z][15] = g_lb[x][y][z][18];
+//     // ----
+//     knew[x][y][z][5] = k_lb[x][y][z][6];
+//     knew[x][y][z][11] = k_lb[x][y][z][14];
+//     knew[x][y][z][13] = k_lb[x][y][z][12];
+//     knew[x][y][z][17] = k_lb[x][y][z][16];
+//     knew[x][y][z][15] = k_lb[x][y][z][18];
+//   }
+// }
 void FixLbMulticomponent::final_bounce_back() {
-  if(update->ntimestep*dt_lb>timestep_movingBoundary_start){
-    movingBoundary = true;
-  }
+  // if(update->ntimestep*dt_lb>timestep_movingBoundary_start){
+  //   movingBoundary = true;
+  // }
   int z_top = domain->boxhi[2]-1;
   int z_bot = domain->boxlo[2];
   for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++){
     int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
     if(cur_z == z_top-1){
+      // bounce back at top
+      std::vector<int> forward_dir = {5, 11, 13, 16, 15};
+      std::vector<int> reverse_dir = {6, 14, 12, 17, 18};
       for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
         for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
-          // bounce back at top
-          fnew[x][y][z][6] = f_lb[x][y][z][5];
-          fnew[x][y][z][14] = f_lb[x][y][z][11];
-          fnew[x][y][z][12] = f_lb[x][y][z][13];
-          fnew[x][y][z][16] = f_lb[x][y][z][17];
-          fnew[x][y][z][18] = f_lb[x][y][z][15];
-          // ----
-          gnew[x][y][z][6] = g_lb[x][y][z][5];
-          gnew[x][y][z][14] = g_lb[x][y][z][11];
-          gnew[x][y][z][12] = g_lb[x][y][z][13];
-          gnew[x][y][z][16] = g_lb[x][y][z][17];
-          gnew[x][y][z][18] = g_lb[x][y][z][15];
-          // ----
-          knew[x][y][z][6] = k_lb[x][y][z][5];
-          knew[x][y][z][14] = k_lb[x][y][z][11];
-          knew[x][y][z][12] = k_lb[x][y][z][13];
-          knew[x][y][z][16] = k_lb[x][y][z][17];
-          knew[x][y][z][18] = k_lb[x][y][z][15];
-          if(movingBoundary == true){
-            double slab_top_vel[3] = {u_x_top, u_y_top, u_z_top};
-            std::vector<int> forward_dir = {5, 11, 13, 17, 15};
-            std::vector<int> reverse_dir = {6, 14, 12, 16, 18};
-            for (size_t pos = 0; pos < forward_dir.size(); ++pos) {
-                int i = forward_dir[pos];
-                double dot_prd = e19[i][0] * slab_top_vel[0] + e19[i][1] * slab_top_vel[1] + e19[i][2] * slab_top_vel[2];
-                fnew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * 1 * (dot_prd / cs2);
-                gnew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * 1 * (dot_prd / cs2);
-                knew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * 1 * (dot_prd / cs2);
-                // fnew[x][y][z-1][reverse_dir[pos]] = f_lb[x][y][z-1][forward_dir[pos]] -2 * w_lb19[i] * 1 * (dot_prd / cs2);
-            }           
+          for (size_t pos = 0; pos < forward_dir.size(); ++pos) {
+            fnew[x][y][z][reverse_dir[pos]] = f_lb[x][y][z][forward_dir[pos]];
+            gnew[x][y][z][reverse_dir[pos]] = g_lb[x][y][z][forward_dir[pos]];
+            knew[x][y][z][reverse_dir[pos]] = k_lb[x][y][z][forward_dir[pos]];
           }
         }
       }   
     }
     if(cur_z == z_bot+1){
+      // bounce back at bottom
+      std::vector<int> forward_dir = {6, 14, 12, 17, 18};
+      std::vector<int> reverse_dir = {5, 11, 13, 16, 15};
       for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
         for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
-          // bounce back at bottom
-          fnew[x][y][z][5] = f_lb[x][y][z][6];
-          fnew[x][y][z][11] = f_lb[x][y][z][14];
-          fnew[x][y][z][13] = f_lb[x][y][z][12];
-          fnew[x][y][z][17] = f_lb[x][y][z][16];
-          fnew[x][y][z][15] = f_lb[x][y][z][18];
-          // ----
-          gnew[x][y][z][5] = g_lb[x][y][z][6];
-          gnew[x][y][z][11] = g_lb[x][y][z][14];
-          gnew[x][y][z][13] = g_lb[x][y][z][12];
-          gnew[x][y][z][17] = g_lb[x][y][z][16];
-          gnew[x][y][z][15] = g_lb[x][y][z][18];
-          // ----
-          knew[x][y][z][5] = knew[x][y][z][6];
-          knew[x][y][z][11] = knew[x][y][z][14];
-          knew[x][y][z][13] = knew[x][y][z][12];
-          knew[x][y][z][17] = knew[x][y][z][16];
-          knew[x][y][z][15] = knew[x][y][z][18];
-          if(movingBoundary == true){
-            double slab_bot_vel[3] = {u_x_bot, u_y_bot, u_z_bot};
-            std::vector<int> forward_dir = {6, 14, 12, 16, 18};
-            std::vector<int> reverse_dir = {5, 11, 13, 17, 15};
-            for (size_t pos = 0; pos < forward_dir.size(); ++pos) {
-                int i = forward_dir[pos];
-                double dot_prd = e19[i][0] * slab_bot_vel[0] + e19[i][1] * slab_bot_vel[1] + e19[i][2] * slab_bot_vel[2];
-                fnew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * 1 * (dot_prd / cs2);
-                gnew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * 1 * (dot_prd / cs2);
-                knew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * 1 * (dot_prd / cs2);
-            }
+          for (size_t pos = 0; pos < forward_dir.size(); ++pos) {
+            fnew[x][y][z][reverse_dir[pos]] = f_lb[x][y][z][forward_dir[pos]];
+            gnew[x][y][z][reverse_dir[pos]] = g_lb[x][y][z][forward_dir[pos]];
+            knew[x][y][z][reverse_dir[pos]] = k_lb[x][y][z][forward_dir[pos]];
           }
         }
       }   
     }
   } 
 }
+// void FixLbMulticomponent::final_bounce_back() {
+//   if(update->ntimestep*dt_lb>timestep_movingBoundary_start){
+//     movingBoundary = true;
+//   }
+//   int z_top = domain->boxhi[2]-1;
+//   int z_bot = domain->boxlo[2];
+//   for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++){
+//     int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
+//     if(cur_z == z_top-1){
+//       for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+//         for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+//           // bounce back at top
+//           fnew[x][y][z][6] = f_lb[x][y][z][5];
+//           fnew[x][y][z][14] = f_lb[x][y][z][11];
+//           fnew[x][y][z][12] = f_lb[x][y][z][13];
+//           fnew[x][y][z][16] = f_lb[x][y][z][17];
+//           fnew[x][y][z][17] = f_lb[x][y][z][16];
+//           fnew[x][y][z][18] = f_lb[x][y][z][15];
+//           // ----
+//           gnew[x][y][z][6] = g_lb[x][y][z][5];
+//           gnew[x][y][z][14] = g_lb[x][y][z][11];
+//           gnew[x][y][z][12] = g_lb[x][y][z][13];
+//           gnew[x][y][z][16] = g_lb[x][y][z][17];
+//           gnew[x][y][z][17] = g_lb[x][y][z][16];
+//           gnew[x][y][z][18] = g_lb[x][y][z][15];
+//           // ----
+//           knew[x][y][z][6] = k_lb[x][y][z][5];
+//           knew[x][y][z][14] = k_lb[x][y][z][11];
+//           knew[x][y][z][12] = k_lb[x][y][z][13];
+//           knew[x][y][z][16] = k_lb[x][y][z][16];
+//           knew[x][y][z][17] = k_lb[x][y][z][16];
+//           knew[x][y][z][18] = k_lb[x][y][z][15];
+//           if(movingBoundary == true){
+//             double slab_top_vel[3] = {u_x_top, u_y_top, u_z_top};
+//             std::vector<int> forward_dir = {5, 11, 13, 16, 15};
+//             std::vector<int> reverse_dir = {6, 14, 12, 17, 18};
+//             for (size_t pos = 0; pos < forward_dir.size(); ++pos) {
+//                 int i = forward_dir[pos];
+//                 double dot_prd = e19[i][0] * slab_top_vel[0] + e19[i][1] * slab_top_vel[1] + e19[i][2] * slab_top_vel[2];
+//                 fnew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * 1 * (dot_prd / cs2);
+//                 gnew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * 1 * (dot_prd / cs2);
+//                 knew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * 1 * (dot_prd / cs2);
+//                 // fnew[x][y][z-1][reverse_dir[pos]] = f_lb[x][y][z-1][forward_dir[pos]] -2 * w_lb19[i] * 1 * (dot_prd / cs2);
+//             }           
+//           }
+//         }
+//       }   
+//     }
+//     if(cur_z == z_bot+1){
+//       for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+//         for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+//           // bounce back at bottom
+//           fnew[x][y][z][5] = f_lb[x][y][z][6];
+//           fnew[x][y][z][11] = f_lb[x][y][z][14];
+//           fnew[x][y][z][13] = f_lb[x][y][z][12];
+//           fnew[x][y][z][17] = f_lb[x][y][z][16];
+//           fnew[x][y][z][16] = f_lb[x][y][z][17];
+//           fnew[x][y][z][15] = f_lb[x][y][z][18];
+//           // ----
+//           gnew[x][y][z][5] = g_lb[x][y][z][6];
+//           gnew[x][y][z][11] = g_lb[x][y][z][14];
+//           gnew[x][y][z][13] = g_lb[x][y][z][12];
+//           gnew[x][y][z][17] = g_lb[x][y][z][16];
+//           gnew[x][y][z][16] = g_lb[x][y][z][17];
+//           gnew[x][y][z][15] = g_lb[x][y][z][18];
+//           // ----
+//           knew[x][y][z][5] = k_lb[x][y][z][6];
+//           knew[x][y][z][11] = k_lb[x][y][z][14];
+//           knew[x][y][z][13] = k_lb[x][y][z][12];
+//           knew[x][y][z][17] = k_lb[x][y][z][16];
+//           knew[x][y][z][16] = k_lb[x][y][z][16];
+//           knew[x][y][z][15] = k_lb[x][y][z][18];
+//           if(movingBoundary == true){
+//             double slab_bot_vel[3] = {u_x_bot, u_y_bot, u_z_bot};
+//             std::vector<int> forward_dir = {6, 14, 12, 17, 18};
+//             std::vector<int> reverse_dir = {5, 11, 13, 16, 15};
+//             for (size_t pos = 0; pos < forward_dir.size(); ++pos) {
+//                 int i = forward_dir[pos];
+//                 double dot_prd = e19[i][0] * slab_bot_vel[0] + e19[i][1] * slab_bot_vel[1] + e19[i][2] * slab_bot_vel[2];
+//                 fnew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * 1 * (dot_prd / cs2);
+//                 gnew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * 1 * (dot_prd / cs2);
+//                 knew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * 1 * (dot_prd / cs2);
+//             }
+//           }
+//         }
+//       }   
+//     }
+//   } 
+// }
 
 void FixLbMulticomponent::calc_moments(int x, int y, int z) {
   double rho, phi, psi, j[3], fi, gi, ki;
@@ -350,20 +422,20 @@ void FixLbMulticomponent::calc_moments(int x, int y, int z) {
   u_lb[x][y][z][2] += 0.5*forcing[2]/rho;
   pressure_lb[x][y][z] = pressure(rho,phi,psi);
 
-  // correcting_phase - to correct corners
-  int z_top = domain->boxhi[2]-1;
-  int z_bot = domain->boxlo[2];
-  int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
-  if(cur_z == z_top){
-    density_lb[x][y][z] = density_lb[x][y][z-1];
-    phi_lb[x][y][z] = phi_lb[x][y][z-1];
-    psi_lb[x][y][z] = psi_lb[x][y][z-1]; 
-  }
-  if(cur_z == z_bot+1){
-    density_lb[x][y][z-1] = density_lb[x][y][z];
-    phi_lb[x][y][z-1] = phi_lb[x][y][z];
-    psi_lb[x][y][z-1] = psi_lb[x][y][z]; 
-  }
+  // // correcting_phase - to correct corners
+  // int z_top = domain->boxhi[2]-1;
+  // int z_bot = domain->boxlo[2];
+  // int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
+  // if(cur_z == z_top){
+  //   density_lb[x][y][z] = density_lb[x][y][z-1];
+  //   phi_lb[x][y][z] = phi_lb[x][y][z-1];
+  //   psi_lb[x][y][z] = psi_lb[x][y][z-1]; 
+  // }
+  // else if(cur_z == z_bot+1){
+  //   density_lb[x][y][z-1] = density_lb[x][y][z];
+  //   phi_lb[x][y][z-1] = phi_lb[x][y][z];
+  //   psi_lb[x][y][z-1] = psi_lb[x][y][z]; 
+  // }
 }
 void FixLbMulticomponent::correcting_phase(int x, int y, int z) {
   int z_top = domain->boxhi[2]-1;
@@ -374,11 +446,21 @@ void FixLbMulticomponent::correcting_phase(int x, int y, int z) {
     phi_lb[x][y][z+1] = phi_lb[x][y][z];
     psi_lb[x][y][z+1] = psi_lb[x][y][z]; 
   }
-  if(cur_z == z_bot){
+  // else if(cur_z == z_top){
+  //   density_lb[x][y][z] = density_lb[x][y][z-1];
+  //   phi_lb[x][y][z] = phi_lb[x][y][z-1];
+  //   psi_lb[x][y][z] = psi_lb[x][y][z-1]; 
+  // }
+  else if(cur_z == z_bot){
     density_lb[x][y][z] = density_lb[x][y][z+1];
     phi_lb[x][y][z] = phi_lb[x][y][z+1];
     psi_lb[x][y][z] = psi_lb[x][y][z+1]; 
   }
+  // else if(cur_z == z_bot){
+  //   density_lb[x][y][z-1] = density_lb[x][y][z];
+  //   phi_lb[x][y][z-1] = phi_lb[x][y][z];
+  //   psi_lb[x][y][z-1] = psi_lb[x][y][z]; 
+  // }
 }
 void FixLbMulticomponent::calc_equilibrium(int x, int y, int z) {
   // correcting_phase(x,y,z);
@@ -752,7 +834,8 @@ void FixLbMulticomponent::init_droplet(double radius) {
   double rho=1.0, phi, psi=0.0;
   double pos[3], r2;
   int x, y, z, i;
-
+  int z_top = domain->boxhi[2]-1;
+  int z_bot = domain->boxlo[2];
   for (x=0; x<subNbx; x++) {
     pos[0] = domain->sublo[0] + (x-halo_extent[0])*dx_lb;
     for (y=0; y<subNby; y++) {
@@ -762,9 +845,16 @@ void FixLbMulticomponent::init_droplet(double radius) {
 	      r2 = pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2];
 	      phi = r2 < radius*radius ? 1.0 : -1.0;
 	      for (i=0; i<numvel; i++) {
-	        f_lb[x][y][z][i] = w_lb19[i]*rho*densityinit;
-	        g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
-	        k_lb[x][y][z][i] = w_lb19[i]*psi*densityinit;
+          if(pos[2] == z_top || pos[2] == z_bot){
+            f_lb[x][y][z][i] = w_lb19[i]*rho*densityinit;
+            g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
+            k_lb[x][y][z][i] = w_lb19[i]*psi*densityinit;
+          }
+          else{
+            f_lb[x][y][z][i] = w_lb19[i]*rho*densityinit;
+            g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
+            k_lb[x][y][z][i] = w_lb19[i]*psi*densityinit;
+          }
 	      }
       }
     }
