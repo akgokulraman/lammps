@@ -78,11 +78,11 @@ namespace LAMMPS_NS {
     double C1_film, C2_film;
     double thickness;
 
-    double ****g_lb;                                
-    double ****gnew;                              
-    double ****geq;    
-    double ****k_lb;                                
-    double ****knew;                              
+    double ****g_lb;
+    double ****gnew;
+    double ****geq;
+    double ****k_lb;
+    double ****knew;
     double ****keq;
     
     double ***pressure_lb;
