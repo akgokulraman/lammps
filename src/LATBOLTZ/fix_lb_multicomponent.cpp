@@ -271,8 +271,14 @@ void FixLbMulticomponent::final_bounce_back() {
   // if(update->ntimestep*dt_lb>timestep_movingBoundary_start){
   //   movingBoundary = true;
   // }
+
   int z_top = domain->boxhi[2]-1;
   int z_bot = domain->boxlo[2];
+  int i, rev_i;
+  double dot_prd;
+  double slab_bot_vel[3] = {u_x_bot, u_y_bot, u_z_bot};
+  double slab_top_vel[3] = {u_x_top, u_y_top, u_z_top};
+
   for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++){
     int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
     if(cur_z == z_top-1){
@@ -285,6 +291,12 @@ void FixLbMulticomponent::final_bounce_back() {
             fnew[x][y][z][reverse_dir[pos]] = f_lb[x][y][z][forward_dir[pos]];
             gnew[x][y][z][reverse_dir[pos]] = g_lb[x][y][z][forward_dir[pos]];
             knew[x][y][z][reverse_dir[pos]] = k_lb[x][y][z][forward_dir[pos]];
+            if(movingBoundary == true){
+              dot_prd = e19[forward_dir[pos]][0] * slab_top_vel[0] + e19[forward_dir[pos]][1] * slab_top_vel[1] + e19[forward_dir[pos]][2] * slab_top_vel[2];
+              fnew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[forward_dir[pos]] * 1 * (dot_prd / cs2);
+              gnew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[forward_dir[pos]] * 1 * (dot_prd / cs2);
+              knew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[forward_dir[pos]] * 1 * (dot_prd / cs2);    
+            }
           }
         }
       }   
@@ -299,6 +311,12 @@ void FixLbMulticomponent::final_bounce_back() {
             fnew[x][y][z][reverse_dir[pos]] = f_lb[x][y][z][forward_dir[pos]];
             gnew[x][y][z][reverse_dir[pos]] = g_lb[x][y][z][forward_dir[pos]];
             knew[x][y][z][reverse_dir[pos]] = k_lb[x][y][z][forward_dir[pos]];
+            if(movingBoundary == true){
+                dot_prd = e19[forward_dir[pos]][0] * slab_bot_vel[0] + e19[forward_dir[pos]][1] * slab_bot_vel[1] + e19[forward_dir[pos]][2] * slab_bot_vel[2];
+                fnew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[forward_dir[pos]] * 1 * (dot_prd / cs2);
+                gnew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[forward_dir[pos]] * 1 * (dot_prd / cs2);
+                knew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[forward_dir[pos]] * 1 * (dot_prd / cs2);
+            }
           }
         }
       }   
