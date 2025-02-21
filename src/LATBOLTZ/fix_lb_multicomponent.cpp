@@ -251,23 +251,23 @@ void FixLbMulticomponent::final_bounce_back() {
       for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
         for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
           // bounce back at top
-          fnew[x][y][z][6] = f_lb[x][y][z][5];
-          fnew[x][y][z][14] = f_lb[x][y][z][11];
-          fnew[x][y][z][12] = f_lb[x][y][z][13];
-          fnew[x][y][z][16] = f_lb[x][y][z][17];
-          fnew[x][y][z][18] = f_lb[x][y][z][15];
+          fnew[x][y][z][6] = fnew[x][y][z+1][5];
+          fnew[x][y][z][14] = fnew[x+1][y][z+1][11];
+          fnew[x][y][z][12] = fnew[x-1][y][z+1][13];
+          fnew[x][y][z][16] = fnew[x][y-1][z+1][17];
+          fnew[x][y][z][18] = fnew[x][y+1][z+1][15];
           // ----
-          gnew[x][y][z][6] = g_lb[x][y][z][5];
-          gnew[x][y][z][14] = g_lb[x][y][z][11];
-          gnew[x][y][z][12] = g_lb[x][y][z][13];
-          gnew[x][y][z][16] = g_lb[x][y][z][17];
-          gnew[x][y][z][18] = g_lb[x][y][z][15];
+          gnew[x][y][z][6] = gnew[x][y][z+1][5];
+          gnew[x][y][z][14] = gnew[x+1][y][z+1][11];
+          gnew[x][y][z][12] = gnew[x-1][y][z+1][13];
+          gnew[x][y][z][16] = gnew[x][y-1][z+1][17];
+          gnew[x][y][z][18] = gnew[x][y+1][z+1][15];
           // ----
-          knew[x][y][z][6] = k_lb[x][y][z][5];
-          knew[x][y][z][14] = k_lb[x][y][z][11];
-          knew[x][y][z][12] = k_lb[x][y][z][13];
-          knew[x][y][z][16] = k_lb[x][y][z][17];
-          knew[x][y][z][18] = k_lb[x][y][z][15];
+          knew[x][y][z][6] = knew[x][y][z+1][5];
+          knew[x][y][z][14] = knew[x+1][y][z+1][11];
+          knew[x][y][z][12] = knew[x-1][y][z+1][13];
+          knew[x][y][z][16] = knew[x][y-1][z+1][17];
+          knew[x][y][z][18] = knew[x][y+1][z+1][15];
           if(movingBoundary == true){
             double slab_top_vel[3] = {u_x_top, u_y_top, u_z_top};
             std::vector<int> forward_dir = {5, 11, 13, 17, 15};
@@ -288,23 +288,23 @@ void FixLbMulticomponent::final_bounce_back() {
       for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
         for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
           // bounce back at bottom
-          fnew[x][y][z][5] = f_lb[x][y][z][6];
-          fnew[x][y][z][11] = f_lb[x][y][z][14];
-          fnew[x][y][z][13] = f_lb[x][y][z][12];
-          fnew[x][y][z][17] = f_lb[x][y][z][16];
-          fnew[x][y][z][15] = f_lb[x][y][z][18];
+          fnew[x][y][z][5] = fnew[x][y][z-1][6];
+          fnew[x][y][z][11] = fnew[x-1][y][z-1][14];
+          fnew[x][y][z][13] = fnew[x+1][y][z-1][12];
+          fnew[x][y][z][17] = fnew[x][y+1][z-1][16];
+          fnew[x][y][z][15] = fnew[x][y-1][z-1][18];
           // ----
-          gnew[x][y][z][5] = g_lb[x][y][z][6];
-          gnew[x][y][z][11] = g_lb[x][y][z][14];
-          gnew[x][y][z][13] = g_lb[x][y][z][12];
-          gnew[x][y][z][17] = g_lb[x][y][z][16];
-          gnew[x][y][z][15] = g_lb[x][y][z][18];
+          gnew[x][y][z][5] = gnew[x][y][z-1][6];
+          gnew[x][y][z][11] = gnew[x-1][y][z-1][14];
+          gnew[x][y][z][13] = gnew[x+1][y][z-1][12];
+          gnew[x][y][z][17] = gnew[x][y+1][z-1][16];
+          gnew[x][y][z][15] = gnew[x][y-1][z-1][18];
           // ----
-          knew[x][y][z][5] = k_lb[x][y][z][6];
-          knew[x][y][z][11] = k_lb[x][y][z][14];
-          knew[x][y][z][13] = k_lb[x][y][z][12];
-          knew[x][y][z][17] = k_lb[x][y][z][16];
-          knew[x][y][z][15] = k_lb[x][y][z][18];
+          knew[x][y][z][5] = knew[x][y][z-1][6];
+          knew[x][y][z][11] = knew[x-1][y][z-1][14];
+          knew[x][y][z][13] = knew[x+1][y][z-1][12];
+          knew[x][y][z][17] = knew[x][y+1][z-1][16];
+          knew[x][y][z][15] = knew[x][y-1][z-1][18];
           if(movingBoundary == true){
             double slab_bot_vel[3] = {u_x_bot, u_y_bot, u_z_bot};
             std::vector<int> forward_dir = {6, 14, 12, 16, 18};
