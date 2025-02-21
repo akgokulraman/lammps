@@ -350,34 +350,107 @@ void FixLbMulticomponent::calc_moments(int x, int y, int z) {
   u_lb[x][y][z][2] += 0.5*forcing[2]/rho;
   pressure_lb[x][y][z] = pressure(rho,phi,psi);
 
-  // correcting_phase - to correct corners
+  // // correcting_phase - to correct corners
+  // int z_top = domain->boxhi[2]-1;
+  // int z_bot = domain->boxlo[2];
+  // int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
+  // if(cur_z == z_top){
+  //   density_lb[x][y][z] = density_lb[x][y][z-1];
+  //   phi_lb[x][y][z] = phi_lb[x][y][z-1];
+  //   psi_lb[x][y][z] = psi_lb[x][y][z-1]; 
+  // }
+  // if(cur_z == z_bot+1){
+  //   density_lb[x][y][z-1] = density_lb[x][y][z];
+  //   phi_lb[x][y][z-1] = phi_lb[x][y][z];
+  //   psi_lb[x][y][z-1] = psi_lb[x][y][z]; 
+  // }
+  correcting_phase(x,y,z);
+}
+// void FixLbMulticomponent::correcting_phase(int x, int y, int z) {
+//   int z_top = domain->boxhi[2]-1;
+//   int z_bot = domain->boxlo[2];
+//   int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
+//   if(cur_z == z_top-1){
+//     density_lb[x][y][z+1] = density_lb[x][y][z];
+//     phi_lb[x][y][z+1] = phi_lb[x][y][z];
+//     psi_lb[x][y][z+1] = psi_lb[x][y][z]; 
+//   }
+//   if(cur_z == z_bot){
+//     density_lb[x][y][z] = density_lb[x][y][z+1];
+//     phi_lb[x][y][z] = phi_lb[x][y][z+1];
+//     psi_lb[x][y][z] = psi_lb[x][y][z+1]; 
+//   }
+// }
+void FixLbMulticomponent::correcting_phase(int x, int y, int z) {
+  // from read_site
   int z_top = domain->boxhi[2]-1;
   int z_bot = domain->boxlo[2];
+  int y_top = domain->boxhi[1]-1;
+  int y_bot = domain->boxlo[1];
+  int x_top = domain->boxhi[0]-1;
+  int x_bot = domain->boxlo[0];
   int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
+  int cur_y = domain->sublo[1] + (y-halo_extent[1])*dx_lb;
+  int cur_x = domain->sublo[0] + (x-halo_extent[0])*dx_lb;
   if(cur_z == z_top){
+    // perpendicular
     density_lb[x][y][z] = density_lb[x][y][z-1];
     phi_lb[x][y][z] = phi_lb[x][y][z-1];
-    psi_lb[x][y][z] = psi_lb[x][y][z-1]; 
+    psi_lb[x][y][z] = psi_lb[x][y][z-1];
+    if(cur_y == y_bot && cur_x == x_bot){
+      // diagonal
+      density_lb[x][y-1][z] = density_lb[x][y][z-1];
+      phi_lb[x][y-1][z] = phi_lb[x][y][z-1];
+      psi_lb[x][y-1][z] = psi_lb[x][y][z-1];
+      density_lb[x-1][y][z] = density_lb[x][y][z-1];
+      phi_lb[x-1][y][z] = phi_lb[x][y][z-1];
+      psi_lb[x-1][y][z] = psi_lb[x][y][z-1]; 
+      density_lb[x-1][y-1][z] = density_lb[x][y][z-1];
+      phi_lb[x-1][y-1][z] = phi_lb[x][y][z-1];
+      psi_lb[x-1][y-1][z] = psi_lb[x][y][z-1]; 
+    }
+    else if(cur_y == y_top && cur_x == x_top){
+      // diagonal
+      density_lb[x][y+1][z] = density_lb[x][y][z-1];
+      phi_lb[x][y+1][z] = phi_lb[x][y][z-1];
+      psi_lb[x][y+1][z] = psi_lb[x][y][z-1];
+      density_lb[x+1][y][z] = density_lb[x][y][z-1];
+      phi_lb[x+1][y][z] = phi_lb[x][y][z-1];
+      psi_lb[x+1][y][z] = psi_lb[x][y][z-1]; 
+      density_lb[x+1][y+1][z] = density_lb[x][y][z-1];
+      phi_lb[x+1][y+1][z] = phi_lb[x][y][z-1];
+      psi_lb[x+1][y+1][z] = psi_lb[x][y][z-1]; 
+    }
   }
   if(cur_z == z_bot+1){
+    // perpendicular
     density_lb[x][y][z-1] = density_lb[x][y][z];
     phi_lb[x][y][z-1] = phi_lb[x][y][z];
-    psi_lb[x][y][z-1] = psi_lb[x][y][z]; 
-  }
-}
-void FixLbMulticomponent::correcting_phase(int x, int y, int z) {
-  int z_top = domain->boxhi[2]-1;
-  int z_bot = domain->boxlo[2];
-  int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
-  if(cur_z == z_top-1){
-    density_lb[x][y][z+1] = density_lb[x][y][z];
-    phi_lb[x][y][z+1] = phi_lb[x][y][z];
-    psi_lb[x][y][z+1] = psi_lb[x][y][z]; 
-  }
-  if(cur_z == z_bot){
-    density_lb[x][y][z] = density_lb[x][y][z+1];
-    phi_lb[x][y][z] = phi_lb[x][y][z+1];
-    psi_lb[x][y][z] = psi_lb[x][y][z+1]; 
+    psi_lb[x][y][z-1] = psi_lb[x][y][z];
+    if(cur_y == y_bot && cur_x == x_bot){
+      // diagonal
+      density_lb[x][y-1][z-1] = density_lb[x][y][z];
+      phi_lb[x][y-1][z-1] = phi_lb[x][y][z];
+      psi_lb[x][y-1][z-1] = psi_lb[x][y][z];
+      density_lb[x-1][y][z-1] = density_lb[x][y][z];
+      phi_lb[x-1][y][z-1] = phi_lb[x][y][z];
+      psi_lb[x-1][y][z-1] = psi_lb[x][y][z]; 
+      density_lb[x-1][y-1][z-1] = density_lb[x][y][z];
+      phi_lb[x-1][y-1][z-1] = phi_lb[x][y][z];
+      psi_lb[x-1][y-1][z-1] = psi_lb[x][y][z]; 
+    }
+    else if(cur_y == y_top && cur_x == x_top){
+      // diagonal
+      density_lb[x][y+1][z-1] = density_lb[x][y][z];
+      phi_lb[x][y+1][z-1] = phi_lb[x][y][z];
+      psi_lb[x][y+1][z-1] = psi_lb[x][y][z];
+      density_lb[x+1][y][z-1] = density_lb[x][y][z];
+      phi_lb[x+1][y][z-1] = phi_lb[x][y][z];
+      psi_lb[x+1][y][z-1] = psi_lb[x][y][z]; 
+      density_lb[x+1][y+1][z-1] = density_lb[x][y][z];
+      phi_lb[x+1][y+1][z-1] = phi_lb[x][y][z];
+      psi_lb[x+1][y+1][z-1] = psi_lb[x][y][z]; 
+    }
   }
 }
 void FixLbMulticomponent::calc_equilibrium(int x, int y, int z) {
