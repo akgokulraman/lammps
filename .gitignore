@@ -60,3 +60,6 @@ out/x64
 src/.ipynb_checkpoints        
 src/LATBOLTZ/.ipynb_checkpoints/
 .ipynb_checkpoints/
+
+# cache files
+.nfs*
