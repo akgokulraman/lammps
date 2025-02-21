@@ -300,11 +300,11 @@ void FixLbMulticomponent::final_bounce_back() {
           gnew[x][y][z][17] = g_lb[x][y][z][16];
           gnew[x][y][z][15] = g_lb[x][y][z][18];
           // ----
-          knew[x][y][z][5] = knew[x][y][z][6];
-          knew[x][y][z][11] = knew[x][y][z][14];
-          knew[x][y][z][13] = knew[x][y][z][12];
-          knew[x][y][z][17] = knew[x][y][z][16];
-          knew[x][y][z][15] = knew[x][y][z][18];
+          knew[x][y][z][5] = k_lb[x][y][z][6];
+          knew[x][y][z][11] = k_lb[x][y][z][14];
+          knew[x][y][z][13] = k_lb[x][y][z][12];
+          knew[x][y][z][17] = k_lb[x][y][z][16];
+          knew[x][y][z][15] = k_lb[x][y][z][18];
           if(movingBoundary == true){
             double slab_bot_vel[3] = {u_x_bot, u_y_bot, u_z_bot};
             std::vector<int> forward_dir = {6, 14, 12, 16, 18};
