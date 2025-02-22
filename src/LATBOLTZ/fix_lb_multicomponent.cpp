@@ -963,8 +963,9 @@ void FixLbMulticomponent::init_three_regions() {
   else if (cut_dimension_short == 1) box_length_short = domain->yprd;
   else box_length_short = domain->zprd;
 
-  cut_point_long = domain->boxlo[cut_dimension_long] + box_length_long / 2.0;
-  cut_point_short = domain->boxlo[cut_dimension_short] + box_length_short / 2.0;
+  // Adjust cutting planes for equal volume:
+  cut_point_long = domain->boxlo[cut_dimension_long] + (1.0 / 3.0) * box_length_long; // Region 3 gets 1/3
+  cut_point_short = domain->boxlo[cut_dimension_short] + (0.5) * box_length_short; // Regions 1 and 2 split 50-50
 
   for (x = halo_extent[0]; x < subNbx - halo_extent[0]; x++) {
     for (y = halo_extent[1]; y < subNby - halo_extent[1]; y++) {
@@ -984,13 +985,14 @@ void FixLbMulticomponent::init_three_regions() {
         else if (cut_dimension_short == 1) pos_short = pos[1];
         else pos_short = pos[2];
 
-        if (pos_long < cut_point_long) { 
-          C3_init = 1.0; C1_init = 0.0; C2_init = 0.0;
+        // Assign regions based on the new cutting points
+        if (pos_long < cut_point_long) {
+          C1_init = 1.0; C2_init = 0.0; C3_init = 0.0; // Region 1
         } else {
           if (pos_short < cut_point_short) {
-            C1_init = 1.0; C2_init = 0.0; C3_init = 0.0;
+            C2_init = 1.0; C1_init = 0.0; C3_init = 0.0; // Region 2
           } else {
-            C2_init = 1.0; C1_init = 0.0; C3_init = 0.0;
+            C3_init = 1.0; C1_init = 0.0; C2_init = 0.0; // Region 3 (top 1/3)
           }
         }
 
@@ -1011,6 +1013,49 @@ void FixLbMulticomponent::init_three_regions() {
     }
   }
   delete(random);
+}
+
+
+// double emulsion droplet of C1 and C2 surrounded by C3
+void FixLbMulticomponent::init_semi_droplet(double radius) {
+  double rho=1.0, phi, psi, C1_init, C2_init, C3_init;
+  double pos[3];
+  double r2;
+  int x, y, z, i;
+  double cent_pos[3] = {double((domain->boxlo[0]+domain->boxhi[0])/2), double((domain->boxlo[1]+domain->boxhi[1])/2), double(domain->boxlo[2])};
+
+  RanMars *random = new RanMars(lmp,seed + comm->me);
+
+  for (x=0; x<subNbx; x++) {
+    pos[0] = domain->sublo[0] + (x-halo_extent[0])*dx_lb;
+    for (y=0; y<subNby; y++) {
+      pos[1] = domain->sublo[1] + (y-halo_extent[1])*dx_lb;
+      for (z=0; z<subNbz; z++) {
+        pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
+        r2 = ((pos[0]-cent_pos[0])*(pos[0]-cent_pos[0]))+((pos[1]-cent_pos[1])*(pos[1]-cent_pos[1]))+((pos[2]-cent_pos[2])*(pos[2]-cent_pos[2]));
+        if (r2 > radius*radius) {
+          C1_init = 0.0;
+          C2_init = 0.0;
+          C3_init = 1.0;
+        }
+        else {
+          C1_init = 1.0;
+          C2_init = 0;
+          C3_init = 0;
+        }
+        rho = densityinit;
+        phi = densityinit*(C1_init-C2_init);
+        psi = densityinit*C3_init;
+        for (i=0; i<numvel; i++) {
+          f_lb[x][y][z][i] = w_lb19[i]*rho*densityinit;
+          g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
+          k_lb[x][y][z][i] = w_lb19[i]*psi*densityinit;
+        }
+      }
+    }
+  }
+  delete(random);
+>>>>>>> ST_NoPeriodic
 }
 
 // mixed droplet of component C1 and C2 within pure C3
@@ -1166,6 +1211,9 @@ void FixLbMulticomponent::init_fluid() {
       break;
     case THREE_REGIONS:
       init_three_regions();
+      break;
+    case SEMI_DROPLET:
+      init_semi_droplet(radius);
       break;
     case SEMI_MIXED_DROPLET:
       init_semi_mixed_droplet(radius, C1_drop, C2_drop);
@@ -1799,6 +1847,12 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
         if (argi+1 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
         init_method = THREE_REGIONS;
         argi += 1;
+      }
+      else if(strcmp(argv[argi],"semi_droplet")==0) {
+        if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
+	radius = utils::numeric(FLERR, argv[argi+1], false, lmp);
+        init_method = SEMI_DROPLET;
+        argi += 2;
       }
       else if(strcmp(argv[argi],"semi_mixed_droplet")==0){
         if (argi+4 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
