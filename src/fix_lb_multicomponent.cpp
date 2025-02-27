@@ -269,15 +269,18 @@ void FixLbMulticomponent::final_bounce_back() {
           knew[x][y][z][16] = knew[x][y-1][z+1][17];
           knew[x][y][z][18] = knew[x][y+1][z+1][15];
           if(movingBoundary == true){
+            double rho = density_lb[x][y][z];
+            double phi = phi_lb[x][y][z];
+            double psi = psi_lb[x][y][z];
             double slab_top_vel[3] = {u_x_top, u_y_top, u_z_top};
             std::vector<int> forward_dir = {5, 11, 13, 17, 15};
             std::vector<int> reverse_dir = {6, 14, 12, 16, 18};
             for (size_t pos = 0; pos < forward_dir.size(); ++pos) {
                 int i = forward_dir[pos];
                 double dot_prd = e19[i][0] * slab_top_vel[0] + e19[i][1] * slab_top_vel[1] + e19[i][2] * slab_top_vel[2];
-                fnew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * 1 * (dot_prd / cs2);
-                gnew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * 1 * (dot_prd / cs2);
-                knew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * 1 * (dot_prd / cs2);
+                fnew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * rho * (dot_prd / cs2);
+                gnew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * phi * (dot_prd / cs2);
+                knew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * psi * (dot_prd / cs2);
                 // fnew[x][y][z-1][reverse_dir[pos]] = f_lb[x][y][z-1][forward_dir[pos]] -2 * w_lb19[i] * 1 * (dot_prd / cs2);
             }           
           }
@@ -306,15 +309,18 @@ void FixLbMulticomponent::final_bounce_back() {
           knew[x][y][z][17] = knew[x][y+1][z-1][16];
           knew[x][y][z][15] = knew[x][y-1][z-1][18];
           if(movingBoundary == true){
+            double rho = density_lb[x][y][z];
+            double phi = phi_lb[x][y][z];
+            double psi = psi_lb[x][y][z];
             double slab_bot_vel[3] = {u_x_bot, u_y_bot, u_z_bot};
             std::vector<int> forward_dir = {6, 14, 12, 16, 18};
             std::vector<int> reverse_dir = {5, 11, 13, 17, 15};
             for (size_t pos = 0; pos < forward_dir.size(); ++pos) {
                 int i = forward_dir[pos];
                 double dot_prd = e19[i][0] * slab_bot_vel[0] + e19[i][1] * slab_bot_vel[1] + e19[i][2] * slab_bot_vel[2];
-                fnew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * 1 * (dot_prd / cs2);
-                gnew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * 1 * (dot_prd / cs2);
-                knew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * 1 * (dot_prd / cs2);
+                fnew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * rho * (dot_prd / cs2);
+                gnew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * phi * (dot_prd / cs2);
+                knew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * psi * (dot_prd / cs2);
             }
           }
         }
@@ -697,7 +703,7 @@ void FixLbMulticomponent::init_binary_separated() {
   double C1tot_global=0., C2tot_global=0., C3tot_global=0.;
   double pos[3];
   int x, y, z, i;
-  bool z_separated = false;
+  bool z_separated = true;
 
   RanMars *random = new RanMars(lmp,seed + comm->me);
 
@@ -811,7 +817,9 @@ void FixLbMulticomponent::init_droplet(double radius) {
   double rho=1.0, phi, psi=0.0;
   double pos[3], r2;
   int x, y, z, i;
-
+  double box_mid_z = domain->boxlo[2] + 0.5*domain->zprd;
+  double box_mid_y = domain->boxlo[1] + 0.5*domain->yprd;
+  double box_mid_x = domain->boxlo[0] + 0.5*domain->xprd;
   for (x=0; x<subNbx; x++) {
     pos[0] = domain->sublo[0] + (x-halo_extent[0])*dx_lb;
     for (y=0; y<subNby; y++) {
@@ -819,6 +827,7 @@ void FixLbMulticomponent::init_droplet(double radius) {
       for (z=0; z<subNbz; z++) {
 	      pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
 	      r2 = pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2];
+        // r2 = (pos[0]-box_mid_x)*(pos[0]-box_mid_x)+(pos[1]-box_mid_y)*(pos[1]-box_mid_y)+(pos[2]-box_mid_z)*(pos[2]-box_mid_z);
 	      phi = r2 < radius*radius ? 1.0 : -1.0;
 	      for (i=0; i<numvel; i++) {
 	        f_lb[x][y][z][i] = w_lb19[i]*rho*densityinit;
@@ -1751,7 +1760,7 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
         init_method = MIXTURE;
         argi += 1;
       }
-      else if(strcmp(argv[argi],"binary_separated")==0) {
+      else if(strcmp(argv[argi],"binary-separated")==0) {
         if (argi+1 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
         init_method = BINARY_SEPARATED;
         argi += 1;
