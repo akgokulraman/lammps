@@ -228,9 +228,9 @@ void FixLbMulticomponent::calc_moments(int x, int y, int z) {
   int z_top = domain->boxhi[2] - 1;
   int z_bot = domain->boxlo[2];
   int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
-  int y_top = domain->boxhi[1] - 1;
-  int y_bot = domain->boxlo[1];
-  int cur_y = domain->sublo[1] + (y-halo_extent[1])*dx_lb;
+  //int y_top = domain->boxhi[1] - 1;
+  //int y_bot = domain->boxlo[1];
+  //int cur_y = domain->sublo[1] + (y-halo_extent[1])*dx_lb;
 
   if(cur_z == z_top){
     density_lb[x][y][z] = density_lb[x][y][z - 1];
@@ -242,16 +242,16 @@ void FixLbMulticomponent::calc_moments(int x, int y, int z) {
     phi_lb[x][y][z - 1] = phi_lb[x][y][z];
     psi_lb[x][y][z - 1] = psi_lb[x][y][z]; 
   }
-  if(cur_y == y_top){
-    density_lb[x][y][z] = density_lb[x][y - 1][z];
-    phi_lb[x][y][z] = phi_lb[x][y - 1][z];
-    psi_lb[x][y][z] = psi_lb[x][y - 1][z];
-  }
-  if(cur_y == y_bot + 1){
-    density_lb[x][y - 1][z] = density_lb[x][y][z];
-    phi_lb[x][y - 1][z] = phi_lb[x][y][z];
-    psi_lb[x][y - 1][z] = psi_lb[x][y][z];
-  }
+  //if(cur_y == y_top){
+    //density_lb[x][y][z] = density_lb[x][y - 1][z];
+    //phi_lb[x][y][z] = phi_lb[x][y - 1][z];
+    //psi_lb[x][y][z] = psi_lb[x][y - 1][z];
+  //}
+  //if(cur_y == y_bot + 1){
+    //density_lb[x][y - 1][z] = density_lb[x][y][z];
+    //phi_lb[x][y - 1][z] = phi_lb[x][y][z];
+    //psi_lb[x][y - 1][z] = psi_lb[x][y][z];
+  //}
 }
 
 void FixLbMulticomponent::bounce_back() { 
@@ -262,34 +262,34 @@ void FixLbMulticomponent::bounce_back() {
 
   for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++){ 
     int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb; 
-      if(cur_z == z_top - 1){ 
-        for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) { 
-          for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) { 
-          // bounce back at top
-          fnew[x][y][z][6] = f_lb[x][y][z][5];
-          fnew[x][y][z][14] = f_lb[x][y][z][11];
-          fnew[x][y][z][12] = f_lb[x][y][z][13];
-          fnew[x][y][z][16] = f_lb[x][y][z][17];
-          fnew[x][y][z][18] = f_lb[x][y][z][15];
-          // ----
-          gnew[x][y][z][6] = g_lb[x][y][z][5];
-          gnew[x][y][z][14] = g_lb[x][y][z][11];
-          gnew[x][y][z][12] = g_lb[x][y][z][13];
-          gnew[x][y][z][16] = g_lb[x][y][z][17];
-          gnew[x][y][z][18] = g_lb[x][y][z][15];
-          // ----
-          knew[x][y][z][6] = k_lb[x][y][z][5];
-          knew[x][y][z][14] = k_lb[x][y][z][11];
-          knew[x][y][z][12] = k_lb[x][y][z][13];
-          knew[x][y][z][16] = k_lb[x][y][z][17];
-          knew[x][y][z][18] = k_lb[x][y][z][15];	  
-	  } 
+    if(cur_z == z_top - 1){
+      for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) { 
+        for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) { 
+        // bounce back at top
+        fnew[x][y][z][6] = f_lb[x][y][z][5];
+        fnew[x][y][z][14] = f_lb[x][y][z][11];
+        fnew[x][y][z][12] = f_lb[x][y][z][13];
+        fnew[x][y][z][16] = f_lb[x][y][z][17];
+        fnew[x][y][z][18] = f_lb[x][y][z][15];
+        // ----
+        gnew[x][y][z][6] = g_lb[x][y][z][5];
+        gnew[x][y][z][14] = g_lb[x][y][z][11];
+        gnew[x][y][z][12] = g_lb[x][y][z][13];
+        gnew[x][y][z][16] = g_lb[x][y][z][17];
+        gnew[x][y][z][18] = g_lb[x][y][z][15];
+        // ----
+        knew[x][y][z][6] = k_lb[x][y][z][5];
+        knew[x][y][z][14] = k_lb[x][y][z][11];
+        knew[x][y][z][12] = k_lb[x][y][z][13];
+        knew[x][y][z][16] = k_lb[x][y][z][17];
+        knew[x][y][z][18] = k_lb[x][y][z][15];	  
         } 
-      }
+      } 
+    }
     if(cur_z == z_bot + 1){
       for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
         for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
-        // bounce back at bottom
+          // bounce back at bottom
           fnew[x][y][z][5] = f_lb[x][y][z][6];
           fnew[x][y][z][11] = f_lb[x][y][z][14];
           fnew[x][y][z][13] = f_lb[x][y][z][12];
@@ -311,57 +311,57 @@ void FixLbMulticomponent::bounce_back() {
       }
     }
   }
-  for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++){ 
-    int cur_y = domain->sublo[1] + (y-halo_extent[1])*dx_lb; 
-      if(cur_y == y_top - 1){ 
-        for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) { 
-          for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) { 
+  //for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++){ 
+    //int cur_y = domain->sublo[1] + (y-halo_extent[1])*dx_lb; 
+      //if(cur_y == y_top - 1){ 
+        //for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) { 
+          //for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) { 
           // bounce back at top
-          fnew[x][y][z][4] = f_lb[x][y][z][2];
-          fnew[x][y][z][8] = f_lb[x][y][z][9];
-          fnew[x][y][z][10] = f_lb[x][y][z][7];
-          fnew[x][y][z][18] = f_lb[x][y][z][15];
-          fnew[x][y][z][17] = f_lb[x][y][z][16];
+          //fnew[x][y][z][4] = f_lb[x][y][z][2];
+          //fnew[x][y][z][8] = f_lb[x][y][z][9];
+          //fnew[x][y][z][10] = f_lb[x][y][z][7];
+          //fnew[x][y][z][18] = f_lb[x][y][z][15];
+          //fnew[x][y][z][17] = f_lb[x][y][z][16];
           // ----
-          gnew[x][y][z][4] = g_lb[x][y][z][2];
-          gnew[x][y][z][8] = g_lb[x][y][z][9];
-          gnew[x][y][z][10] = g_lb[x][y][z][7];
-          gnew[x][y][z][18] = g_lb[x][y][z][15];
-          gnew[x][y][z][17] = g_lb[x][y][z][16];
+          //gnew[x][y][z][4] = g_lb[x][y][z][2];
+          //gnew[x][y][z][8] = g_lb[x][y][z][9];
+          //gnew[x][y][z][10] = g_lb[x][y][z][7];
+          //gnew[x][y][z][18] = g_lb[x][y][z][15];
+          //gnew[x][y][z][17] = g_lb[x][y][z][16];
           // ----
-          knew[x][y][z][4] = k_lb[x][y][z][2];
-          knew[x][y][z][8] = k_lb[x][y][z][9];
-          knew[x][y][z][10] = k_lb[x][y][z][7];
-          knew[x][y][z][18] = k_lb[x][y][z][15];
-          knew[x][y][z][17] = k_lb[x][y][z][16];
-	} 
-      } 
-    }
-    if(cur_y == y_bot + 1){
-      for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
-        for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
+          //knew[x][y][z][4] = k_lb[x][y][z][2];
+          //knew[x][y][z][8] = k_lb[x][y][z][9];
+          //knew[x][y][z][10] = k_lb[x][y][z][7];
+          //knew[x][y][z][18] = k_lb[x][y][z][15];
+          //knew[x][y][z][17] = k_lb[x][y][z][16];
+	//} 
+      //} 
+    //}
+    //if(cur_y == y_bot + 1){
+      //for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+        //for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
         // bounce back at bottom
-          fnew[x][y][z][2] = f_lb[x][y][z][4];
-          fnew[x][y][z][9] = f_lb[x][y][z][8];
-          fnew[x][y][z][7] = f_lb[x][y][z][10];
-          fnew[x][y][z][15] = f_lb[x][y][z][18];
-          fnew[x][y][z][16] = f_lb[x][y][z][17];
+          //fnew[x][y][z][2] = f_lb[x][y][z][4];
+          //fnew[x][y][z][9] = f_lb[x][y][z][8];
+          //fnew[x][y][z][7] = f_lb[x][y][z][10];
+          //fnew[x][y][z][15] = f_lb[x][y][z][18];
+          //fnew[x][y][z][16] = f_lb[x][y][z][17];
           // ----
-          gnew[x][y][z][2] = g_lb[x][y][z][4];
-          gnew[x][y][z][9] = g_lb[x][y][z][8];
-          gnew[x][y][z][7] = g_lb[x][y][z][10];
-          gnew[x][y][z][15] = g_lb[x][y][z][18];
-          gnew[x][y][z][16] = g_lb[x][y][z][17];
+          //gnew[x][y][z][2] = g_lb[x][y][z][4];
+          //gnew[x][y][z][9] = g_lb[x][y][z][8];
+          //gnew[x][y][z][7] = g_lb[x][y][z][10];
+          //gnew[x][y][z][15] = g_lb[x][y][z][18];
+          //gnew[x][y][z][16] = g_lb[x][y][z][17];
           // ----
-          knew[x][y][z][2] = k_lb[x][y][z][4];
-          knew[x][y][z][9] = k_lb[x][y][z][8];
-          knew[x][y][z][7] = k_lb[x][y][z][10];
-          knew[x][y][z][15] = k_lb[x][y][z][18];
-          knew[x][y][z][16] = k_lb[x][y][z][17];
-        }
-      }
-    }
-  }
+          //knew[x][y][z][2] = k_lb[x][y][z][4];
+          //knew[x][y][z][9] = k_lb[x][y][z][8];
+          //knew[x][y][z][7] = k_lb[x][y][z][10];
+          //knew[x][y][z][15] = k_lb[x][y][z][18];
+          //knew[x][y][z][16] = k_lb[x][y][z][17];
+        //}
+      //}
+    //}
+  //}
 }
 
 void FixLbMulticomponent::Neumann_BC(int x, int y, int z) {
@@ -411,42 +411,42 @@ void FixLbMulticomponent::Neumann_BC(int x, int y, int z) {
       psi_lb[x][y - 1][z - 1] = psi_lb[x][y - 1][z] + H3;
     }
   }
-  for (int y = halo_extent[1]; y < subNby - halo_extent[1]; y++) {
-    int cur_y = domain->sublo[1] + (y - halo_extent[1]) * dx_lb;
-    if (cur_y == y_top) {
-      density_lb[x][y + 1][z + 1] = density_lb[x][y][z + 1] - H1 - H2 - H3;
-      density_lb[x][y + 1][z] = density_lb[x][y][z] - H1 - H2 - H3;
-      density_lb[x][y + 1][z - 1] = density_lb[x][y][z - 1] - H1 - H2 - H3;
+  //for (int y = halo_extent[1]; y < subNby - halo_extent[1]; y++) {
+    //int cur_y = domain->sublo[1] + (y - halo_extent[1]) * dx_lb;
+    //if (cur_y == y_top) {
+      //density_lb[x][y + 1][z + 1] = density_lb[x][y][z + 1] - H1 - H2 - H3;
+      //density_lb[x][y + 1][z] = density_lb[x][y][z] - H1 - H2 - H3;
+      //density_lb[x][y + 1][z - 1] = density_lb[x][y][z - 1] - H1 - H2 - H3;
 
-      phi_lb[x][y + 1][z + 1] = phi_lb[x][y][z + 1] - H1 + H2;
-      phi_lb[x][y + 1][z] = phi_lb[x][y][z] - H1 + H2;
-      phi_lb[x][y + 1][z - 1] = phi_lb[x][y][z - 1] - H1 + H2;
+      //phi_lb[x][y + 1][z + 1] = phi_lb[x][y][z + 1] - H1 + H2;
+      //phi_lb[x][y + 1][z] = phi_lb[x][y][z] - H1 + H2;
+      //phi_lb[x][y + 1][z - 1] = phi_lb[x][y][z - 1] - H1 + H2;
 
-      psi_lb[x][y + 1][z + 1] = psi_lb[x][y][z + 1] - H3;
-      psi_lb[x][y + 1][z] = psi_lb[x][y][z] - H3;
-      psi_lb[x][y + 1][z - 1] = psi_lb[x][y][z - 1] - H3;
+      //psi_lb[x][y + 1][z + 1] = psi_lb[x][y][z + 1] - H3;
+      //psi_lb[x][y + 1][z] = psi_lb[x][y][z] - H3;
+      //psi_lb[x][y + 1][z - 1] = psi_lb[x][y][z - 1] - H3;
       // density_lb[x][y][z] = density_lb[x][y - 1][z];
       // phi_lb[x][y][z] = phi_lb[x][y - 1][z];
       // psi_lb[x][y][z] = psi_lb[x][y - 1][z];
-    }
+    //}
 
-    if (cur_y == y_bot) {
-      density_lb[x][y - 1][z + 1] = density_lb[x][y][z + 1] + H1 + H2 + H3;
-      density_lb[x][y - 1][z] = density_lb[x][y][z] + H1 + H2 + H3;
-      density_lb[x][y - 1][z - 1] = density_lb[x][y][z - 1] + H1 + H2 + H3;
+    //if (cur_y == y_bot) {
+      //density_lb[x][y - 1][z + 1] = density_lb[x][y][z + 1] + H1 + H2 + H3;
+      //density_lb[x][y - 1][z] = density_lb[x][y][z] + H1 + H2 + H3;
+      //density_lb[x][y - 1][z - 1] = density_lb[x][y][z - 1] + H1 + H2 + H3;
 
-      phi_lb[x][y - 1][z + 1] = phi_lb[x][y][z + 1] + H1 - H2;
-      phi_lb[x][y - 1][z] = phi_lb[x][y][z] + H1 - H2;
-      phi_lb[x][y - 1][z - 1] = phi_lb[x][y][z - 1] + H1 - H2;
+      //phi_lb[x][y - 1][z + 1] = phi_lb[x][y][z + 1] + H1 - H2;
+      //phi_lb[x][y - 1][z] = phi_lb[x][y][z] + H1 - H2;
+      //phi_lb[x][y - 1][z - 1] = phi_lb[x][y][z - 1] + H1 - H2;
 
-      psi_lb[x][y - 1][z + 1] = psi_lb[x][y][z + 1] + H3;
-      psi_lb[x][y - 1][z] = psi_lb[x][y][z] + H3;
-      psi_lb[x][y - 1][z - 1] = psi_lb[x][y][z - 1] + H3;
+      //psi_lb[x][y - 1][z + 1] = psi_lb[x][y][z + 1] + H3;
+      //psi_lb[x][y - 1][z] = psi_lb[x][y][z] + H3;
+      //psi_lb[x][y - 1][z - 1] = psi_lb[x][y][z - 1] + H3;
       // density_lb[x][y][z] = density_lb[x][y + 1][z];
       // phi_lb[x][y][z] = phi_lb[x][y + 1][z];
       // psi_lb[x][y][z] = psi_lb[x][y + 1][z];
-    }
-  }
+    //}
+  //}
 }
 
 void FixLbMulticomponent::calc_equilibrium(int x, int y, int z) {
@@ -1055,7 +1055,6 @@ void FixLbMulticomponent::init_semi_droplet(double radius) {
     }
   }
   delete(random);
->>>>>>> ST_NoPeriodic
 }
 
 // mixed droplet of component C1 and C2 within pure C3
@@ -1111,25 +1110,9 @@ void FixLbMulticomponent::init_semi_mixed_droplet(double radius, double C1, doub
           g_lb[x][y][z][i] = w_lb19[i] * phi * densityinit;
           k_lb[x][y][z][i] = w_lb19[i] * psi * densityinit;
         }
-        
-        // Accumulate the total component concentrations for averaging.
-        C1tot += C1_init;
-        C2tot += C2_init;
-        C3tot += C3_init;
       }
     }
   }
-
-  // Reduce the totals over all MPI processes.
-  MPI_Reduce(&C1tot, &C1tot_global, 1, MPI_DOUBLE, MPI_SUM, 0, world);
-  MPI_Reduce(&C2tot, &C2tot_global, 1, MPI_DOUBLE, MPI_SUM, 0, world);
-  MPI_Reduce(&C3tot, &C3tot_global, 1, MPI_DOUBLE, MPI_SUM, 0, world);
-  double vol = Nbx * Nby * Nbz;
-  if (comm->me == 0) {
-    error->message(FLERR, "Initialized semi droplet with <C1> = {:f}, <C2> = {:f}, <C3> = {:f}",
-                   C1tot_global / vol, C2tot_global / vol, C3tot_global / vol);
-  }
-
   delete(random);
 }
 
