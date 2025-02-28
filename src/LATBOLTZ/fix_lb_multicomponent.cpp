@@ -715,12 +715,12 @@ void FixLbMulticomponent::init_binary_separated() {
         for (z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
           pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
           if (pos[2] > box_mid_z) {
-            C1_init = 1 + 0.01*random->gaussian();
+            C1_init = 1;
             C2_init = 0;
             C3_init = 0;
           } else {
             C1_init = 0;
-            C2_init = 1 + 0.01*random->gaussian();
+            C2_init = 1;
             C3_init = 0;
           }
           rho = densityinit;
