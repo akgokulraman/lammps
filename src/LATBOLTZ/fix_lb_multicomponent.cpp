@@ -826,7 +826,8 @@ void FixLbMulticomponent::init_droplet(double radius) {
       pos[1] = domain->sublo[1] + (y-halo_extent[1])*dx_lb;
       for (z=0; z<subNbz; z++) {
 	      pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
-	      r2 = pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2];
+	      r2 = (pos[0]+0.5)*(pos[0]+0.5)+(pos[1]+0.5)*(pos[1]+0.5)+(pos[2]+0.5)*(pos[2]+0.5); // redefining droplet calculation by adjusitng center
+        // r2 = pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2];
         // r2 = (pos[0]-box_mid_x)*(pos[0]-box_mid_x)+(pos[1]-box_mid_y)*(pos[1]-box_mid_y)+(pos[2]-box_mid_z)*(pos[2]-box_mid_z);
 	      phi = r2 < radius*radius ? 1.0 : -1.0;
 	      for (i=0; i<numvel; i++) {
