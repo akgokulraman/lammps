@@ -247,7 +247,7 @@ void FixLbMulticomponent::final_bounce_back() {
   int z_bot = domain->boxlo[2];
   for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++){
     int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
-    if(cur_z == z_top-1){
+    if(cur_z == z_top){
       for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
         for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
           // bounce back at top
@@ -287,7 +287,7 @@ void FixLbMulticomponent::final_bounce_back() {
         }
       }   
     }
-    if(cur_z == z_bot+1){
+    if(cur_z == z_bot){
       for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
         for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
           // bounce back at bottom
@@ -384,7 +384,7 @@ void FixLbMulticomponent::correcting_phase(int x, int y, int z) {
   int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
   int cur_y = domain->sublo[1] + (y-halo_extent[1])*dx_lb;
   int cur_x = domain->sublo[0] + (x-halo_extent[0])*dx_lb;
-  if(cur_z == z_top){
+  if(cur_z == z_top+1){
     // perpendicular
     density_lb[x][y][z] = density_lb[x][y][z-1];
     phi_lb[x][y][z] = phi_lb[x][y][z-1];
@@ -414,7 +414,7 @@ void FixLbMulticomponent::correcting_phase(int x, int y, int z) {
     //   psi_lb[x+1][y+1][z] = psi_lb[x][y][z-1]; 
     // }
   }
-  if(cur_z == z_bot+1){
+  if(cur_z == z_bot){
     // perpendicular
     density_lb[x][y][z-1] = density_lb[x][y][z];
     phi_lb[x][y][z-1] = phi_lb[x][y][z];
