@@ -249,18 +249,11 @@ void FixLbMulticomponent::final_bounce_back() {
   int x_bot = domain->boxlo[0];
   int y_top = domain->boxhi[1]-1;
   int y_bot = domain->boxlo[1];
-  FILE *fptr;
   for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++){
     int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
     if(cur_z == z_top){
       for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
         for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
-          if(x == halo_extent[0]+25 && y == halo_extent[1]+15){
-            fptr = fopen("top.txt", "a");
-            fprintf(fptr, "f_6 - %f, f_14 - %f, f_12 - %f, f_16 - %f, f_18 - %f\n", fnew[x][y][z][6], fnew[x][y][z][14], fnew[x][y][z][12], fnew[x][y][z][16], fnew[x][y][z][18]);
-            fprintf(fptr, "f_5 - %f, f_11 - %f, f_13 - %f, f_17 - %f, f_15 - %f\n", fnew[x][y][z+1][5], fnew[x+1][y][z+1][11], fnew[x-1][y][z+1][13], fnew[x][y-1][z+1][17], fnew[x][y+1][z+1][15]);
-            fclose(fptr);
-          }
           // bounce back at top
           fnew[x][y][z][6] = fnew[x][y][z+1][5];
           fnew[x][y][z][14] = fnew[x+1][y][z+1][11];
@@ -279,13 +272,6 @@ void FixLbMulticomponent::final_bounce_back() {
           knew[x][y][z][12] = knew[x-1][y][z+1][13];
           knew[x][y][z][16] = knew[x][y-1][z+1][17];
           knew[x][y][z][18] = knew[x][y+1][z+1][15];
-          if(x == halo_extent[0]+25 && y == halo_extent[1]+15){
-            fptr = fopen("top.txt", "a");
-            fprintf(fptr, "f_6 - %f, f_14 - %f, f_12 - %f, f_16 - %f, f_18 - %f\n", fnew[x][y][z][6], fnew[x][y][z][14], fnew[x][y][z][12], fnew[x][y][z][16], fnew[x][y][z][18]);
-            fprintf(fptr, "----------------------------------\n");
-            fclose(fptr);
-          }
-
           if(movingBoundary == true){
             double rho = density_lb[x][y][z];
             double phi = phi_lb[x][y][z];
@@ -293,25 +279,13 @@ void FixLbMulticomponent::final_bounce_back() {
             double slab_top_vel[3] = {u_x_top, u_y_top, u_z_top};
             std::vector<int> forward_dir = {5, 11, 13, 17, 15};
             std::vector<int> reverse_dir = {6, 14, 12, 16, 18};
-            if(x == halo_extent[0]+25 && y == halo_extent[1]+15){
-              fptr = fopen("top_vel.txt", "a");
-              fprintf(fptr, "f_6 - %f, f_14 - %f, f_12 - %f, f_16 - %f, f_18 - %f\n", fnew[x][y][z][6], fnew[x][y][z][14], fnew[x][y][z][12], fnew[x][y][z][16], fnew[x][y][z][18]);
-              fclose(fptr);
-            }
             for (size_t pos = 0; pos < forward_dir.size(); ++pos) {
                 int i = reverse_dir[pos];
                 double dot_prd = e19[i][0] * slab_top_vel[0] + e19[i][1] * slab_top_vel[1] + e19[i][2] * slab_top_vel[2];
                 fnew[x][y][z][i] += 2 * w_lb19[i] * 1 * (dot_prd / cs2);
                 gnew[x][y][z][i] += 2 * w_lb19[i] * 1 * (dot_prd / cs2);
                 knew[x][y][z][i] += 2 * w_lb19[i] * 1 * (dot_prd / cs2);
-                // fnew[x][y][z-1][reverse_dir[pos]] = f_lb[x][y][z-1][forward_dir[pos]] -2 * w_lb19[i] * 1 * (dot_prd / cs2);
-            } 
-            if(x == halo_extent[0]+25 && y == halo_extent[1]+15){
-              fptr = fopen("top_vel.txt", "a");
-              fprintf(fptr, "f_6 - %f, f_14 - %f, f_12 - %f, f_16 - %f, f_18 - %f\n", fnew[x][y][z][6], fnew[x][y][z][14], fnew[x][y][z][12], fnew[x][y][z][16], fnew[x][y][z][18]);
-              fprintf(fptr, "----------------------------------\n");
-              fclose(fptr);
-            }        
+            }      
           }
         }
       }   
@@ -319,12 +293,6 @@ void FixLbMulticomponent::final_bounce_back() {
     if(cur_z == z_bot){
       for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
         for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
-          if(x == halo_extent[0]+25 && y == halo_extent[1]+15){
-            fptr = fopen("bot.txt", "a");
-            fprintf(fptr, "f_5 - %f, f_11 - %f, f_13 - %f, f_17 - %f, f_15 - %f\n", fnew[x][y][z][5], fnew[x][y][z][11], fnew[x][y][z][13], fnew[x][y][z][17], fnew[x][y][z][15]);
-            fprintf(fptr, "f_6 - %f, f_14 - %f, f_12 - %f, f_16 - %f, f_18 - %f\n", fnew[x][y][z-1][6], fnew[x-1][y][z-1][14], fnew[x+1][y][z-1][12], fnew[x][y+1][z-1][16], fnew[x][y-1][z-1][18]);
-            fclose(fptr);
-          }
           // bounce back at bottom
           fnew[x][y][z][5] = fnew[x][y][z-1][6];
           fnew[x][y][z][11] = fnew[x-1][y][z-1][14];
@@ -343,12 +311,6 @@ void FixLbMulticomponent::final_bounce_back() {
           knew[x][y][z][13] = knew[x+1][y][z-1][12];
           knew[x][y][z][17] = knew[x][y+1][z-1][16];
           knew[x][y][z][15] = knew[x][y-1][z-1][18];
-          if(x == halo_extent[0]+25 && y == halo_extent[1]+15){
-            fptr = fopen("bot.txt", "a");
-            fprintf(fptr, "f_5 - %f, f_11 - %f, f_13 - %f, f_17 - %f, f_15 - %f\n", fnew[x][y][z][5], fnew[x][y][z][11], fnew[x][y][z][13], fnew[x][y][z][17], fnew[x][y][z][15]);
-            fprintf(fptr, "----------------------------------\n");
-            fclose(fptr);
-          }
           if(movingBoundary == true){
             double rho = density_lb[x][y][z];
             double phi = phi_lb[x][y][z];
@@ -356,23 +318,12 @@ void FixLbMulticomponent::final_bounce_back() {
             double slab_bot_vel[3] = {u_x_bot, u_y_bot, u_z_bot};
             std::vector<int> forward_dir = {6, 14, 12, 16, 18};
             std::vector<int> reverse_dir = {5, 11, 13, 17, 15};
-            if(x == halo_extent[0]+25 && y == halo_extent[1]+15){
-              fptr = fopen("bot_vel.txt", "a");
-              fprintf(fptr, "f_5 - %f, f_11 - %f, f_13 - %f, f_17 - %f, f_15 - %f\n", fnew[x][y][z][5], fnew[x][y][z][11], fnew[x][y][z][13], fnew[x][y][z][17], fnew[x][y][z][15]);
-              fclose(fptr);
-            }
             for (size_t pos = 0; pos < forward_dir.size(); ++pos) {
                 int i = reverse_dir[pos];
                 double dot_prd = e19[i][0] * slab_bot_vel[0] + e19[i][1] * slab_bot_vel[1] + e19[i][2] * slab_bot_vel[2];
                 fnew[x][y][z][i] += 2 * w_lb19[i] * 1 * (dot_prd / cs2);
                 gnew[x][y][z][i] += 2 * w_lb19[i] * 1 * (dot_prd / cs2);
                 knew[x][y][z][i] += 2 * w_lb19[i] * 1 * (dot_prd / cs2);
-            }
-            if(x == halo_extent[0]+25 && y == halo_extent[1]+15){
-              fptr = fopen("bot_vel.txt", "a");
-              fprintf(fptr, "f_5 - %f, f_11 - %f, f_13 - %f, f_17 - %f, f_15 - %f\n", fnew[x][y][z][5], fnew[x][y][z][11], fnew[x][y][z][13], fnew[x][y][z][17], fnew[x][y][z][15]);
-              fprintf(fptr, "----------------------------------\n");
-              fclose(fptr);
             }
           }
         }
