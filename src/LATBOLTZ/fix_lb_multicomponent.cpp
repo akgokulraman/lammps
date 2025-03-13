@@ -302,8 +302,8 @@ void FixLbMulticomponent::final_bounce_back() {
                 int i = reverse_dir[pos];
                 double dot_prd = e19[i][0] * slab_top_vel[0] + e19[i][1] * slab_top_vel[1] + e19[i][2] * slab_top_vel[2];
                 fnew[x][y][z][i] += 2 * w_lb19[i] * 1 * (dot_prd / cs2);
-                // gnew[x][y][z][i] += 2 * w_lb19[i] * 1 * (dot_prd / cs2);
-                // knew[x][y][z][i] += 2 * w_lb19[i] * 1 * (dot_prd / cs2);
+                gnew[x][y][z][i] += 2 * w_lb19[i] * 1 * (dot_prd / cs2);
+                knew[x][y][z][i] += 2 * w_lb19[i] * 1 * (dot_prd / cs2);
                 // fnew[x][y][z-1][reverse_dir[pos]] = f_lb[x][y][z-1][forward_dir[pos]] -2 * w_lb19[i] * 1 * (dot_prd / cs2);
             } 
             if(x == halo_extent[0]+25 && y == halo_extent[1]+15){
@@ -365,8 +365,8 @@ void FixLbMulticomponent::final_bounce_back() {
                 int i = reverse_dir[pos];
                 double dot_prd = e19[i][0] * slab_bot_vel[0] + e19[i][1] * slab_bot_vel[1] + e19[i][2] * slab_bot_vel[2];
                 fnew[x][y][z][i] += 2 * w_lb19[i] * 1 * (dot_prd / cs2);
-                // gnew[x][y][z][i] += 2 * w_lb19[i] * 1 * (dot_prd / cs2);
-                // knew[x][y][z][i] += 2 * w_lb19[i] * 1 * (dot_prd / cs2);
+                gnew[x][y][z][i] += 2 * w_lb19[i] * 1 * (dot_prd / cs2);
+                knew[x][y][z][i] += 2 * w_lb19[i] * 1 * (dot_prd / cs2);
             }
             if(x == halo_extent[0]+25 && y == halo_extent[1]+15){
               fptr = fopen("bot_vel.txt", "a");
