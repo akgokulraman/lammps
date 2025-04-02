@@ -817,7 +817,7 @@ void FixLbMulticomponent::init_binary_separated() {
 
 // droplet composed of component C1 and C2 (C3=0)
 void FixLbMulticomponent::init_droplet(double radius) {
-  double rho=1.0, phi, psi=0.0;
+  double rho=1.0, phi, psi=0.0, C1, C2, C3;
   double pos[3], r2;
   int x, y, z, i;
   double box_mid_z = domain->boxlo[2] + 0.5*domain->zprd;
@@ -832,7 +832,16 @@ void FixLbMulticomponent::init_droplet(double radius) {
 	      r2 = (pos[0]+0.5)*(pos[0]+0.5)+(pos[1]+0.5)*(pos[1]+0.5)+(pos[2]+0.5)*(pos[2]+0.5); // redefining droplet calculation by adjusitng center
         // r2 = pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2];
         // r2 = (pos[0]-box_mid_x)*(pos[0]-box_mid_x)+(pos[1]-box_mid_y)*(pos[1]-box_mid_y)+(pos[2]-box_mid_z)*(pos[2]-box_mid_z);
-	      phi = r2 < radius*radius ? 1.0 : -1.0;
+	      // phi = r2 < radius*radius ? 1.0 : -1.0;
+        if(r2<radius*radius){
+          C1 = 0.95;
+          C2 = 0.05;
+        }
+        else{
+          C1 = 0.05;
+          C2 = 0.95;
+        }
+        phi = C1 - C2;
 	      for (i=0; i<numvel; i++) {
 	        f_lb[x][y][z][i] = w_lb19[i]*rho*densityinit;
 	        g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
