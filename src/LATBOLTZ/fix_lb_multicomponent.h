@@ -145,6 +145,9 @@ namespace LAMMPS_NS {
     void bounce_back_z_bottom();
     void bounce_back_z_top();
 
+    void neumann_bc_bottom(int x, int y, int z);
+    void neumann_bc_top(int x, int y, int z);
+
     static const int numrequests = 12;
     MPI_Request requests[numrequests];
     MPI_Datatype fluid_scalar_field_mpitype;
