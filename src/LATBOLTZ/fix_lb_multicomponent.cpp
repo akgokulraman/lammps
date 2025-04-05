@@ -780,6 +780,60 @@ void FixLbMulticomponent::init_mixture() {
   delete(random);
 }
 
+void FixLbMulticomponent::init_three_liquids() {
+  double rho=1.0, phi, psi;
+  double C1tot=0., C2tot=0., C3tot=0.;
+  double C1tot_global=0., C2tot_global=0., C3tot_global=0.;
+  double pos[3];
+  int x, y, z, i;
+
+  domain->periodicity[0] = 0;
+  domain->periodicity[1] = 0;
+
+  for (x=0; x<subNbx; x++) {
+    pos[0] = domain->sublo[0] + (x-halo_extent[0])*dx_lb + 0.5;
+    for (y=0; y<subNby; y++) {
+      pos[1] = domain->sublo[1] + (y-halo_extent[1])*dx_lb + 0.5;
+      for (z=0; z<subNbz; z++) {
+        pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb + 0.5;
+        if (pos[1] < domain->boxlo[1] + (domain->boxhi[1]-domain->boxlo[1])/3) {
+          C3 = 1;
+          C1 = C2 = 0;
+        } else {
+          if (pos[0] < (domain->boxlo[0] + domain->boxhi[0])/2) {
+            C1 = 1;
+            C2 = C3 = 0;
+          } else {
+            C1 = C3 = 0;
+            C2 = 1;
+          }
+        }
+	      rho = densityinit;
+	      phi = densityinit*(C1-C2);
+	      psi = densityinit*C3;
+	      for (i=0; i<numvel; i++) {
+	        f_lb[x][y][z][i] = w_lb19[i]*rho*densityinit;
+	        g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
+	        k_lb[x][y][z][i] = w_lb19[i]*psi*densityinit;
+	      }
+	      C1tot += C1;
+	      C2tot += C2;
+	      C3tot += C3;
+      }
+    }
+  }
+
+  MPI_Reduce(&C1tot,&C1tot_global,1,MPI_DOUBLE,MPI_SUM,0,world);
+  MPI_Reduce(&C2tot,&C2tot_global,1,MPI_DOUBLE,MPI_SUM,0,world);
+  MPI_Reduce(&C3tot,&C3tot_global,1,MPI_DOUBLE,MPI_SUM,0,world);
+
+  double vol = Nbx*Nby*Nbz;
+  if(comm->me==0){
+    error->message(FLERR,"Initialized three liquids with <C1> = {:f}, <C2> = {:f}, <C3> = {:f}",C1tot_global/vol,C2tot_global/vol,C3tot_global/vol);
+  }
+
+}
+
 // droplet composed of component C1 and C2 (C3=0)
 void FixLbMulticomponent::init_droplet(double radius) {
   double rho=1.0, phi, psi=0.0;
@@ -987,6 +1041,9 @@ void FixLbMulticomponent::init_fluid() {
   switch(init_method) {
     case MIXTURE:
       init_mixture();
+      break;
+    case THREE_LIQUIDS:
+      init_three_liquids();
       break;
     case DROPLET:
       init_droplet(radius*dx_lb);
@@ -1580,6 +1637,11 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
       if(strcmp(argv[argi],"mixture")==0) {
         if (argi+1 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
         init_method = MIXTURE;
+        argi += 1;
+      }
+      else if(strcmp(argv[argi],"three_liquids")==0) {
+        if (argi+1 > argc) error->all(FLERR, "Illegal fix/lbmulticomponent command: {} {}", argv[argi-1], argv[argi]);
+        init_method = THREE_LIQUIDS;
         argi += 1;
       }
       else if(strcmp(argv[argi],"droplet")==0) {
