@@ -136,6 +136,8 @@ void FixLbMulticomponent::update_column(int x, int y, int zmin, int zmax) {
   read_site(x,y,zmin+1);
   for (z=zmin+2; z<zmax; ++z) {
     read_site(x,y,z);
+    neumann_bc_top(x,y,z);
+    neumann_bc_bottom(x-1,y-1,z-1);
     write_site(x-1,y-1,z-1);
   }
 }
@@ -156,8 +158,6 @@ void FixLbMulticomponent::read_column(int x, int y, int zmin, int zmax) {
 
 void FixLbMulticomponent::read_site(int x, int y, int z) {
   calc_moments(x,y,z);
-  neumann_bc_top(x,y,z);
-  neumann_bc_bottom(x-1,y-1,z-1);
 }
 
 void FixLbMulticomponent::write_site(int x, int y, int z) {
