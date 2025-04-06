@@ -789,11 +789,11 @@ void FixLbMulticomponent::init_three_liquids() {
   domain->periodicity[0] = 0;
   domain->periodicity[1] = 0;
 
-  for (x=0; x<subNbx; x++) {
+  for (x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
     pos[0] = domain->sublo[0] + (x-halo_extent[0])*dx_lb + 0.5;
-    for (y=0; y<subNby; y++) {
+    for (y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
       pos[1] = domain->sublo[1] + (y-halo_extent[1])*dx_lb + 0.5;
-      for (z=0; z<subNbz; z++) {
+      for (z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
         pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb + 0.5;
         if (pos[1] < domain->boxlo[1] + (domain->boxhi[1]-domain->boxlo[1])/3) {
           C3 = 1;
