@@ -526,7 +526,7 @@ void FixLbMulticomponent::neumann_bc(int x, int y, int z) {
       phi_lb[x-1][y  ][z  ] = phi_lb[x][y  ][z  ];
       phi_lb[x-1][y  ][z+1] = phi_lb[x][y  ][z+1]; // covers edges with z
       phi_lb[x-1][y  ][z-1] = phi_lb[x][y  ][z-1]; // covers edges with z
-      phi_lb[x+1][y+1][z  ] = phi_lb[x][y+1][z  ];
+      phi_lb[x-1][y+1][z  ] = phi_lb[x][y+1][z  ];
       phi_lb[x-1][y-1][z  ] = phi_lb[x][y-1][z  ];
 
       psi_lb[x-1][y  ][z  ] = psi_lb[x][y  ][z  ];
