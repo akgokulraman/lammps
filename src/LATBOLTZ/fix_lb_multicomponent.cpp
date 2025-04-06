@@ -136,8 +136,6 @@ void FixLbMulticomponent::update_column(int x, int y, int zmin, int zmax) {
   read_site(x,y,zmin+1);
   for (z=zmin+2; z<zmax; ++z) {
     read_site(x,y,z);
-    neumann_bc_top(x,y,z);
-    neumann_bc_bottom(x-1,y-1,z-1);
     write_site(x-1,y-1,z-1);
   }
 }
@@ -161,6 +159,7 @@ void FixLbMulticomponent::read_site(int x, int y, int z) {
 }
 
 void FixLbMulticomponent::write_site(int x, int y, int z) {
+  neumann_bc(x,y,z);
   collide_stream(x,y,z);
 }
 
@@ -426,6 +425,137 @@ void FixLbMulticomponent::calc_moments_full() {
       }
     }
   }
+}
+
+void FixLbMulticomponent::neumann_bc(int x, int y, int z) {
+
+  // writes fields into the wall to satisfy Neumann boundary conditions
+  // corners are not needed for D3Q19
+  // edges are covered through "hops"
+
+  if (!domain->periodicity[2]) {
+    if ((comm->myloc[2] == 0) && (z == halo_extent[2])) { // next to bottom z wall
+      density_lb[x  ][y  ][z-1] = density_lb[x  ][y  ][z];
+      density_lb[x  ][y+1][z-1] = density_lb[x  ][y+1][z];
+      density_lb[x  ][y-1][z-1] = density_lb[x  ][y-1][z];
+      density_lb[x+1][y  ][z-1] = density_lb[x+1][y  ][z];
+      density_lb[x-1][y  ][z-1] = density_lb[x-1][y  ][z];
+
+      phi_lb[x  ][y  ][z-1] = phi_lb[x  ][y  ][z];
+      phi_lb[x  ][y+1][z-1] = phi_lb[x  ][y+1][z];
+      phi_lb[x  ][y-1][z-1] = phi_lb[x  ][y-1][z];
+      phi_lb[x+1][y  ][z-1] = phi_lb[x+1][y  ][z];
+      phi_lb[x-1][y  ][z-1] = phi_lb[x-1][y  ][z];
+
+      psi_lb[x  ][y  ][z-1] = psi_lb[x  ][y  ][z];
+      psi_lb[x  ][y+1][z-1] = psi_lb[x  ][y+1][z];
+      psi_lb[x  ][y-1][z-1] = psi_lb[x  ][y-1][z];
+      psi_lb[x+1][y  ][z-1] = psi_lb[x+1][y  ][z];
+      psi_lb[x-1][y  ][z-1] = psi_lb[x-1][y  ][z];
+    }
+    if ((comm->myloc[2] == comm->procgrid[2]-1) && (z == subNbz-halo_extent[2]-1)) { // next to top z wall
+      density_lb[x  ][y  ][z+1] = density_lb[x  ][y  ][z];
+      density_lb[x  ][y+1][z+1] = density_lb[x  ][y+1][z];
+      density_lb[x  ][y-1][z+1] = density_lb[x  ][y-1][z];
+      density_lb[x+1][y  ][z+1] = density_lb[x+1][y  ][z];
+      density_lb[x-1][y  ][z+1] = density_lb[x-1][y  ][z];
+
+      phi_lb[x  ][y  ][z+1] = phi_lb[x  ][y  ][z];
+      phi_lb[x  ][y+1][z+1] = phi_lb[x  ][y+1][z];
+      phi_lb[x  ][y-1][z+1] = phi_lb[x  ][y-1][z];
+      phi_lb[x+1][y  ][z+1] = phi_lb[x+1][y  ][z];
+      phi_lb[x-1][y  ][z+1] = phi_lb[x-1][y  ][z];
+
+      psi_lb[x  ][y  ][z+1] = psi_lb[x  ][y  ][z];
+      psi_lb[x  ][y+1][z+1] = psi_lb[x  ][y+1][z];
+      psi_lb[x  ][y-1][z+1] = psi_lb[x  ][y-1][z];
+      psi_lb[x+1][y  ][z+1] = psi_lb[x+1][y  ][z];
+      psi_lb[x-1][y  ][z+1] = psi_lb[x-1][y  ][z];
+    }
+  }
+
+  if (!domain->periodicity[1]) {
+    if ((comm->myloc[1] == 0) && (y == halo_extent[1])) { // next to bottom y wall
+      density_lb[x  ][y-1][z  ] = density_lb[x  ][y][z  ];
+      density_lb[x  ][y-1][z+1] = density_lb[x  ][y][z+1]; // covers edges with z
+      density_lb[x  ][y-1][z-1] = density_lb[x  ][y][z-1]; // covers edges with z
+      density_lb[x+1][y-1][z  ] = density_lb[x+1][y][z  ];
+      density_lb[x-1][y-1][z  ] = density_lb[x-1][y][z  ];
+
+      phi_lb[x  ][y-1][z  ] = phi_lb[x  ][y][z  ];
+      phi_lb[x  ][y-1][z+1] = phi_lb[x  ][y][z+1]; // covers edges with z
+      phi_lb[x  ][y-1][z-1] = phi_lb[x  ][y][z-1]; // covers edges with z
+      phi_lb[x+1][y-1][z  ] = phi_lb[x+1][y][z  ];
+      phi_lb[x-1][y-1][z  ] = phi_lb[x-1][y][z  ];
+
+      psi_lb[x  ][y-1][z  ] = psi_lb[x  ][y][z  ];
+      psi_lb[x  ][y-1][z+1] = psi_lb[x  ][y][z+1]; // covers edges with z
+      psi_lb[x  ][y-1][z-1] = psi_lb[x  ][y][z-1]; // covers edges with z
+      psi_lb[x+1][y-1][z  ] = psi_lb[x+1][y][z  ];
+      psi_lb[x-1][y-1][z  ] = psi_lb[x-1][y][z  ];
+    }
+    if ((comm->myloc[1] == comm->procgrid[1]-1) && (y == subNby-halo_extent[1]-1)) { // next to top y wall
+      density_lb[x  ][y+1][z  ] = density_lb[x  ][y][z  ];
+      density_lb[x  ][y+1][z+1] = density_lb[x  ][y][z+1]; // covers edges with z
+      density_lb[x  ][y+1][z-1] = density_lb[x  ][y][z-1]; // covers edges with z
+      density_lb[x+1][y+1][z  ] = density_lb[x+1][y][z  ];
+      density_lb[x-1][y+1][z  ] = density_lb[x-1][y][z  ];
+
+      phi_lb[x  ][y+1][z  ] = phi_lb[x  ][y][z  ];
+      phi_lb[x  ][y+1][z+1] = phi_lb[x  ][y][z+1]; // covers edges with z
+      phi_lb[x  ][y+1][z-1] = phi_lb[x  ][y][z-1]; // covers edges with z
+      phi_lb[x+1][y+1][z  ] = phi_lb[x+1][y][z  ];
+      phi_lb[x-1][y+1][z  ] = phi_lb[x-1][y][z  ];
+
+      psi_lb[x  ][y+1][z  ] = psi_lb[x  ][y][z  ];
+      psi_lb[x  ][y+1][z+1] = psi_lb[x  ][y][z+1]; // covers edges with z
+      psi_lb[x  ][y+1][z-1] = psi_lb[x  ][y][z-1]; // covers edges with z
+      psi_lb[x+1][y+1][z  ] = psi_lb[x+1][y][z  ];
+      psi_lb[x-1][y+1][z  ] = psi_lb[x-1][y][z  ];
+    }
+  }
+
+  if (!domain->periodicity[0]) {
+    if ((comm->myloc[0] == 0) && (x == halo_extent[0])) { // next to bottom x wall
+      density_lb[x-1][y  ][z  ] = density_lb[x][y  ][z  ];
+      density_lb[x-1][y  ][z+1] = density_lb[x][y  ][z+1]; // covers edges with z
+      density_lb[x-1][y  ][z-1] = density_lb[x][y  ][z-1]; // covers edges with z
+      density_lb[x-1][y+1][z  ] = density_lb[x][y+1][z  ]; // covers edges with y
+      density_lb[x-1][y-1][z  ] = density_lb[x][y-1][z  ]; // covers edges with y
+
+      phi_lb[x-1][y  ][z  ] = phi_lb[x][y  ][z  ];
+      phi_lb[x-1][y  ][z+1] = phi_lb[x][y  ][z+1]; // covers edges with z
+      phi_lb[x-1][y  ][z-1] = phi_lb[x][y  ][z-1]; // covers edges with z
+      phi_lb[x+1][y+1][z  ] = phi_lb[x][y+1][z  ];
+      phi_lb[x-1][y-1][z  ] = phi_lb[x][y-1][z  ];
+
+      psi_lb[x-1][y  ][z  ] = psi_lb[x][y  ][z  ];
+      psi_lb[x-1][y  ][z+1] = psi_lb[x][y  ][z+1]; // covers edges with z
+      psi_lb[x-1][y  ][z-1] = psi_lb[x][y  ][z-1]; // covers edges with z
+      psi_lb[x-1][y+1][z  ] = psi_lb[x][y+1][z  ];
+      psi_lb[x-1][y-1][z  ] = psi_lb[x][y-1][z  ];
+    }
+    if ((comm->myloc[0] == comm->procgrid[0]-1) && (x == subNbx-halo_extent[0]-1)) { // next to top x wall
+      density_lb[x+1][y  ][z  ] = density_lb[x][y  ][z  ];
+      density_lb[x+1][y  ][z+1] = density_lb[x][y  ][z+1]; // covers edges with z
+      density_lb[x+1][y  ][z-1] = density_lb[x][y  ][z-1]; // covers edges with z
+      density_lb[x+1][y+1][z  ] = density_lb[x][y+1][z  ]; // covers edges with y
+      density_lb[x+1][y-1][z  ] = density_lb[x][y-1][z  ]; // covers edges with y
+
+      phi_lb[x+1][y  ][z  ] = phi_lb[x][y  ][z  ];
+      phi_lb[x+1][y  ][z+1] = phi_lb[x][y  ][z+1]; // covers edges with z
+      phi_lb[x+1][y  ][z-1] = phi_lb[x][y  ][z-1]; // covers edges with z
+      phi_lb[x+1][y+1][z  ] = phi_lb[x][y+1][z  ];
+      phi_lb[x+1][y-1][z  ] = phi_lb[x][y-1][z  ];
+
+      psi_lb[x+1][y  ][z  ] = psi_lb[x][y  ][z  ];
+      psi_lb[x+1][y  ][z+1] = psi_lb[x][y  ][z+1]; // covers edges with z
+      psi_lb[x+1][y  ][z-1] = psi_lb[x][y  ][z-1]; // covers edges with z
+      psi_lb[x+1][y+1][z  ] = psi_lb[x][y+1][z  ];
+      psi_lb[x+1][y-1][z  ] = psi_lb[x][y-1][z  ];
+    }
+  }
+
 }
 
 // TODO: Check if it's better to test site type and do it per link

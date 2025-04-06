@@ -146,6 +146,7 @@ namespace LAMMPS_NS {
     void bounce_back_z_bottom();
     void bounce_back_z_top();
 
+    void neumann_bc(int x, int y, int z);
     void neumann_bc_bottom(int x, int y, int z);
     void neumann_bc_top(int x, int y, int z);
 
