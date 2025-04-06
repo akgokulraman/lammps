@@ -67,6 +67,7 @@ namespace LAMMPS_NS {
     double tau_r, tau_p, tau_s;
     double gamma_p, gamma_s;
     double kappa1, kappa2, kappa3;
+    double h1, h2, h3;
     double kappa_rr, kappa_pp, kappa_ss, kappa_rp, kappa_ps, kappa_rs;
     double alpha;
 
