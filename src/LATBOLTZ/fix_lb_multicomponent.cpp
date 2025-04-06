@@ -428,136 +428,278 @@ void FixLbMulticomponent::calc_moments_full() {
   }
 }
 
+// TODO: Check if it's better to test site type and do it per link
+
 void FixLbMulticomponent::neumann_bc_bottom(int x, int y, int z) {
-  if (!domain->periodicity[0]) {
-    if (comm->myloc[0] == 0) {
-      if (x == halo_extent[0] - 1) { // wall
-        if (y == halo_extent[1] - 1) { // edge
-          if (z == halo_extent[2] - 1) { // corner
-            density_lb[x][y][z] = density_lb[x+1][y+1][z+1];
-            phi_lb[x][y][z] = phi_lb[x+1][y+1][z+1];
-            psi_lb[x][y][z] = psi_lb[x+1][y+1][z+1];
-          } else { // edge
-            density_lb[x][y][z] = density_lb[x+1][y+1][z];
-            phi_lb[x][y][z] = phi_lb[x+1][y+1][z];
-            psi_lb[x][y][z] = psi_lb[x+1][y+1][z];
-          }
-        } else { // wall
-          density_lb[x][y][z] = density_lb[x+1][y][z];
-          phi_lb[x][y][z] = phi_lb[x+1][y][z];
-          psi_lb[x][y][z] = psi_lb[x+1][y][z];
-        }
+
+  if ((!domain->periodicity[0]) && (comm->myloc[0] == 0) && (x == halo_extent[0] - 1)) { // wall
+    if ((!domain->periodicity[1]) && (comm->myloc[1] == 0) && (y == halo_extent[1] - 1)) { // edge
+      if ((!domain->periodicity[2]) && (comm->myloc[2] == 0) && (z == halo_extent[2] - 1)) { // corner
+        density_lb[x][y][z] = density_lb[x+1][y+1][z+1];
+        phi_lb[x][y][z] = phi_lb[x+1][y+1][z+1];
+        psi_lb[x][y][z] = psi_lb[x+1][y+1][z+1];
+      } else if ((!domain->periodicity[2]) && (comm->myloc[2] == comm->procgrid[2] - 1) && (z == subNbz - halo_extent[2])) { // corner
+        density_lb[x][y][z] = density_lb[x+1][y+1][z-1];
+        phi_lb[x][y][z] = phi_lb[x+1][y+1][z-1];
+        psi_lb[x][y][z] = psi_lb[x+1][y+1][z-1];
+      } else { // edge
+        density_lb[x][y][z] = density_lb[x+1][y+1][z];
+        phi_lb[x][y][z] = phi_lb[x+1][y+1][z];
+        psi_lb[x][y][z] = psi_lb[x+1][y+1][z];
       }
+    } else if ((!domain->periodicity[1]) && (comm->myloc[1] == comm->procgrid[1] - 1) && (y == subNby - halo_extent[1])) { // edge
+      if ((!domain->periodicity[2]) && (comm->myloc[2] == 0) && (z == halo_extent[2] - 1)) { // corner
+        density_lb[x][y][z] = density_lb[x+1][y-1][z+1];
+        phi_lb[x][y][z] = phi_lb[x+1][y-1][z+1];
+        psi_lb[x][y][z] = psi_lb[x+1][y-1][z+1];
+      } else if ((!domain->periodicity[2]) && (comm->myloc[2] == comm->procgrid[2] - 1) && (z == subNbz - halo_extent[2])) { // corner
+        density_lb[x][y][z] = density_lb[x+1][y-1][z-1];
+        phi_lb[x][y][z] = phi_lb[x+1][y-1][z-1];
+        psi_lb[x][y][z] = psi_lb[x+1][y-1][z-1];
+      } else { // edge
+        density_lb[x][y][z] = density_lb[x+1][y-1][z];
+        phi_lb[x][y][z] = phi_lb[x+1][y-1][z];
+        psi_lb[x][y][z] = psi_lb[x+1][y-1][z];
+      }
+    } else if ((!domain->periodicity[2]) && (comm->myloc[2] == 0) && (z == halo_extent[2] - 1)) { // edge
+      density_lb[x][y][z] = density_lb[x+1][y][z+1];
+      phi_lb[x][y][z] = phi_lb[x+1][y][z+1];
+      psi_lb[x][y][z] = psi_lb[x+1][y][z+1];
+    } else if ((!domain->periodicity[1]) && (comm->myloc[2] == comm->procgrid[2] - 1) && (z == subNbz - halo_extent[2])) { // edge
+      density_lb[x][y][z] = density_lb[x+1][y][z-1];
+      phi_lb[x][y][z] = phi_lb[x+1][y][z-1];
+      psi_lb[x][y][z] = psi_lb[x+1][y][z-1];
+    } else { // wall
+      density_lb[x][y][z] = density_lb[x+1][y][z];
+      phi_lb[x][y][z] = phi_lb[x+1][y][z];
+      psi_lb[x][y][z] = psi_lb[x+1][y][z];
     }
   }
-  if (!domain->periodicity[1]) {
-    if (comm->myloc[1] == 0) {
-      if (y == halo_extent[1] - 1) { // wall
-        if (z == halo_extent[2] - 1) { // edge
-          if (x == halo_extent[0] - 1) { // corner
-            density_lb[x][y][z] = density_lb[x+1][y+1][z+1];
-            phi_lb[x][y][z] = phi_lb[x+1][y+1][z+1];
-            psi_lb[x][y][z] = psi_lb[x+1][y+1][z+1];
-          } else { // edge
-            density_lb[x][y][z] = density_lb[x][y+1][z+1];
-            phi_lb[x][y][z] = phi_lb[x][y+1][z+1];
-            psi_lb[x][y][z] = psi_lb[x][y+1][z+1];
-          }
-        } else { // wall
-          density_lb[x][y][z] = density_lb[x][y+1][z];
-          phi_lb[x][y][z] = phi_lb[x][y+1][z];
-          psi_lb[x][y][z] = psi_lb[x][y+1][z];
-        }
+
+  if ((!domain->periodicity[1]) && (comm->myloc[1] == 0) && (y == halo_extent[1] - 1)) { // wall
+    if ((!domain->periodicity[2]) && (comm->myloc[2] == 0) && (z == halo_extent[2] - 1)) { // edge
+      if ((!domain->periodicity[0]) && (comm->myloc[0] == 0) && (x == halo_extent[0] - 1)) { // corner (already covered above)
+        density_lb[x][y][z] = density_lb[x+1][y+1][z+1];
+        phi_lb[x][y][z] = phi_lb[x+1][y+1][z+1];
+        psi_lb[x][y][z] = psi_lb[x+1][y+1][z+1];
+      } else if ((!domain->periodicity[0]) && (comm->myloc[0] == comm->procgrid[0] - 1) && (x == subNbx - halo_extent[0])) { // corner
+        density_lb[x][y][z] = density_lb[x-1][y+1][z+1];
+        phi_lb[x][y][z] = phi_lb[x-1][y+1][z+1];
+        psi_lb[x][y][z] = psi_lb[x-1][y+1][z+1];
+      } else { // edge
+        density_lb[x][y][z] = density_lb[x][y+1][z+1];
+        phi_lb[x][y][z] = phi_lb[x][y+1][z+1];
+        psi_lb[x][y][z] = psi_lb[x][y+1][z+1];
       }
+    } else if ((!domain->periodicity[2]) && (comm->myloc[2] == comm->procgrid[2] - 1) && (z == subNbz - halo_extent[2] - 1)) { // edge
+      if ((!domain->periodicity[0]) && (comm->myloc[0] == 0) && (x == halo_extent[0] - 1)) { // corner (already covered above)
+        density_lb[x][y][z] = density_lb[x+1][y+1][z-1];
+        phi_lb[x][y][z] = phi_lb[x+1][y+1][z-1];
+        psi_lb[x][y][z] = psi_lb[x+1][y+1][z-1];
+      } else if ((!domain->periodicity[0]) && (comm->myloc[0] == comm->procgrid[0] - 1) && (x == subNbx - halo_extent[0])) { // corner
+        density_lb[x][y][z] = density_lb[x-1][y+1][z-1];
+        phi_lb[x][y][z] = phi_lb[x-1][y+1][z-1];
+        psi_lb[x][y][z] = psi_lb[x-1][y+1][z-1];
+      } else { // edge
+        density_lb[x][y][z] = density_lb[x][y+1][z-1];
+        phi_lb[x][y][z] = phi_lb[x][y+1][z-1];
+        psi_lb[x][y][z] = psi_lb[x][y+1][z-1];
+      }
+    } else if ((!domain->periodicity[0]) && (comm->myloc[0] == 0) && (z == halo_extent[0] - 1)) { // edge (already covered above)
+      density_lb[x][y][z] = density_lb[x+11][y+1][z];
+      phi_lb[x][y][z] = phi_lb[x+1][y+1][z];
+      psi_lb[x][y][z] = psi_lb[x+1][y+1][z];
+    } else if ((!domain->periodicity[0]) && (comm->myloc[0] == comm->procgrid[0] - 1) && (x == subNbx - halo_extent[2] - 1)) { // edge
+      density_lb[x][y][z] = density_lb[x-1][y+1][z];
+      phi_lb[x][y][z] = phi_lb[x-1][y+1][z];
+      psi_lb[x][y][z] = psi_lb[x-1][y+1][z];
+    } else { // wall
+      density_lb[x][y][z] = density_lb[x][y+1][z];
+      phi_lb[x][y][z] = phi_lb[x][y+1][z];
+      psi_lb[x][y][z] = psi_lb[x][y+1][z];
     }
   }
-  if (!domain->periodicity[2]) {
-    if (comm->myloc[2] == 0) {
-      if (z == halo_extent[2] - 1) { //wall
-        if (x == halo_extent[0] - 1) { // edge
-          if (y == halo_extent[1] - 1) { // corner
-            density_lb[x][y][z] = density_lb[x+1][y+1][z+1];
-            phi_lb[x][y][z] = phi_lb[x+1][y+1][z+1];
-            psi_lb[x][y][z] = psi_lb[x+1][y+1][z+1];
-          } else { // edge
-            density_lb[x][y][z] = density_lb[x+1][y][z+1];
-            phi_lb[x][y][z] = phi_lb[x+1][y][z+1];
-            psi_lb[x][y][z] = psi_lb[x+1][y][z+1];
-          }
-        } else { // wall
-          density_lb[x][y][z] = density_lb[x][y][z+1];
-          phi_lb[x][y][z] = phi_lb[x][y][z+1];
-          psi_lb[x][y][z] = psi_lb[x][y][z+1];
-        }
+
+  if ((!domain->periodicity[2]) && (comm->myloc[2] == 0) && (z == halo_extent[2] - 1)) { // wall
+    if ((!domain->periodicity[0]) && (comm->myloc[0] == 0) && (x == halo_extent[0] - 1)) { // edge
+      if ((!domain->periodicity[1]) && (comm->myloc[1] == 0) && (y == halo_extent[1] - 1)) { // corner (alread covered above)
+        density_lb[x][y][z] = density_lb[x+1][y+1][z+1];
+        phi_lb[x][y][z] = phi_lb[x+1][y+1][z+1];
+        psi_lb[x][y][z] = psi_lb[x+1][y+1][z+1];
+      } else if ((!domain->periodicity[1]) && (comm->myloc[1] == comm->procgrid[1] - 1) && (y == subNby - halo_extent[1])) { // corner (already covered above)
+        density_lb[x][y][z] = density_lb[x+1][y-1][z+1];
+        phi_lb[x][y][z] = phi_lb[x+1][y-1][z+1];
+        psi_lb[x][y][z] = psi_lb[x+1][y-1][z+1];
+      } else { // edge (already covered above)
+        density_lb[x][y][z] = density_lb[x+1][y][z+1];
+        phi_lb[x][y][z] = phi_lb[x+1][y][z+1];
+        psi_lb[x][y][z] = psi_lb[x+1][y][z+1];
       }
+    } else if ((!domain->periodicity[0]) && (comm->myloc[0] == comm->procgrid[0] - 1) && (x == subNbx - halo_extent[0])) { // edge
+      if ((!domain->periodicity[1]) && (comm->myloc[1] == 0) && (y == halo_extent[1] - 1)) { // corner (alread covered above)
+        density_lb[x][y][z] = density_lb[x-1][y+1][z+1];
+        phi_lb[x][y][z] = phi_lb[x-1][y+1][z+1];
+        psi_lb[x][y][z] = psi_lb[x-1][y+1][z+1];
+      } else if ((!domain->periodicity[1]) && (comm->myloc[1] == comm->procgrid[1] - 1) && (y == subNby - halo_extent[1])) { // corner
+        density_lb[x][y][z] = density_lb[x-1][y-1][z+1];
+        phi_lb[x][y][z] = phi_lb[x-1][y+1][z+1];
+        psi_lb[x][y][z] = psi_lb[x-1][y+1][z+1];
+      } else { // edge
+        density_lb[x][y][z] = density_lb[x-1][y][z+1];
+        phi_lb[x][y][z] = phi_lb[x-1][y][z+1];
+        psi_lb[x][y][z] = psi_lb[x-1][y][z+1];
+      }
+    } else if ((!domain->periodicity[1]) && (comm->myloc[1] == 0) && (y == halo_extent[1] - 1)) { // edge (already covered above)
+      density_lb[x][y][z] = density_lb[x][y+1][z+1];
+      phi_lb[x][y][z] = phi_lb[x][y-1][z+1];
+      psi_lb[x][y][z] = psi_lb[x][y-1][z+1];
+    } else if ((!domain->periodicity[1]) && (comm->myloc[1] == comm->procgrid[1] - 1) && (x == subNby - halo_extent[1])) { // edge
+      density_lb[x][y][z] = density_lb[x-1][y][z+1];
+      phi_lb[x][y][z] = phi_lb[x][y-1][z+1];
+      psi_lb[x][y][z] = psi_lb[x][y-1][z+1];
+    } else { // wall
+      density_lb[x][y][z] = density_lb[x][y][z+1];
+      phi_lb[x][y][z] = phi_lb[x][y][z+1];
+      psi_lb[x][y][z] = psi_lb[x][y][z+1];
     }
   }
+
 }
 
 void FixLbMulticomponent::neumann_bc_top(int x, int y, int z) {
-  if (!domain->periodicity[0]) {
-    if (comm->myloc[0] == comm->procgrid[0] - 1) {
-      if (x == subNbx - halo_extent[0]) { // wall
-        if (y == subNby - halo_extent[1]) { // edge
-          if (z == subNbz - halo_extent[2]) { // corner
-            density_lb[x][y][z] = density_lb[x-1][y-1][z-1];
-            phi_lb[x][y][z] = phi_lb[x-1][y-1][z-1];
-            psi_lb[x][y][z] = psi_lb[x-1][y-1][z-1];
-          } else { // edge
-            density_lb[x][y][z] = density_lb[x-1][y-1][z];
-            phi_lb[x][y][z] = phi_lb[x-1][y-1][z];
-            psi_lb[x][y][z] = psi_lb[x-1][y-1][z];
-          }
-        } else { // wall
-          density_lb[x][y][z] = density_lb[x-1][y][z];
-          phi_lb[x][y][z] = phi_lb[x-1][y][z];
-          psi_lb[x][y][z] = psi_lb[x-1][y][z];
-        }
+
+  if ((!domain->periodicity[0]) && (comm->myloc[0] == comm->procgrid[0] - 1) && (x == subNbx - halo_extent[0])) { // wall
+    if ((!domain->periodicity[1]) && (comm->myloc[1] == comm->procgrid[1] - 1) && (y == subNby - halo_extent[1])) { // edge
+      if ((!domain->periodicity[2]) && (comm->myloc[2] == comm->procgrid[2] - 1) && (z == subNbz - halo_extent[2])) { // corner
+        density_lb[x][y][z] = density_lb[x-1][y-1][z-1];
+        phi_lb[x][y][z] = phi_lb[x-1][y-1][z-1];
+        psi_lb[x][y][z] = psi_lb[x-1][y-1][z-1];
+      } else if ((!domain->periodicity[2]) && (comm->myloc[2] == 0) && (z == halo_extent[2] - 1)){ // corner
+        density_lb[x][y][z] = density_lb[x-1][y-1][z+1];
+        phi_lb[x][y][z] = phi_lb[x-1][y-1][z+1];
+        psi_lb[x][y][z] = psi_lb[x-1][y-1][z+1];
+      } else { // edge
+        density_lb[x][y][z] = density_lb[x-1][y-1][z];
+        phi_lb[x][y][z] = phi_lb[x-1][y-1][z];
+        psi_lb[x][y][z] = psi_lb[x-1][y-1][z];
       }
+    } else if ((!domain->periodicity[1]) && (comm->myloc[1] == 0) && (y == halo_extent[1] - 1)){ // edge
+      if ((!domain->periodicity[2]) && (comm->myloc[2] == comm->procgrid[2] - 1) && (z == subNbz - halo_extent[2])) { // corner
+        density_lb[x][y][z] = density_lb[x-1][y+1][z-1];
+        phi_lb[x][y][z] = phi_lb[x-1][y+1][z-1];
+        psi_lb[x][y][z] = psi_lb[x-1][y+1][z-1];
+      } else if ((!domain->periodicity[2]) && (comm->myloc[2] == 0) && (z == halo_extent[2] - 1)){ // corner
+        density_lb[x][y][z] = density_lb[x-1][y+1][z+1];
+        phi_lb[x][y][z] = phi_lb[x-1][y+1][z+1];
+        psi_lb[x][y][z] = psi_lb[x-1][y+1][z+1];
+      } else { // edge
+        density_lb[x][y][z] = density_lb[x-1][y+1][z];
+        phi_lb[x][y][z] = phi_lb[x-1][y+1][z];
+        psi_lb[x][y][z] = psi_lb[x-1][y+1][z];
+      }
+    } else if ((!domain->periodicity[2]) && (comm->myloc[2] == comm->procgrid[2] - 1) && (z == subNbz - halo_extent[2])){ // edge
+      density_lb[x][y][z] = density_lb[x-1][y][z-1];
+      phi_lb[x][y][z] = phi_lb[x-1][y][z-1];
+      psi_lb[x][y][z] = psi_lb[x-1][y][z-1];
+    } else if ((!domain->periodicity[2]) && (comm->myloc[2] == 0) && (z == halo_extent[2] - 1)){ // edge
+      density_lb[x][y][z] = density_lb[x-1][y+1][z+1];
+      phi_lb[x][y][z] = phi_lb[x-1][y][z+1];
+      psi_lb[x][y][z] = psi_lb[x-1][y][z+1];
+    } else { // wall
+      density_lb[x][y][z] = density_lb[x-1][y][z];
+      phi_lb[x][y][z] = phi_lb[x-1][y][z];
+      psi_lb[x][y][z] = psi_lb[x-1][y][z];
     }
   }
-  if (!domain->periodicity[1]) {
-    if (comm->myloc[1] == comm->procgrid[1] - 1) {
-      if (y == subNby - halo_extent[1]) { // wall
-        if (z == subNbz - halo_extent[2]) { // edge
-          if (x == subNbx - halo_extent[0]) { // corner
-            density_lb[x][y][z] = density_lb[x-1][y-1][z-1];
-            phi_lb[x][y][z] = phi_lb[x-1][y-1][z-1];
-            psi_lb[x][y][z] = psi_lb[x-1][y-1][z-1];
-          } else { // edge
-            density_lb[x][y][z] = density_lb[x][y-1][z-1];
-            phi_lb[x][y][z] = phi_lb[x][y-1][z-1];
-            psi_lb[x][y][z] = psi_lb[x][y-1][z-1];
-          }
-        } else { // wall
-          density_lb[x][y][z] = density_lb[x][y-1][z];
-          phi_lb[x][y][z] = phi_lb[x][y-1][z];
-          psi_lb[x][y][z] = psi_lb[x][y-1][z];
-        }
+
+  if ((!domain->periodicity[1]) && (comm->myloc[1] == comm->procgrid[1] - 1) && (y == subNby - halo_extent[1])) { // wall
+    if ((!domain->periodicity[2]) && (comm->myloc[2] == comm->procgrid[2] - 1) && (z == subNbz - halo_extent[2])) { // edge
+      if ((!domain->periodicity[0]) && (comm->myloc[0] == comm->procgrid[0] - 1) && (x == subNbx - halo_extent[0])) { // corner
+        density_lb[x][y][z] = density_lb[x-1][y-1][z-1];
+        phi_lb[x][y][z] = phi_lb[x-1][y-1][z-1];
+        psi_lb[x][y][z] = psi_lb[x-1][y-1][z-1];
+      } else if ((!domain->periodicity[0]) && (comm->myloc[0] == 0) && (x == halo_extent[0] - 1)){ // corner
+        density_lb[x][y][z] = density_lb[x+1][y-1][z-1];  // TODO is this available?
+        phi_lb[x][y][z] = phi_lb[x+1][y-1][z-1];
+        psi_lb[x][y][z] = psi_lb[x+1][y-1][z-1];
+      } else { // edge
+        density_lb[x][y][z] = density_lb[x][y-1][z-1];
+        phi_lb[x][y][z] = phi_lb[x][y-1][z-1];
+        psi_lb[x][y][z] = psi_lb[x][y-1][z-1];
       }
+    } else if ((!domain->periodicity[2]) && (comm->myloc[2] == 0) && (z == halo_extent[2] - 1)) { // edge
+      if ((!domain->periodicity[0]) && (comm->myloc[0] == comm->procgrid[0] - 1) && (x == subNbx - halo_extent[0])) { // corner
+        density_lb[x][y][z] = density_lb[x-1][y-1][z+1];
+        phi_lb[x][y][z] = phi_lb[x-1][y-1][z+1];
+        psi_lb[x][y][z] = psi_lb[x-1][y-1][z+1];
+      } else if ((!domain->periodicity[0]) && (comm->myloc[0] == 0) && (x == halo_extent[0] - 1)) { // corner
+        density_lb[x][y][z] = density_lb[x+1][y-1][z+1]; // TODO is this available?
+        phi_lb[x][y][z] = phi_lb[x+1][y-1][z+1];
+        psi_lb[x][y][z] = psi_lb[x+1][y-1][z+1];
+      } else { // edge
+        density_lb[x][y][z] = density_lb[x][y-1][z+1];
+        phi_lb[x][y][z] = phi_lb[x][y-1][z+1];
+        psi_lb[x][y][z] = psi_lb[x][y-1][z+1];
+      }
+    } else if ((!domain->periodicity[0]) && (comm->myloc[0] == comm->procgrid[0] - 1) && (x == subNbx - halo_extent[0])) { // edge
+      density_lb[x][y][z] = density_lb[x-1][y-1][z];
+      phi_lb[x][y][z] = phi_lb[x-1][y-1][z];
+      psi_lb[x][y][z] = psi_lb[x-1][y-1][z];
+    } else if ((!domain->periodicity[0]) && (comm->myloc[0] == 0) && (x == halo_extent[0] - 1)) { // edge
+      density_lb[x][y][z] = density_lb[x+1][y-1][z];  // TODO is this available?
+      phi_lb[x][y][z] = phi_lb[x+1][y-1][z];
+      psi_lb[x][y][z] = psi_lb[x+1][y-1][z];
+    } else { // wall
+      density_lb[x][y][z] = density_lb[x][y-1][z];
+      phi_lb[x][y][z] = phi_lb[x][y-1][z];
+      psi_lb[x][y][z] = psi_lb[x][y-1][z];
     }
   }
-  if (!domain->periodicity[2]) {
-    if (comm->myloc[2] == comm->procgrid[2] - 1) {
-      if (z == subNbz - halo_extent[2]) { // wall
-        if (x == subNbx - halo_extent[0]) { // edge
-          if (y == subNby - halo_extent[1]) { // corner
-            density_lb[x][y][z] = density_lb[x-1][y-1][z-1];
-            phi_lb[x][y][z] = phi_lb[x-1][y-1][z-1];
-            psi_lb[x][y][z] = psi_lb[x-1][y-1][z-1];
-          } else { // edge
-            density_lb[x][y][z] = density_lb[x-1][y][z-1];
-            phi_lb[x][y][z] = phi_lb[x-1][y][z-1];
-            psi_lb[x][y][z] = psi_lb[x-1][y][z-1];
-          }
-        } else { // wall
-          density_lb[x][y][z] = density_lb[x][y][z-1];
-          phi_lb[x][y][z] = phi_lb[x][y][z-1];
-          psi_lb[x][y][z] = psi_lb[x][y][z-1];
-        }
+
+  if ((!domain->periodicity[2]) && (comm->myloc[2] == comm->procgrid[2] - 1) && (z == subNbz - halo_extent[2])) { // wall
+    if ((!domain->periodicity[0]) && (comm->myloc[0] == comm->procgrid[0] - 1) && (x == subNbx - halo_extent[0])) { // edge
+      if ((!domain->periodicity[1]) && (comm->myloc[1] == comm->procgrid[1] - 1) && (y == subNby - halo_extent[1])) { // corner
+        density_lb[x][y][z] = density_lb[x-1][y-1][z-1];
+        phi_lb[x][y][z] = phi_lb[x-1][y-1][z-1];
+        psi_lb[x][y][z] = psi_lb[x-1][y-1][z-1];
+      } else if ((!domain->periodicity[1]) && (comm->myloc[1] == 0) && (y == halo_extent[1] - 1)) { // corner
+        density_lb[x][y][z] = density_lb[x-1][y+1][z-1];
+        phi_lb[x][y][z] = phi_lb[x-1][y+1][z-1];
+        psi_lb[x][y][z] = psi_lb[x-1][y+1][z-1];
+      } else { // edge
+        density_lb[x][y][z] = density_lb[x-1][y][z-1];
+        phi_lb[x][y][z] = phi_lb[x-1][y][z-1];
+        psi_lb[x][y][z] = psi_lb[x-1][y][z-1];
       }
+    } else if ((!domain->periodicity[0]) && (comm->myloc[0] == 0) && (x == halo_extent[0] - 1)) { // edge
+      if ((!domain->periodicity[1]) && (comm->myloc[1] == comm->procgrid[1] - 1) && (y == subNby - halo_extent[1])) { // corner
+        density_lb[x][y][z] = density_lb[x+1][y-1][z-1];
+        phi_lb[x][y][z] = phi_lb[x+1][y-1][z-1];
+        psi_lb[x][y][z] = psi_lb[x+1][y-1][z-1];
+      } else if ((!domain->periodicity[1]) && (comm->myloc[1] == 0) && (y == halo_extent[1] - 1)) { // corner
+        density_lb[x][y][z] = density_lb[x+1][y+1][z-1];
+        phi_lb[x][y][z] = phi_lb[x+1][y+1][z-1];
+        psi_lb[x][y][z] = psi_lb[x+1][y+1][z-1];
+      } else { // edge
+        density_lb[x][y][z] = density_lb[x+1][y][z-1];
+        phi_lb[x][y][z] = phi_lb[x+1][y][z-1];
+        psi_lb[x][y][z] = psi_lb[x+1][y][z-1];
+      }
+    } else if ((!domain->periodicity[1]) && (comm->myloc[1] == comm->procgrid[1] - 1) && (y == subNby - halo_extent[1])) { // edge
+      density_lb[x][y][z] = density_lb[x][y-1][z-1];
+      phi_lb[x][y][z] = phi_lb[x][y-1][z-1];
+      psi_lb[x][y][z] = psi_lb[x][y-1][z-1];
+    } else if ((!domain->periodicity[1]) && (comm->myloc[1] == 0) && (y == halo_extent[1] - 1)) { // edge
+      density_lb[x][y][z] = density_lb[x][y+1][z-1];
+      phi_lb[x][y][z] = phi_lb[x][y+1][z-1];
+      psi_lb[x][y][z] = psi_lb[x][y+1][z-1];
+    } else { // wall
+      density_lb[x][y][z] = density_lb[x][y][z-1];
+      phi_lb[x][y][z] = phi_lb[x][y][z-1];
+      psi_lb[x][y][z] = psi_lb[x][y][z-1];
     }
   }
+
 }
 
 void FixLbMulticomponent::bounce_back() {
