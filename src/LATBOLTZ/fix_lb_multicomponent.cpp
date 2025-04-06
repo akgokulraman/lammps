@@ -614,7 +614,7 @@ void FixLbMulticomponent::bounce_back_x_bottom() {
 }
 
 void FixLbMulticomponent::bounce_back_x_top() {
-  int x = subNbz - halo_extent[0] - 1;
+  int x = subNbx - halo_extent[0] - 1;
   for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
     for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
       fnew[x][y][z][3]  = fnew[x+1][y][z][1];
