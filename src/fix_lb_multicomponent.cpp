@@ -245,9 +245,13 @@ void FixLbMulticomponent::final_bounce_back() {
   }
   int z_top = domain->boxhi[2]-1;
   int z_bot = domain->boxlo[2];
+  int x_top = domain->boxhi[0]-1;
+  int x_bot = domain->boxlo[0];
+  int y_top = domain->boxhi[1]-1;
+  int y_bot = domain->boxlo[1];
   for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++){
     int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
-    if(cur_z == z_top-1){
+    if(cur_z == z_top){
       for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
         for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
           // bounce back at top
@@ -276,18 +280,17 @@ void FixLbMulticomponent::final_bounce_back() {
             std::vector<int> forward_dir = {5, 11, 13, 17, 15};
             std::vector<int> reverse_dir = {6, 14, 12, 16, 18};
             for (size_t pos = 0; pos < forward_dir.size(); ++pos) {
-                int i = forward_dir[pos];
+                int i = reverse_dir[pos];
                 double dot_prd = e19[i][0] * slab_top_vel[0] + e19[i][1] * slab_top_vel[1] + e19[i][2] * slab_top_vel[2];
-                fnew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * rho * (dot_prd / cs2);
-                gnew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * phi * (dot_prd / cs2);
-                knew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * psi * (dot_prd / cs2);
-                // fnew[x][y][z-1][reverse_dir[pos]] = f_lb[x][y][z-1][forward_dir[pos]] -2 * w_lb19[i] * 1 * (dot_prd / cs2);
-            }           
+                fnew[x][y][z][i] += 2 * w_lb19[i] * 1 * (dot_prd / cs2);
+                gnew[x][y][z][i] += 2 * w_lb19[i] * 1 * (dot_prd / cs2);
+                knew[x][y][z][i] += 2 * w_lb19[i] * 1 * (dot_prd / cs2);
+            }      
           }
         }
       }   
     }
-    if(cur_z == z_bot+1){
+    if(cur_z == z_bot){
       for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
         for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
           // bounce back at bottom
@@ -316,11 +319,11 @@ void FixLbMulticomponent::final_bounce_back() {
             std::vector<int> forward_dir = {6, 14, 12, 16, 18};
             std::vector<int> reverse_dir = {5, 11, 13, 17, 15};
             for (size_t pos = 0; pos < forward_dir.size(); ++pos) {
-                int i = forward_dir[pos];
+                int i = reverse_dir[pos];
                 double dot_prd = e19[i][0] * slab_bot_vel[0] + e19[i][1] * slab_bot_vel[1] + e19[i][2] * slab_bot_vel[2];
-                fnew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * rho * (dot_prd / cs2);
-                gnew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * phi * (dot_prd / cs2);
-                knew[x][y][z][reverse_dir[pos]] -= 2 * w_lb19[i] * psi * (dot_prd / cs2);
+                fnew[x][y][z][i] += 2 * w_lb19[i] * 1 * (dot_prd / cs2);
+                gnew[x][y][z][i] += 2 * w_lb19[i] * 1 * (dot_prd / cs2);
+                knew[x][y][z][i] += 2 * w_lb19[i] * 1 * (dot_prd / cs2);
             }
           }
         }
@@ -384,7 +387,7 @@ void FixLbMulticomponent::correcting_phase(int x, int y, int z) {
   int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
   int cur_y = domain->sublo[1] + (y-halo_extent[1])*dx_lb;
   int cur_x = domain->sublo[0] + (x-halo_extent[0])*dx_lb;
-  if(cur_z == z_top){
+  if(cur_z == z_top+1){
     // perpendicular
     density_lb[x][y][z] = density_lb[x][y][z-1];
     phi_lb[x][y][z] = phi_lb[x][y][z-1];
@@ -414,7 +417,7 @@ void FixLbMulticomponent::correcting_phase(int x, int y, int z) {
     //   psi_lb[x+1][y+1][z] = psi_lb[x][y][z-1]; 
     // }
   }
-  if(cur_z == z_bot+1){
+  if(cur_z == z_bot){
     // perpendicular
     density_lb[x][y][z-1] = density_lb[x][y][z];
     phi_lb[x][y][z-1] = phi_lb[x][y][z];
@@ -715,12 +718,12 @@ void FixLbMulticomponent::init_binary_separated() {
         for (z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
           pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
           if (pos[2] > box_mid_z) {
-            C1_init = 1 + 0.01*random->gaussian();
+            C1_init = 1;
             C2_init = 0;
             C3_init = 0;
           } else {
             C1_init = 0;
-            C2_init = 1 + 0.01*random->gaussian();
+            C2_init = 1;
             C3_init = 0;
           }
           rho = densityinit;
@@ -814,7 +817,7 @@ void FixLbMulticomponent::init_binary_separated() {
 
 // droplet composed of component C1 and C2 (C3=0)
 void FixLbMulticomponent::init_droplet(double radius) {
-  double rho=1.0, phi, psi=0.0;
+  double rho=1.0, phi, psi=0.0, C1, C2, C3;
   double pos[3], r2;
   int x, y, z, i;
   double box_mid_z = domain->boxlo[2] + 0.5*domain->zprd;
@@ -826,9 +829,19 @@ void FixLbMulticomponent::init_droplet(double radius) {
       pos[1] = domain->sublo[1] + (y-halo_extent[1])*dx_lb;
       for (z=0; z<subNbz; z++) {
 	      pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
-	      r2 = pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2];
+	      r2 = (pos[0]+0.5)*(pos[0]+0.5)+(pos[1]+0.5)*(pos[1]+0.5)+(pos[2]+0.5)*(pos[2]+0.5); // redefining droplet calculation by adjusitng center
+        // r2 = pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2];
         // r2 = (pos[0]-box_mid_x)*(pos[0]-box_mid_x)+(pos[1]-box_mid_y)*(pos[1]-box_mid_y)+(pos[2]-box_mid_z)*(pos[2]-box_mid_z);
-	      phi = r2 < radius*radius ? 1.0 : -1.0;
+	      // phi = r2 < radius*radius ? 1.0 : -1.0;
+        if(r2<radius*radius){
+          C1 = 0.95;
+          C2 = 0.05;
+        }
+        else{
+          C1 = 0.05;
+          C2 = 0.95;
+        }
+        phi = C1 - C2;
 	      for (i=0; i<numvel; i++) {
 	        f_lb[x][y][z][i] = w_lb19[i]*rho*densityinit;
 	        g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
