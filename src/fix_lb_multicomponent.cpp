@@ -834,12 +834,12 @@ void FixLbMulticomponent::init_droplet(double radius) {
         // r2 = (pos[0]-box_mid_x)*(pos[0]-box_mid_x)+(pos[1]-box_mid_y)*(pos[1]-box_mid_y)+(pos[2]-box_mid_z)*(pos[2]-box_mid_z);
 	      // phi = r2 < radius*radius ? 1.0 : -1.0;
         if(r2<radius*radius){
-          C1 = 0.95;
-          C2 = 0.05;
+          C1 = 0.97;
+          C2 = 0.03;
         }
         else{
-          C1 = 0.05;
-          C2 = 0.95;
+          C1 = 0.03;
+          C2 = 0.97;
         }
         phi = C1 - C2;
 	      for (i=0; i<numvel; i++) {
