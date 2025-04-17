@@ -199,14 +199,12 @@ void FixLbMulticomponent::calc_moments(int x, int y, int z) {
 }
 
 void FixLbMulticomponent::bounce_back() { 
-  int z_top = domain->boxhi[2] - 1;
+  int z_top = domain->boxhi[2];
   int z_bot = domain->boxlo[2];
-  int y_top = domain->boxhi[1] - 1;
-  int y_bot = domain->boxlo[1];
 
   for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++){ 
     int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb; 
-    if(cur_z == z_top){ 
+    if(cur_z == z_top - 1){ 
       for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) { 
         for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) { 
           // bounce back at top
@@ -230,7 +228,7 @@ void FixLbMulticomponent::bounce_back() {
         } 
       } 
     }
-    if(cur_z == z_bot){
+    if(cur_z == z_bot + 1){
       for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
         for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
           // bounce back at bottom
