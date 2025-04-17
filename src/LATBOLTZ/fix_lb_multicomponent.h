@@ -67,23 +67,21 @@ namespace LAMMPS_NS {
     double tau_r, tau_p, tau_s;
     double gamma_p, gamma_s;
     double kappa1, kappa2, kappa3;
-    double h1, h2, h3;
     double kappa_rr, kappa_pp, kappa_ss, kappa_rp, kappa_ps, kappa_rs;
     double alpha;
 
     int seed;
     double C1, C2, C3;
     int radius;
-    double C1_three, C2_three, C3_three;
-    double C1_drop, C2_drop, C3_drop;
+    double C1_drop, C2_drop;
     double C1_film, C2_film;
     double thickness;
 
-    double ****g_lb;
-    double ****gnew;
-    double ****geq;
-    double ****k_lb;
-    double ****knew;
+    double ****g_lb;                                
+    double ****gnew;                              
+    double ****geq;    
+    double ****k_lb;                                
+    double ****knew;                              
     double ****keq;
     
     double ***pressure_lb;
@@ -105,20 +103,15 @@ namespace LAMMPS_NS {
     void init_lattice();
     void destroy_lattice();
 
-    enum init_type { MIXTURE, BINARY_MIXTURE, DROPLET, LIQUID_LENS, DOUBLE_EMULSION, FILM, THREE_REGIONS, SEMI_DROPLET, SEMI_MIXED_DROPLET, MIXED_DROPLET};
+    enum init_type { MIXTURE, DROPLET, LIQUID_LENS, DOUBLE_EMULSION, FILM, MIXED_DROPLET };
     init_type init_method = MIXTURE;
 
     void init_fluid();
     void init_mixture();
-    void init_binary_mixture();
-    void init_single();
     void init_droplet(double radius);
     void init_liquid_lens(double radius);
     void init_double_emulsion(double radius);
     void init_film(double thickness, double C1, double C2);
-    void init_three_regions(double C1_three, double C2_three, double C3_three);
-    void init_semi_droplet(double radius, double C1, double C2, double C3);
-    void init_semi_mixed_droplet(double radius, double C1, double C2);
     void init_mixed_droplet(double radius, double C1, double C2);
 
     void lb_update();
@@ -131,9 +124,6 @@ namespace LAMMPS_NS {
     void read_column(int x,int y, int zmin, int zmax);
     void read_site(int x, int y, int z);
     void write_site(int x, int y, int z);
-    void bounce_back();
-    void Neumann_BC(int x, int y, int z);
-    //void Neumann_BC();
 
     void calc_moments(int x, int y, int z);
     void calc_chemical_potentials(int x, int y, int z);
