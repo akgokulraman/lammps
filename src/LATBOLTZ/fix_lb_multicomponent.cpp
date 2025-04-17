@@ -196,6 +196,22 @@ void FixLbMulticomponent::calc_moments(int x, int y, int z) {
   u_lb[x][y][z][1] = j[1]/rho;
   u_lb[x][y][z][2] = j[2]/rho;
   pressure_lb[x][y][z] = pressure(rho,phi,psi);
+
+    // correcting_phase
+    int z_top = domain->boxhi[2] + 1;
+    int z_bot = domain->boxlo[2] - 1;
+    int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
+ 
+    if(cur_z == z_top){
+      density_lb[x][y][z] = density_lb[x][y][z - 1];
+      phi_lb[x][y][z] = phi_lb[x][y][z - 1];
+      psi_lb[x][y][z] = psi_lb[x][y][z - 1];
+    }
+    if(cur_z == z_bot){
+      density_lb[x][y][z - 1] = density_lb[x][y][z];
+      phi_lb[x][y][z - 1] = phi_lb[x][y][z];
+      psi_lb[x][y][z - 1] = psi_lb[x][y][z];
+    }
 }
 
 void FixLbMulticomponent::bounce_back() { 
