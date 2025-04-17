@@ -103,7 +103,7 @@ namespace LAMMPS_NS {
     void init_lattice();
     void destroy_lattice();
 
-    enum init_type { MIXTURE, DROPLET, LIQUID_LENS, DOUBLE_EMULSION, FILM, MIXED_DROPLET };
+    enum init_type { MIXTURE, DROPLET, LIQUID_LENS, DOUBLE_EMULSION, FILM, SEMI_DROPLET, MIXED_DROPLET };
     init_type init_method = MIXTURE;
 
     void init_fluid();
@@ -112,6 +112,7 @@ namespace LAMMPS_NS {
     void init_liquid_lens(double radius);
     void init_double_emulsion(double radius);
     void init_film(double thickness, double C1, double C2);
+    void init_semi_droplet(double radius, double C1, double C2, double C3);
     void init_mixed_droplet(double radius, double C1, double C2);
 
     void lb_update();
