@@ -128,6 +128,7 @@ namespace LAMMPS_NS {
     void write_site(int x, int y, int z);
 
     void calc_moments(int x, int y, int z);
+    void bounce_back();
     void calc_chemical_potentials(int x, int y, int z);
     void calc_equilibrium(int x, int y, int z);
     void calc_feq(int x, int y, int z);

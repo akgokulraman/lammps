@@ -102,6 +102,8 @@ void FixLbMulticomponent::lb_update() {
   update_cube(subNbx-4,subNbx, 0,subNby, 0,subNbz);
 #endif
 
+  bounce_back();
+
   /* swap the pointers of the lattice copies */
   std::swap(f_lb,fnew);
   std::swap(g_lb,gnew);
@@ -194,6 +196,65 @@ void FixLbMulticomponent::calc_moments(int x, int y, int z) {
   u_lb[x][y][z][1] = j[1]/rho;
   u_lb[x][y][z][2] = j[2]/rho;
   pressure_lb[x][y][z] = pressure(rho,phi,psi);
+}
+
+void FixLbMulticomponent::bounce_back() { 
+  int z_top = domain->boxhi[2] - 1;
+  int z_bot = domain->boxlo[2];
+  int y_top = domain->boxhi[1] - 1;
+  int y_bot = domain->boxlo[1];
+
+  for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++){ 
+    int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb; 
+    if(cur_z == z_top){ 
+      for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) { 
+        for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) { 
+          // bounce back at top
+          fnew[x][y][z][6] = fnew[x][y][z + 1][5];
+          fnew[x][y][z][14] = fnew[x + 1][y][z + 1][11];
+          fnew[x][y][z][12] = fnew[x - 1][y][z + 1][13];
+          fnew[x][y][z][16] = fnew[x][y - 1][z + 1][17];
+          fnew[x][y][z][18] = fnew[x][y + 1][z + 1][15];
+          // ----
+          gnew[x][y][z][6] = gnew[x][y][z + 1][5];
+          gnew[x][y][z][14] = gnew[x + 1][y][z + 1][11];
+          gnew[x][y][z][12] = gnew[x - 1][y][z + 1][13];
+          gnew[x][y][z][16] = gnew[x][y - 1][z + 1][17];
+          gnew[x][y][z][18] = gnew[x][y + 1][z + 1][15];
+          // ----
+          knew[x][y][z][6] = knew[x][y][z + 1][5];
+          knew[x][y][z][14] = knew[x + 1][y][z + 1][11];
+          knew[x][y][z][12] = knew[x - 1][y][z + 1][13];
+          knew[x][y][z][16] = knew[x][y - 1][z + 1][17];
+          knew[x][y][z][18] = knew[x][y + 1][z + 1][15];	  
+        } 
+      } 
+    }
+    if(cur_z == z_bot){
+      for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+        for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+          // bounce back at bottom
+          fnew[x][y][z][5] = fnew[x][y][z][6];
+          fnew[x][y][z][11] = fnew[x - 1][y][z - 1][14];
+          fnew[x][y][z][13] = fnew[x + 1][y][z - 1][12];
+          fnew[x][y][z][17] = fnew[x][y + 1][z - 1][16];
+          fnew[x][y][z][15] = fnew[x][y - 1][z - 1][18];
+          // ----
+          gnew[x][y][z][5] = gnew[x][y][z][6];
+          gnew[x][y][z][11] = gnew[x - 1][y][z - 1][14];
+          gnew[x][y][z][13] = gnew[x + 1][y][z - 1][12];
+          gnew[x][y][z][17] = gnew[x][y + 1][z - 1][16];
+          gnew[x][y][z][15] = gnew[x][y - 1][z - 1][18];
+          // ----
+          knew[x][y][z][5] = knew[x][y][z][6];
+          knew[x][y][z][11] = knew[x - 1][y][z - 1][14];
+          knew[x][y][z][13] = knew[x + 1][y][z - 1][12];
+          knew[x][y][z][17] = knew[x][y + 1][z - 1][16];
+          knew[x][y][z][15] = knew[x][y - 1][z - 1][18];
+        }
+      }
+    }
+  }
 }
 
 void FixLbMulticomponent::calc_equilibrium(int x, int y, int z) {
