@@ -38,6 +38,7 @@
 #include "update.h"
 #include "error.h"
 #include "random_mars.h"
+#include <iostream>
 
 using namespace LAMMPS_NS;
 
@@ -101,9 +102,8 @@ void FixLbMulticomponent::lb_update() {
   update_cube(0,4, 0,subNby, 0,subNbz);
   update_cube(subNbx-4,subNbx, 0,subNby, 0,subNbz);
 #endif
-
+  
   bounce_back();
-
   /* swap the pointers of the lattice copies */
   std::swap(f_lb,fnew);
   std::swap(g_lb,gnew);
@@ -189,40 +189,59 @@ void FixLbMulticomponent::calc_moments(int x, int y, int z) {
     j[1] += fi*e19[i][1];
     j[2] += fi*e19[i][2];
   }
+
   density_lb[x][y][z] = rho;
   phi_lb[x][y][z] = phi;
   psi_lb[x][y][z] = psi;
+
   u_lb[x][y][z][0] = j[0]/rho;
   u_lb[x][y][z][1] = j[1]/rho;
   u_lb[x][y][z][2] = j[2]/rho;
+  
   pressure_lb[x][y][z] = pressure(rho,phi,psi);
+  Neumann_BC(x,y,z);
 
-    // correcting_phase
-    int z_top = domain->boxhi[2] + 1;
-    int z_bot = domain->boxlo[2] - 1;
-    int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
- 
-    if(cur_z == z_top){
-      density_lb[x][y][z] = density_lb[x][y][z - 1];
-      phi_lb[x][y][z] = phi_lb[x][y][z - 1];
-      psi_lb[x][y][z] = psi_lb[x][y][z - 1];
-    }
-    if(cur_z == z_bot){
-      density_lb[x][y][z - 1] = density_lb[x][y][z];
-      phi_lb[x][y][z - 1] = phi_lb[x][y][z];
-      psi_lb[x][y][z - 1] = psi_lb[x][y][z];
-    }
+  // // correcting_phase
+  // int z_top = domain->boxhi[2] - 1;
+  // int z_bot = domain->boxlo[2];
+  // int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
+  // int y_top = domain->boxhi[1] - 1;
+  // int y_bot = domain->boxlo[1];
+  // int cur_y = domain->sublo[1] + (y-halo_extent[1])*dx_lb;
+
+  // if(cur_z == z_top + 1){
+  //   density_lb[x][y][z] = density_lb[x][y][z - 1];
+  //   phi_lb[x][y][z] = phi_lb[x][y][z - 1];
+  //   psi_lb[x][y][z] = psi_lb[x][y][z - 1];
+  // }
+  // if(cur_z == z_bot){
+  //   density_lb[x][y][z - 1] = density_lb[x][y][z];
+  //   phi_lb[x][y][z - 1] = phi_lb[x][y][z];
+  //   psi_lb[x][y][z - 1] = psi_lb[x][y][z];
+  // }
+  // if(cur_y == y_top + 1){
+  //   density_lb[x][y][z] = density_lb[x][y - 1][z];
+  //   phi_lb[x][y][z] = phi_lb[x][y - 1][z];
+  //   psi_lb[x][y][z] = psi_lb[x][y - 1][z];
+  // }
+  // if(cur_y == y_bot){
+  //   density_lb[x][y - 1][z] = density_lb[x][y][z];
+  //   phi_lb[x][y - 1][z] = phi_lb[x][y][z];
+  //   psi_lb[x][y - 1][z] = psi_lb[x][y][z];
+  // }
 }
 
 void FixLbMulticomponent::bounce_back() { 
-  int z_top = domain->boxhi[2] + 1;
-  int z_bot = domain->boxlo[2] - 1;
+  int z_top = domain->boxhi[2] - 1;
+  int z_bot = domain->boxlo[2];
+  // int y_top = domain->boxhi[1] - 1;
+  // int y_bot = domain->boxlo[1];
 
-  for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++){ 
-    int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb; 
+  for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++){
+    int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
     if(cur_z == z_top){ 
-      for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) { 
-        for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) { 
+      for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+        for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
           // bounce back at top
           fnew[x][y][z][6] = fnew[x][y][z + 1][5];
           fnew[x][y][z][14] = fnew[x + 1][y][z + 1][11];
@@ -240,7 +259,7 @@ void FixLbMulticomponent::bounce_back() {
           knew[x][y][z][14] = knew[x + 1][y][z + 1][11];
           knew[x][y][z][12] = knew[x - 1][y][z + 1][13];
           knew[x][y][z][16] = knew[x][y - 1][z + 1][17];
-          knew[x][y][z][18] = knew[x][y + 1][z + 1][15];	  
+          knew[x][y][z][18] = knew[x][y + 1][z + 1][15];
         } 
       } 
     }
@@ -248,19 +267,19 @@ void FixLbMulticomponent::bounce_back() {
       for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
         for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
           // bounce back at bottom
-          fnew[x][y][z][5] = fnew[x][y][z][6];
+          fnew[x][y][z][5] = fnew[x][y][z - 1][6];
           fnew[x][y][z][11] = fnew[x - 1][y][z - 1][14];
           fnew[x][y][z][13] = fnew[x + 1][y][z - 1][12];
           fnew[x][y][z][17] = fnew[x][y + 1][z - 1][16];
           fnew[x][y][z][15] = fnew[x][y - 1][z - 1][18];
           // ----
-          gnew[x][y][z][5] = gnew[x][y][z][6];
+          gnew[x][y][z][5] = gnew[x][y][z - 1][6];
           gnew[x][y][z][11] = gnew[x - 1][y][z - 1][14];
           gnew[x][y][z][13] = gnew[x + 1][y][z - 1][12];
           gnew[x][y][z][17] = gnew[x][y + 1][z - 1][16];
           gnew[x][y][z][15] = gnew[x][y - 1][z - 1][18];
           // ----
-          knew[x][y][z][5] = knew[x][y][z][6];
+          knew[x][y][z][5] = knew[x][y][z - 1][6];
           knew[x][y][z][11] = knew[x - 1][y][z - 1][14];
           knew[x][y][z][13] = knew[x + 1][y][z - 1][12];
           knew[x][y][z][17] = knew[x][y + 1][z - 1][16];
@@ -269,6 +288,129 @@ void FixLbMulticomponent::bounce_back() {
       }
     }
   }
+  // for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++){ 
+  //   int cur_y = domain->sublo[1] + (y-halo_extent[1])*dx_lb; 
+  //   if(cur_y == y_top){ 
+  //     for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) { 
+  //       for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) { 
+  //       // bounce back at top
+  //       fnew[x][y][z][4] = fnew[x][y + 1][z][2];
+  //       fnew[x][y][z][8] = fnew[x - 1][y + 1][z][9];
+  //       fnew[x][y][z][10] = fnew[x + 1][y + 1][z][7];
+  //       fnew[x][y][z][18] = fnew[x][y + 1][z + 1][15];
+  //       fnew[x][y][z][17] = fnew[x][y + 1][z - 1][16];
+  //       // ----
+  //       gnew[x][y][z][4] = gnew[x][y + 1][z][2];
+  //       gnew[x][y][z][8] = gnew[x - 1][y + 1][z][9];
+  //       gnew[x][y][z][10] = gnew[x + 1][y + 1][z][7];
+  //       gnew[x][y][z][18] = gnew[x][y + 1][z + 1][15];
+  //       gnew[x][y][z][17] = gnew[x][y + 1][z - 1][16];
+  //       // ----
+  //       knew[x][y][z][4] = knew[x][y + 1][z][2];
+  //       knew[x][y][z][8] = knew[x - 1][y + 1][z][9];
+  //       knew[x][y][z][10] = knew[x + 1][y + 1][z][7];
+  //       knew[x][y][z][18] = knew[x][y + 1][z + 1][15];
+  //       knew[x][y][z][17] = knew[x][y + 1][z - 1][16];
+  //       } 
+  //     } 
+  //   }
+  //   if(cur_y == y_bot){
+  //     for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+  //       for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
+  //         // bounce back at bottom
+  //         fnew[x][y][z][2] = fnew[x][y - 1][z][4];
+  //         fnew[x][y][z][9] = fnew[x + 1][y - 1][z][8];
+  //         fnew[x][y][z][7] = fnew[x - 1][y - 1][z][10];
+  //         fnew[x][y][z][15] = fnew[x][y - 1][z - 1][18];
+  //         fnew[x][y][z][16] = fnew[x][y - 1][z + 1][17];
+  //         // ----
+  //         gnew[x][y][z][2] = gnew[x][y - 1][z][4];
+  //         gnew[x][y][z][9] = gnew[x + 1][y - 1][z][8];
+  //         gnew[x][y][z][7] = gnew[x - 1][y - 1][z][10];
+  //         gnew[x][y][z][15] = gnew[x][y - 1][z - 1][18];
+  //         gnew[x][y][z][16] = gnew[x][y - 1][z + 1][17];
+  //         // ----
+  //         knew[x][y][z][2] = knew[x][y - 1][z][4];
+  //         knew[x][y][z][9] = knew[x + 1][y - 1][z][8];
+  //         knew[x][y][z][7] = knew[x - 1][y - 1][z][10];
+  //         knew[x][y][z][15] = knew[x][y - 1][z - 1][18];
+  //         knew[x][y][z][16] = knew[x][y - 1][z + 1][17];
+  //       }
+  //     }
+  //   }
+  // }
+}
+
+void FixLbMulticomponent::Neumann_BC(int x, int y, int z) {
+  int z_top = domain->boxhi[2] - 1;
+  int z_bot = domain->boxlo[2];
+  // int y_top = domain->boxhi[1];
+  // int y_bot = domain->boxlo[1];
+
+  double alpha2 = alpha * alpha;
+  double H1 = (h1 / (alpha2 * kappa1));
+  double H2 = (h2 / (alpha2 * kappa2));
+  double H3 = (h3 / (alpha2 * kappa3));
+
+  // for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++){
+  int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
+  if(cur_z == z_top + 1){
+    // density_lb[x][y + 1][z] = density_lb[x][y + 1][z - 1] - H1 - H2 - H3;
+    density_lb[x][y][z] = density_lb[x][y][z - 1] - H1 - H2 - H3;
+    // density_lb[x][y - 1][z] = density_lb[x][y - 1][z - 1] - H1 - H2 - H3;
+
+    // phi_lb[x][y + 1][z] = phi_lb[x][y + 1][z - 1] - H1 + H2;
+    phi_lb[x][y][z] = phi_lb[x][y][z - 1] - H1 + H2;
+    // phi_lb[x][y - 1][z] = phi_lb[x][y - 1][z - 1] - H1 + H2;
+
+    // psi_lb[x][y + 1][z] = psi_lb[x][y + 1][z - 1] - H3;
+    psi_lb[x][y][z] = psi_lb[x][y][z - 1] - H3;
+    // psi_lb[x][y - 1][z] = psi_lb[x][y - 1][z - 1] - H3;
+  }
+  if(cur_z == z_bot){
+    // density_lb[x][y + 1][z - 1] = density_lb[x][y + 1][z + 1] + H1 + H2 + H3;
+    density_lb[x][y][z - 1] = density_lb[x][y][z] + H1 + H2 + H3;
+    // density_lb[x][y - 1][z - 1] = density_lb[x][y - 1][z + 1] + H1 + H2 + H3;
+
+    // phi_lb[x][y + 1][z - 1] = phi_lb[x][y + 1][z + 1] + H1 - H2;
+    phi_lb[x][y][z - 1] = phi_lb[x][y][z] + H1 - H2;
+    // phi_lb[x][y - 1][z - 1] = phi_lb[x][y - 1][z + 1] + H1 - H2;
+
+    // psi_lb[x][y + 1][z - 1] = psi_lb[x][y + 1][z + 1] + H3;
+    psi_lb[x][y][z - 1] = psi_lb[x][y][z] + H3;
+    // psi_lb[x][y - 1][z - 1] = psi_lb[x][y - 1][z + 1] + H3;
+  }
+  // }
+  // for (int y = halo_extent[1]; y < subNby - halo_extent[1]; y++) {
+  //   int cur_y = domain->sublo[1] + (y - halo_extent[1]) * dx_lb;
+  //   if (cur_y == y_top) {
+  //     density_lb[x][y][z + 1] = density_lb[x][y - 1][z + 1] - H1 - H2 - H3;
+  //     density_lb[x][y][z] = density_lb[x][y - 1][z] - H1 - H2 - H3;
+  //     density_lb[x][y][z - 1] = density_lb[x][y - 1][z - 1] - H1 - H2 - H3;
+
+  //     phi_lb[x][y][z + 1] = phi_lb[x][y - 1][z + 1] - H1 + H2;
+  //     phi_lb[x][y][z] = phi_lb[x][y - 1][z] - H1 + H2;
+  //     phi_lb[x][y][z - 1] = phi_lb[x][y - 1][z - 1] - H1 + H2;
+
+  //     psi_lb[x][y][z + 1] = psi_lb[x][y - 1][z + 1] - H3;
+  //     psi_lb[x][y][z] = psi_lb[x][y - 1][z] - H3;
+  //     psi_lb[x][y][z - 1] = psi_lb[x][y - 1][z - 1] - H3;
+  //   }
+
+  //   if (cur_y == y_bot) {
+  //     density_lb[x][y][z + 1] = density_lb[x][y + 1][z + 1] + H1 + H2 + H3;
+  //     density_lb[x][y][z] = density_lb[x][y + 1][z] + H1 + H2 + H3;
+  //     density_lb[x][y][z - 1] = density_lb[x][y + 1][z - 1] + H1 + H2 + H3;
+
+  //     phi_lb[x][y][z + 1] = phi_lb[x][y + 1][z + 1] + H1 - H2;
+  //     phi_lb[x][y][z] = phi_lb[x][y + 1][z] + H1 - H2;
+  //     phi_lb[x][y][z - 1] = phi_lb[x][y + 1][z - 1] + H1 - H2;
+
+  //     psi_lb[x][y][z + 1] = psi_lb[x][y + 1][z + 1] + H3;
+  //     psi_lb[x][y][z] = psi_lb[x][y + 1][z] + H3;
+  //     psi_lb[x][y][z - 1] = psi_lb[x][y + 1][z - 1] + H3;
+  //   }
+  // }
 }
 
 void FixLbMulticomponent::calc_equilibrium(int x, int y, int z) {
@@ -599,6 +741,7 @@ void FixLbMulticomponent::init_liquid_lens(double radius) {
 
 }
 
+
 // double emulsion droplet of C1 and C2 surrounded by C3
 void FixLbMulticomponent::init_double_emulsion(double radius) {
   double rho=1.0, phi, psi;
@@ -787,12 +930,12 @@ void FixLbMulticomponent::init_semi_droplet(double radius, double C1, double C2,
         r2 = ((pos[0]-cent_pos[0])*(pos[0]-cent_pos[0]))+((pos[1]-cent_pos[1])*(pos[1]-cent_pos[1]))+((pos[2]-cent_pos[2])*(pos[2]-cent_pos[2]));
         if (r2 > radius*radius) {
           C1_init = 0.0;
-          C2_init = 1 - C3_init;
-          C3_init = C3;
+          C2_init = 1.0;
+          C3_init = 0.0;
         } 
         else {
-          C1_init = C1;
-          C2_init = 1 - C1_init;
+          C1_init = 1.0;
+          C2_init = 0.0;
           C3_init = 0.0;
         }
         rho = densityinit;
@@ -825,7 +968,7 @@ void FixLbMulticomponent::init_mixed_droplet(double radius, double C1, double C2
       pos[1] = domain->sublo[1] + (y-halo_extent[1])*dx_lb;
       for (z=0; z<subNbz; z++) {
       	pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
-      	r2 = pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2];
+      	r2 = r2 = pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2];
 
       	if (r2 < radius*radius) {
 	        C1_init = C1 + 0.01*random->gaussian();
@@ -847,6 +990,13 @@ void FixLbMulticomponent::init_mixed_droplet(double radius, double C1, double C2
 	      C1tot += C1_init;
 	      C2tot += C2_init;
 	      C3tot += C3_init;
+      	std::cout << "this is pos[0] " << pos[0] <<"\n";
+	      std::cout << "this is pos[1] " << pos[1] <<"\n";	
+        std::cout << "this is pos[2] " << pos[2] <<"\n";
+        std::cout << "this is C1_init " << C1_init <<"\n";
+        std::cout << "this is C2_init " << C2_init <<"\n";
+        std::cout << "this is C3_init " << C3_init <<"\n";
+        std::cout << "this is r^2 " << r2 << " at " << pos[0] << ", " << pos[1] << ", and " << pos[2]<<"\n";
       }
     }
   }
@@ -1384,6 +1534,7 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
   kappa1 = 0.01; kappa2 = 0.01, kappa3 = 0.01; // surface tensions
   tau_r = 1.0; tau_p = 1.0; tau_s = 0.666667;  // relaxation times
   gamma_p = 1.0; gamma_s = 1.0;                // mobility coefficients
+  h1 = -0.002; h2 = 0.002; h3 = 0.0;           // interaction parameter
   init_method = MIXTURE;                       // initialization
 
   // parse optional parameters
@@ -1417,6 +1568,21 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
     else if (strcmp(argv[argi],"kappa3")==0) {
       if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
       kappa3 = utils::numeric(FLERR, argv[argi+1], false, lmp);
+      argi += 2;
+    }
+    else if (strcmp(argv[argi],"h1")==0) {
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      h1 = utils::numeric(FLERR, argv[argi+1], false, lmp);
+      argi += 2;
+    }
+    else if (strcmp(argv[argi],"h2")==0) {
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      h2 = utils::numeric(FLERR, argv[argi+1], false, lmp);
+      argi += 2;
+    }
+    else if (strcmp(argv[argi],"h3")==0) {
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      h3 = utils::numeric(FLERR, argv[argi+1], false, lmp);
       argi += 2;
     }
     else if (strcmp(argv[argi],"alpha")==0) {
@@ -1511,7 +1677,7 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
       }
       else if(strcmp(argv[argi],"mixed_droplet")==0){
         if (argi+4 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
-        radius = utils::numeric(FLERR, argv[argi+1], false, lmp);
+  radius = utils::numeric(FLERR, argv[argi+1], false, lmp);
 	C1_drop = utils::numeric(FLERR, argv[argi+2], false, lmp);
 	C2_drop = utils::numeric(FLERR, argv[argi+3], false, lmp);
         init_method = MIXED_DROPLET;

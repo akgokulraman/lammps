@@ -69,11 +69,12 @@ namespace LAMMPS_NS {
     double kappa1, kappa2, kappa3;
     double kappa_rr, kappa_pp, kappa_ss, kappa_rp, kappa_ps, kappa_rs;
     double alpha;
+    double h1, h2, h3;
 
     int seed;
     double C1, C2, C3;
     int radius;
-    double C1_drop, C2_drop;
+    double C1_drop, C2_drop, C3_drop;
     double C1_film, C2_film;
     double thickness;
 
@@ -129,6 +130,7 @@ namespace LAMMPS_NS {
 
     void calc_moments(int x, int y, int z);
     void bounce_back();
+    void Neumann_BC(int x, int y, int z);
     void calc_chemical_potentials(int x, int y, int z);
     void calc_equilibrium(int x, int y, int z);
     void calc_feq(int x, int y, int z);
