@@ -74,7 +74,7 @@ namespace LAMMPS_NS {
     int seed;
     double C1, C2, C3;
     int radius;
-    double C1_drop, C2_drop, C3_drop;
+    double C1_drop, C2_drop, C3_drop, C1_drop_out, C2_drop_out, C3_drop_out;
     double C1_film, C2_film;
     double thickness;
 
@@ -114,7 +114,7 @@ namespace LAMMPS_NS {
     void init_double_emulsion(double radius);
     void init_film(double thickness, double C1, double C2);
     void init_three_regions();
-    void init_semi_droplet(double radius, double C1, double C2, double C3);
+    void init_semi_droplet(double radius, double C1, double C2, double C3, double C1_out, double C2_out, double C3_out);
     void init_mixed_droplet(double radius, double C1, double C2);
 
     void lb_update();

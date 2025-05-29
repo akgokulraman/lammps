@@ -911,13 +911,13 @@ void FixLbMulticomponent::init_three_regions() {
   delete(random);
 }
 
-// double emulsion droplet of C1 and C2 surrounded by C3
-void FixLbMulticomponent::init_semi_droplet(double radius, double C1, double C2, double C3) {
+// semi droplet 
+void FixLbMulticomponent::init_semi_droplet(double radius, double C1, double C2, double C3, double C1_out, double C2_out, double C3_out) {
   double rho=1.0, phi, psi, C1_init, C2_init, C3_init;
   double pos[3];
   double r2;
   int x, y, z, i;
-  double cent_pos[3] = {double((domain->boxlo[0]+domain->boxhi[0])/2), double((domain->boxlo[1]+domain->boxhi[1])/2), double(domain->boxlo[2])};
+  double cent_pos[3] = {double((domain->boxlo[0]+domain->boxhi[0])/2), double((domain->boxlo[1]+domain->boxhi[1])/2), double(domain->boxhi[2])};
 
   RanMars *random = new RanMars(lmp,seed + comm->me);
 
@@ -928,15 +928,14 @@ void FixLbMulticomponent::init_semi_droplet(double radius, double C1, double C2,
       for (z=0; z<subNbz; z++) {
         pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
         r2 = ((pos[0]-cent_pos[0])*(pos[0]-cent_pos[0]))+((pos[1]-cent_pos[1])*(pos[1]-cent_pos[1]))+((pos[2]-cent_pos[2])*(pos[2]-cent_pos[2]));
-        if (r2 > radius*radius) {
-          C1_init = 0.0;
-          C2_init = 1.0;
-          C3_init = 0.0;
-        } 
-        else {
-          C1_init = 1.0;
-          C2_init = 0.0;
-          C3_init = 0.0;
+        if (r2 < radius*radius) {
+            C1_init = C1 + 0.01*random->gaussian();
+            C2_init = C2;
+            C3_init = C3;
+        } else {
+            C1_init = C1_out;
+            C2_init = C2_out;
+            C3_init = C3_out;
         }
         rho = densityinit;
         phi = densityinit*(C1_init-C2_init);
@@ -1035,7 +1034,7 @@ void FixLbMulticomponent::init_fluid() {
       init_three_regions();
       break;
     case SEMI_DROPLET:
-      init_semi_droplet(radius, C1_drop, C2_drop, C3_drop);
+      init_semi_droplet(radius, C1_drop, C2_drop, C3_drop, C1_drop_out, C2_drop_out, C3_drop_out);
       break;
     case MIXED_DROPLET:
       init_mixed_droplet(radius, C1_drop, C2_drop);
@@ -1670,10 +1669,13 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
         if (argi+5 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
   radius = utils::numeric(FLERR, argv[argi+1], false, lmp);
   C1_drop = utils::numeric(FLERR, argv[argi+2], false, lmp);
-  C2_drop = utils::numeric(FLERR, argv[argi+2], false, lmp);
-  C3_drop = utils::numeric(FLERR, argv[argi+3], false, lmp);
+  C2_drop = utils::numeric(FLERR, argv[argi+3], false, lmp);
+  C3_drop = utils::numeric(FLERR, argv[argi+4], false, lmp);
+  C1_drop_out = utils::numeric(FLERR, argv[argi+5], false, lmp);
+  C2_drop_out = utils::numeric(FLERR, argv[argi+6], false, lmp);
+  C3_drop_out = utils::numeric(FLERR, argv[argi+7], false, lmp);
         init_method = SEMI_DROPLET;
-        argi += 5;
+        argi += 8;
       }
       else if(strcmp(argv[argi],"mixed_droplet")==0){
         if (argi+4 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
