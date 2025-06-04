@@ -124,7 +124,6 @@ namespace LAMMPS_NS {
     void lb_update();
     void calc_moments_full();
     void collide_stream(int x, int y, int z);
-    void bounce_back(int x, int y, int z);
     void update_cube(int xmin, int xmax, int ymin, int ymax, int zmin, int zmax);
     void update_slab(int x, int ymin, int ymax, int zmin, int zmax);
     void update_column(int x, int y, int zmin, int zmax);
@@ -135,7 +134,6 @@ namespace LAMMPS_NS {
 
     void calc_moments(int x, int y, int z);
     void calc_chemical_potentials(int x, int y, int z);
-    void correcting_phase(int x, int y, int z);
     void calc_equilibrium(int x, int y, int z);
     void calc_feq(int x, int y, int z);
     void calc_geq(int x, int y, int z);
@@ -145,7 +143,9 @@ namespace LAMMPS_NS {
     void calc_phi_gradients(int x, int y, int z);
     void calc_psi_gradients(int x, int y, int z);
     double pressure(double rho, double phi, double psi);
-    void final_bounce_back();
+
+    void bounce_back();
+    void neumann_bc(int x, int y, int z);
 
     static const int numrequests = 12;
     MPI_Request requests[numrequests];

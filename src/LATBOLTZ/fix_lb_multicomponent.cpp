@@ -107,7 +107,7 @@ void FixLbMulticomponent::lb_update() {
   update_cube(0,4, 0,subNby, 0,subNbz);
   update_cube(subNbx-4,subNbx, 0,subNby, 0,subNbz);
 #endif
-  final_bounce_back();
+  bounce_back();
   /* swap the pointers of the lattice copies */
   std::swap(f_lb,fnew);
   std::swap(g_lb,gnew);
@@ -163,7 +163,6 @@ void FixLbMulticomponent::read_site(int x, int y, int z) {
 
 void FixLbMulticomponent::write_site(int x, int y, int z) {
   collide_stream(x,y,z);
-  // bounce_back(x,y,z);
 }
 
 void FixLbMulticomponent::collide_stream(int x, int y, int z) {
@@ -195,51 +194,7 @@ void FixLbMulticomponent::collide_stream(int x, int y, int z) {
   }
 }
 
-void FixLbMulticomponent::bounce_back(int x, int y, int z) {
-  // Function to implement bounce_back along z direction
-  int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
-  if (cur_z == domain->boxhi[2]-2) {
-    fnew[x][y][z][6] = f_lb[x][y][z][5];
-    fnew[x][y][z][14] = f_lb[x][y][z][11];
-    fnew[x][y][z][12] = f_lb[x][y][z][13];
-    fnew[x][y][z][16] = f_lb[x][y][z][17];
-    fnew[x][y][z][18] = f_lb[x][y][z][15];
-    // ----
-    gnew[x][y][z][6] = g_lb[x][y][z][5];
-    gnew[x][y][z][14] = g_lb[x][y][z][11];
-    gnew[x][y][z][12] = g_lb[x][y][z][13];
-    gnew[x][y][z][16] = g_lb[x][y][z][17];
-    gnew[x][y][z][18] = g_lb[x][y][z][15];
-    // ----
-    knew[x][y][z][6] = k_lb[x][y][z][5];
-    knew[x][y][z][14] = k_lb[x][y][z][11];
-    knew[x][y][z][12] = k_lb[x][y][z][13];
-    knew[x][y][z][16] = k_lb[x][y][z][17];
-    knew[x][y][z][18] = k_lb[x][y][z][15];
-  }
-
-  if (cur_z == domain->boxlo[2]+1) {
-    fnew[x][y][z][5] = f_lb[x][y][z][6];
-    fnew[x][y][z][11] = f_lb[x][y][z][14];
-    fnew[x][y][z][13] = f_lb[x][y][z][12];
-    fnew[x][y][z][17] = f_lb[x][y][z][16];
-    fnew[x][y][z][15] = f_lb[x][y][z][18];
-    // ----
-    gnew[x][y][z][5] = g_lb[x][y][z][6];
-    gnew[x][y][z][11] = g_lb[x][y][z][14];
-    gnew[x][y][z][13] = g_lb[x][y][z][12];
-    gnew[x][y][z][17] = g_lb[x][y][z][16];
-    gnew[x][y][z][15] = g_lb[x][y][z][18];
-    // ----
-    knew[x][y][z][5] = k_lb[x][y][z][6];
-    knew[x][y][z][11] = k_lb[x][y][z][14];
-    knew[x][y][z][13] = k_lb[x][y][z][12];
-    knew[x][y][z][17] = k_lb[x][y][z][16];
-    knew[x][y][z][15] = k_lb[x][y][z][18];
-  }
-}
-
-void FixLbMulticomponent::final_bounce_back() {
+void FixLbMulticomponent::bounce_back() {
   if(update->ntimestep*dt_lb>timestep_movingBoundary_start){
     movingBoundary = true;
   }
@@ -260,18 +215,19 @@ void FixLbMulticomponent::final_bounce_back() {
           fnew[x][y][z][12] = fnew[x-1][y][z+1][13];
           fnew[x][y][z][16] = fnew[x][y-1][z+1][17];
           fnew[x][y][z][18] = fnew[x][y+1][z+1][15];
-          // ----
+
           gnew[x][y][z][6] = gnew[x][y][z+1][5];
           gnew[x][y][z][14] = gnew[x+1][y][z+1][11];
           gnew[x][y][z][12] = gnew[x-1][y][z+1][13];
           gnew[x][y][z][16] = gnew[x][y-1][z+1][17];
           gnew[x][y][z][18] = gnew[x][y+1][z+1][15];
-          // ----
+
           knew[x][y][z][6] = knew[x][y][z+1][5];
           knew[x][y][z][14] = knew[x+1][y][z+1][11];
           knew[x][y][z][12] = knew[x-1][y][z+1][13];
           knew[x][y][z][16] = knew[x][y-1][z+1][17];
           knew[x][y][z][18] = knew[x][y+1][z+1][15];
+
           if(movingBoundary == true){
             double rho = density_lb[x][y][z];
             double phi = phi_lb[x][y][z];
@@ -299,31 +255,28 @@ void FixLbMulticomponent::final_bounce_back() {
           fnew[x][y][z][13] = fnew[x+1][y][z-1][12];
           fnew[x][y][z][17] = fnew[x][y+1][z-1][16];
           fnew[x][y][z][15] = fnew[x][y-1][z-1][18];
-          // ----
+
           gnew[x][y][z][5] = gnew[x][y][z-1][6];
           gnew[x][y][z][11] = gnew[x-1][y][z-1][14];
           gnew[x][y][z][13] = gnew[x+1][y][z-1][12];
           gnew[x][y][z][17] = gnew[x][y+1][z-1][16];
           gnew[x][y][z][15] = gnew[x][y-1][z-1][18];
-          // ----
+
           knew[x][y][z][5] = knew[x][y][z-1][6];
           knew[x][y][z][11] = knew[x-1][y][z-1][14];
           knew[x][y][z][13] = knew[x+1][y][z-1][12];
           knew[x][y][z][17] = knew[x][y+1][z-1][16];
           knew[x][y][z][15] = knew[x][y-1][z-1][18];
           if(movingBoundary == true){
-            double rho = density_lb[x][y][z];
-            double phi = phi_lb[x][y][z];
-            double psi = psi_lb[x][y][z];
             double slab_bot_vel[3] = {u_x_bot, u_y_bot, u_z_bot};
             std::vector<int> forward_dir = {6, 14, 12, 16, 18};
             std::vector<int> reverse_dir = {5, 11, 13, 17, 15};
             for (size_t pos = 0; pos < forward_dir.size(); ++pos) {
                 int i = reverse_dir[pos];
                 double dot_prd = e19[i][0] * slab_bot_vel[0] + e19[i][1] * slab_bot_vel[1] + e19[i][2] * slab_bot_vel[2];
-                fnew[x][y][z][i] += 2 * w_lb19[i] * 1 * (dot_prd / cs2);
-                gnew[x][y][z][i] += 2 * w_lb19[i] * 1 * (dot_prd / cs2);
-                knew[x][y][z][i] += 2 * w_lb19[i] * 1 * (dot_prd / cs2);
+                fnew[x][y][z][i] += 2*w_lb19[i]*dot_prd/cs2;
+                gnew[x][y][z][i] += 2*w_lb19[i]*dot_prd/cs2;
+                knew[x][y][z][i] += 2*w_lb19[i]*dot_prd/cs2;
             }
           }
         }
@@ -359,24 +312,10 @@ void FixLbMulticomponent::calc_moments(int x, int y, int z) {
   u_lb[x][y][z][2] += 0.5*forcing[2]/rho;
   pressure_lb[x][y][z] = pressure(rho,phi,psi);
 
-  // // correcting_phase - to correct corners
-  // int z_top = domain->boxhi[2]-1;
-  // int z_bot = domain->boxlo[2];
-  // int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
-  // if(cur_z == z_top){
-  //   density_lb[x][y][z] = density_lb[x][y][z-1];
-  //   phi_lb[x][y][z] = phi_lb[x][y][z-1];
-  //   psi_lb[x][y][z] = psi_lb[x][y][z-1]; 
-  // }
-  // if(cur_z == z_bot+1){
-  //   density_lb[x][y][z-1] = density_lb[x][y][z];
-  //   phi_lb[x][y][z-1] = phi_lb[x][y][z];
-  //   psi_lb[x][y][z-1] = psi_lb[x][y][z]; 
-  // }
-  correcting_phase(x,y,z);
+  neumann_bc(x,y,z); // [2025/06/04 uschill: moments at z+1 have not been calculated yet!]
 }
 
-void FixLbMulticomponent::correcting_phase(int x, int y, int z) {
+void FixLbMulticomponent::neumann_bc(int x, int y, int z) {
   // from read_site
   int z_top = domain->boxhi[2]-1;
   int z_bot = domain->boxlo[2];
@@ -392,64 +331,16 @@ void FixLbMulticomponent::correcting_phase(int x, int y, int z) {
     density_lb[x][y][z] = density_lb[x][y][z-1];
     phi_lb[x][y][z] = phi_lb[x][y][z-1];
     psi_lb[x][y][z] = psi_lb[x][y][z-1];
-    // if(cur_y == y_bot && cur_x == x_bot){
-    //   // diagonal
-    //   density_lb[x][y-1][z] = density_lb[x][y][z-1];
-    //   phi_lb[x][y-1][z] = phi_lb[x][y][z-1];
-    //   psi_lb[x][y-1][z] = psi_lb[x][y][z-1];
-    //   density_lb[x-1][y][z] = density_lb[x][y][z-1];
-    //   phi_lb[x-1][y][z] = phi_lb[x][y][z-1];
-    //   psi_lb[x-1][y][z] = psi_lb[x][y][z-1]; 
-    //   density_lb[x-1][y-1][z] = density_lb[x][y][z-1];
-    //   phi_lb[x-1][y-1][z] = phi_lb[x][y][z-1];
-    //   psi_lb[x-1][y-1][z] = psi_lb[x][y][z-1]; 
-    // }
-    // else if(cur_y == y_top && cur_x == x_top){
-    //   // diagonal
-    //   density_lb[x][y+1][z] = density_lb[x][y][z-1];
-    //   phi_lb[x][y+1][z] = phi_lb[x][y][z-1];
-    //   psi_lb[x][y+1][z] = psi_lb[x][y][z-1];
-    //   density_lb[x+1][y][z] = density_lb[x][y][z-1];
-    //   phi_lb[x+1][y][z] = phi_lb[x][y][z-1];
-    //   psi_lb[x+1][y][z] = psi_lb[x][y][z-1]; 
-    //   density_lb[x+1][y+1][z] = density_lb[x][y][z-1];
-    //   phi_lb[x+1][y+1][z] = phi_lb[x][y][z-1];
-    //   psi_lb[x+1][y+1][z] = psi_lb[x][y][z-1]; 
-    // }
   }
   if(cur_z == z_bot){
     // perpendicular
     density_lb[x][y][z-1] = density_lb[x][y][z];
     phi_lb[x][y][z-1] = phi_lb[x][y][z];
     psi_lb[x][y][z-1] = psi_lb[x][y][z];
-    // if(cur_y == y_bot && cur_x == x_bot){
-    //   // diagonal
-    //   density_lb[x][y-1][z-1] = density_lb[x][y][z];
-    //   phi_lb[x][y-1][z-1] = phi_lb[x][y][z];
-    //   psi_lb[x][y-1][z-1] = psi_lb[x][y][z];
-    //   density_lb[x-1][y][z-1] = density_lb[x][y][z];
-    //   phi_lb[x-1][y][z-1] = phi_lb[x][y][z];
-    //   psi_lb[x-1][y][z-1] = psi_lb[x][y][z]; 
-    //   density_lb[x-1][y-1][z-1] = density_lb[x][y][z];
-    //   phi_lb[x-1][y-1][z-1] = phi_lb[x][y][z];
-    //   psi_lb[x-1][y-1][z-1] = psi_lb[x][y][z]; 
-    // }
-    // else if(cur_y == y_top && cur_x == x_top){
-    //   // diagonal
-    //   density_lb[x][y+1][z-1] = density_lb[x][y][z];
-    //   phi_lb[x][y+1][z-1] = phi_lb[x][y][z];
-    //   psi_lb[x][y+1][z-1] = psi_lb[x][y][z];
-    //   density_lb[x+1][y][z-1] = density_lb[x][y][z];
-    //   phi_lb[x+1][y][z-1] = phi_lb[x][y][z];
-    //   psi_lb[x+1][y][z-1] = psi_lb[x][y][z]; 
-    //   density_lb[x+1][y+1][z-1] = density_lb[x][y][z];
-    //   phi_lb[x+1][y+1][z-1] = phi_lb[x][y][z];
-    //   psi_lb[x+1][y+1][z-1] = psi_lb[x][y][z]; 
-    // }
   }
 }
+
 void FixLbMulticomponent::calc_equilibrium(int x, int y, int z) {
-  // correcting_phase(x,y,z);
   calc_gradient_laplacian(x,y,z, density_lb, density_gradient, laplace_rho);
   calc_gradient_laplacian(x,y,z, phi_lb, phi_gradient, laplace_phi);
   calc_gradient_laplacian(x,y,z, psi_lb, psi_gradient, laplace_psi);
