@@ -165,6 +165,93 @@ void FixLbMulticomponent::write_site(int x, int y, int z) {
   collide_stream(x,y,z);
 }
 
+void FixLbMulticomponent::bounce_back() {
+  const double rho_w = 1.0;
+
+  if(update->ntimestep*dt_lb>timestep_movingBoundary_start){
+    movingBoundary = true;
+  }
+
+  if(comm->myloc[2] == comm->procgrid[2]-1) {
+    int z = subNbz-1-halo_extent[2]; // last fluid layer
+    for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+      for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+
+          // bounce back at top
+        fnew[x][y][z][6] = fnew[x][y][z+1][5];
+        fnew[x][y][z][14] = fnew[x+1][y][z+1][11];
+        fnew[x][y][z][12] = fnew[x-1][y][z+1][13];
+        fnew[x][y][z][16] = fnew[x][y-1][z+1][17];
+        fnew[x][y][z][18] = fnew[x][y+1][z+1][15];
+
+        gnew[x][y][z][6] = gnew[x][y][z+1][5];
+        gnew[x][y][z][14] = gnew[x+1][y][z+1][11];
+        gnew[x][y][z][12] = gnew[x-1][y][z+1][13];
+        gnew[x][y][z][16] = gnew[x][y-1][z+1][17];
+        gnew[x][y][z][18] = gnew[x][y+1][z+1][15];
+
+        knew[x][y][z][6] = knew[x][y][z+1][5];
+        knew[x][y][z][14] = knew[x+1][y][z+1][11];
+        knew[x][y][z][12] = knew[x-1][y][z+1][13];
+        knew[x][y][z][16] = knew[x][y-1][z+1][17];
+        knew[x][y][z][18] = knew[x][y+1][z+1][15];
+
+        if(movingBoundary == true){
+          std::vector<int> dir = {6, 14, 12, 16, 18};
+          for (int k=0; k<dir.size(); ++k) {
+              int i = dir[k];
+              double uc = e19[i][0] * u_x_top + e19[i][1] * u_y_top + e19[i][2] * u_z_top;
+              fnew[x][y][z][i] += 2*w_lb19[i]*rho_w*uc/cs2;
+              gnew[x][y][z][i] += 2*w_lb19[i]*rho_w*uc/cs2;
+              knew[x][y][z][i] += 2*w_lb19[i]*rho_w*uc/cs2;
+          }
+        }
+
+      }
+    }
+  }
+
+  if (comm->myloc[2] == 0) {
+    int z = halo_extent[2]; // first fluid layer
+    for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+      for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+
+        // bounce back at bottom
+        fnew[x][y][z][5] = fnew[x][y][z-1][6];
+        fnew[x][y][z][11] = fnew[x-1][y][z-1][14];
+        fnew[x][y][z][13] = fnew[x+1][y][z-1][12];
+        fnew[x][y][z][17] = fnew[x][y+1][z-1][16];
+        fnew[x][y][z][15] = fnew[x][y-1][z-1][18];
+
+        gnew[x][y][z][5] = gnew[x][y][z-1][6];
+        gnew[x][y][z][11] = gnew[x-1][y][z-1][14];
+        gnew[x][y][z][13] = gnew[x+1][y][z-1][12];
+        gnew[x][y][z][17] = gnew[x][y+1][z-1][16];
+        gnew[x][y][z][15] = gnew[x][y-1][z-1][18];
+
+        knew[x][y][z][5] = knew[x][y][z-1][6];
+        knew[x][y][z][11] = knew[x-1][y][z-1][14];
+        knew[x][y][z][13] = knew[x+1][y][z-1][12];
+        knew[x][y][z][17] = knew[x][y+1][z-1][16];
+        knew[x][y][z][15] = knew[x][y-1][z-1][18];
+
+        if(movingBoundary == true){
+          std::vector<int> dir = {5, 11, 13, 17, 15};
+          for (int k=0; k<dir.size(); ++k) {
+              int i = dir[k];
+              double uc = e19[i][0] * u_x_bot + e19[i][1] * u_y_bot + e19[i][2] * u_z_bot;
+              fnew[x][y][z][i] += 2*w_lb19[i]*rho_w*uc/cs2;
+              gnew[x][y][z][i] += 2*w_lb19[i]*rho_w*uc/cs2;
+              knew[x][y][z][i] += 2*w_lb19[i]*rho_w*uc/cs2;
+          }
+        }
+
+      }
+    }
+  }
+
+}
+
 void FixLbMulticomponent::collide_stream(int x, int y, int z) {
   int i, xnew, ynew, znew;
   double f_w[19] = {0, 0.11111, 0.11111, 0.11111, 0.11111, 0.11111, 0.11111, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777};
@@ -192,97 +279,6 @@ void FixLbMulticomponent::collide_stream(int x, int y, int z) {
     // gnew[xnew][ynew][znew][i] += S_g*(1-0.5/tau_p);
     // knew[xnew][ynew][znew][i] += S_k*(1-0.5/tau_s);
   }
-}
-
-void FixLbMulticomponent::bounce_back() {
-  if(update->ntimestep*dt_lb>timestep_movingBoundary_start){
-    movingBoundary = true;
-  }
-  int z_top = domain->boxhi[2]-1;
-  int z_bot = domain->boxlo[2];
-  int x_top = domain->boxhi[0]-1;
-  int x_bot = domain->boxlo[0];
-  int y_top = domain->boxhi[1]-1;
-  int y_bot = domain->boxlo[1];
-  for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++){
-    int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
-    if(cur_z == z_top){
-      for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
-        for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
-          // bounce back at top
-          fnew[x][y][z][6] = fnew[x][y][z+1][5];
-          fnew[x][y][z][14] = fnew[x+1][y][z+1][11];
-          fnew[x][y][z][12] = fnew[x-1][y][z+1][13];
-          fnew[x][y][z][16] = fnew[x][y-1][z+1][17];
-          fnew[x][y][z][18] = fnew[x][y+1][z+1][15];
-
-          gnew[x][y][z][6] = gnew[x][y][z+1][5];
-          gnew[x][y][z][14] = gnew[x+1][y][z+1][11];
-          gnew[x][y][z][12] = gnew[x-1][y][z+1][13];
-          gnew[x][y][z][16] = gnew[x][y-1][z+1][17];
-          gnew[x][y][z][18] = gnew[x][y+1][z+1][15];
-
-          knew[x][y][z][6] = knew[x][y][z+1][5];
-          knew[x][y][z][14] = knew[x+1][y][z+1][11];
-          knew[x][y][z][12] = knew[x-1][y][z+1][13];
-          knew[x][y][z][16] = knew[x][y-1][z+1][17];
-          knew[x][y][z][18] = knew[x][y+1][z+1][15];
-
-          if(movingBoundary == true){
-            double rho = density_lb[x][y][z];
-            double phi = phi_lb[x][y][z];
-            double psi = psi_lb[x][y][z];
-            double slab_top_vel[3] = {u_x_top, u_y_top, u_z_top};
-            std::vector<int> forward_dir = {5, 11, 13, 17, 15};
-            std::vector<int> reverse_dir = {6, 14, 12, 16, 18};
-            for (size_t pos = 0; pos < forward_dir.size(); ++pos) {
-                int i = reverse_dir[pos];
-                double dot_prd = e19[i][0] * slab_top_vel[0] + e19[i][1] * slab_top_vel[1] + e19[i][2] * slab_top_vel[2];
-                fnew[x][y][z][i] += 2 * w_lb19[i] * 1 * (dot_prd / cs2);
-                gnew[x][y][z][i] += 2 * w_lb19[i] * 1 * (dot_prd / cs2);
-                knew[x][y][z][i] += 2 * w_lb19[i] * 1 * (dot_prd / cs2);
-            }      
-          }
-        }
-      }   
-    }
-    if(cur_z == z_bot){
-      for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
-        for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
-          // bounce back at bottom
-          fnew[x][y][z][5] = fnew[x][y][z-1][6];
-          fnew[x][y][z][11] = fnew[x-1][y][z-1][14];
-          fnew[x][y][z][13] = fnew[x+1][y][z-1][12];
-          fnew[x][y][z][17] = fnew[x][y+1][z-1][16];
-          fnew[x][y][z][15] = fnew[x][y-1][z-1][18];
-
-          gnew[x][y][z][5] = gnew[x][y][z-1][6];
-          gnew[x][y][z][11] = gnew[x-1][y][z-1][14];
-          gnew[x][y][z][13] = gnew[x+1][y][z-1][12];
-          gnew[x][y][z][17] = gnew[x][y+1][z-1][16];
-          gnew[x][y][z][15] = gnew[x][y-1][z-1][18];
-
-          knew[x][y][z][5] = knew[x][y][z-1][6];
-          knew[x][y][z][11] = knew[x-1][y][z-1][14];
-          knew[x][y][z][13] = knew[x+1][y][z-1][12];
-          knew[x][y][z][17] = knew[x][y+1][z-1][16];
-          knew[x][y][z][15] = knew[x][y-1][z-1][18];
-          if(movingBoundary == true){
-            double slab_bot_vel[3] = {u_x_bot, u_y_bot, u_z_bot};
-            std::vector<int> forward_dir = {6, 14, 12, 16, 18};
-            std::vector<int> reverse_dir = {5, 11, 13, 17, 15};
-            for (size_t pos = 0; pos < forward_dir.size(); ++pos) {
-                int i = reverse_dir[pos];
-                double dot_prd = e19[i][0] * slab_bot_vel[0] + e19[i][1] * slab_bot_vel[1] + e19[i][2] * slab_bot_vel[2];
-                fnew[x][y][z][i] += 2*w_lb19[i]*dot_prd/cs2;
-                gnew[x][y][z][i] += 2*w_lb19[i]*dot_prd/cs2;
-                knew[x][y][z][i] += 2*w_lb19[i]*dot_prd/cs2;
-            }
-          }
-        }
-      }   
-    }
-  } 
 }
 
 void FixLbMulticomponent::calc_moments(int x, int y, int z) {
