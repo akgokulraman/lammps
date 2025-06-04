@@ -162,6 +162,7 @@ void FixLbMulticomponent::read_site(int x, int y, int z) {
 }
 
 void FixLbMulticomponent::write_site(int x, int y, int z) {
+  neumann_bc(x,y,z); // [2025/06/04 uschill: call here to ensure that fields at z+1 are available]
   collide_stream(x,y,z);
 }
 
@@ -252,6 +253,47 @@ void FixLbMulticomponent::bounce_back() {
 
 }
 
+void FixLbMulticomponent::neumann_bc(int x, int y, int z) {
+
+  if ((comm->myloc[2] == comm->procgrid[2]-1) && (z == subNbz-halo_extent[2]-1)) { // next to top z wall
+    // set fields in the wall (at z+1)
+    density_lb[x  ][y  ][z+1] = density_lb[x  ][y  ][z];
+    density_lb[x  ][y+1][z+1] = density_lb[x  ][y+1][z];
+    density_lb[x  ][y-1][z+1] = density_lb[x  ][y-1][z];
+    density_lb[x+1][y  ][z+1] = density_lb[x+1][y  ][z];
+    density_lb[x-1][y  ][z+1] = density_lb[x-1][y  ][z];
+    phi_lb[x  ][y  ][z+1] = phi_lb[x  ][y  ][z];
+    phi_lb[x  ][y+1][z+1] = phi_lb[x  ][y+1][z];
+    phi_lb[x  ][y-1][z+1] = phi_lb[x  ][y-1][z];
+    phi_lb[x+1][y  ][z+1] = phi_lb[x+1][y  ][z];
+    phi_lb[x-1][y  ][z+1] = phi_lb[x-1][y  ][z];
+    psi_lb[x  ][y  ][z+1] = psi_lb[x  ][y  ][z];
+    psi_lb[x  ][y+1][z+1] = psi_lb[x  ][y+1][z];
+    psi_lb[x  ][y-1][z+1] = psi_lb[x  ][y-1][z];
+    psi_lb[x+1][y  ][z+1] = psi_lb[x+1][y  ][z];
+    psi_lb[x-1][y  ][z+1] = psi_lb[x-1][y  ][z];
+  }
+
+  if((comm->myloc[2] == 0) && (z == halo_extent[2])) { // next to bottom z wall
+    density_lb[x  ][y  ][z-1] = density_lb[x  ][y  ][z];
+    density_lb[x  ][y+1][z-1] = density_lb[x  ][y+1][z];
+    density_lb[x  ][y-1][z-1] = density_lb[x  ][y-1][z];
+    density_lb[x+1][y  ][z-1] = density_lb[x+1][y  ][z];
+    density_lb[x-1][y  ][z-1] = density_lb[x-1][y  ][z];
+    phi_lb[x  ][y  ][z-1] = phi_lb[x  ][y  ][z];
+    phi_lb[x  ][y+1][z-1] = phi_lb[x  ][y+1][z];
+    phi_lb[x  ][y-1][z-1] = phi_lb[x  ][y-1][z];
+    phi_lb[x+1][y  ][z-1] = phi_lb[x+1][y  ][z];
+    phi_lb[x-1][y  ][z-1] = phi_lb[x-1][y  ][z];
+    psi_lb[x  ][y  ][z-1] = psi_lb[x  ][y  ][z];
+    psi_lb[x  ][y+1][z-1] = psi_lb[x  ][y+1][z];
+    psi_lb[x  ][y-1][z-1] = psi_lb[x  ][y-1][z];
+    psi_lb[x+1][y  ][z-1] = psi_lb[x+1][y  ][z];
+    psi_lb[x-1][y  ][z-1] = psi_lb[x-1][y  ][z];
+  }
+
+}
+
 void FixLbMulticomponent::collide_stream(int x, int y, int z) {
   int i, xnew, ynew, znew;
   double f_w[19] = {0, 0.11111, 0.11111, 0.11111, 0.11111, 0.11111, 0.11111, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777};
@@ -307,33 +349,6 @@ void FixLbMulticomponent::calc_moments(int x, int y, int z) {
   u_lb[x][y][z][1] += 0.5*forcing[1]/rho;
   u_lb[x][y][z][2] += 0.5*forcing[2]/rho;
   pressure_lb[x][y][z] = pressure(rho,phi,psi);
-
-  neumann_bc(x,y,z); // [2025/06/04 uschill: moments at z+1 have not been calculated yet!]
-}
-
-void FixLbMulticomponent::neumann_bc(int x, int y, int z) {
-  // from read_site
-  int z_top = domain->boxhi[2]-1;
-  int z_bot = domain->boxlo[2];
-  int y_top = domain->boxhi[1]-1;
-  int y_bot = domain->boxlo[1];
-  int x_top = domain->boxhi[0]-1;
-  int x_bot = domain->boxlo[0];
-  int cur_z = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
-  int cur_y = domain->sublo[1] + (y-halo_extent[1])*dx_lb;
-  int cur_x = domain->sublo[0] + (x-halo_extent[0])*dx_lb;
-  if(cur_z == z_top+1){
-    // perpendicular
-    density_lb[x][y][z] = density_lb[x][y][z-1];
-    phi_lb[x][y][z] = phi_lb[x][y][z-1];
-    psi_lb[x][y][z] = psi_lb[x][y][z-1];
-  }
-  if(cur_z == z_bot){
-    // perpendicular
-    density_lb[x][y][z-1] = density_lb[x][y][z];
-    phi_lb[x][y][z-1] = phi_lb[x][y][z];
-    psi_lb[x][y][z-1] = psi_lb[x][y][z];
-  }
 }
 
 void FixLbMulticomponent::calc_equilibrium(int x, int y, int z) {
