@@ -107,7 +107,10 @@ void FixLbMulticomponent::lb_update() {
   update_cube(0,4, 0,subNby, 0,subNbz);
   update_cube(subNbx-4,subNbx, 0,subNby, 0,subNbz);
 #endif
+
+  /* bounce back boundary conditions */
   bounce_back();
+
   /* swap the pointers of the lattice copies */
   std::swap(f_lb,fnew);
   std::swap(g_lb,gnew);
@@ -162,144 +165,16 @@ void FixLbMulticomponent::read_site(int x, int y, int z) {
 }
 
 void FixLbMulticomponent::write_site(int x, int y, int z) {
-  neumann_bc(x,y,z); // [2025/06/04 uschill: call here to ensure that fields at z+1 are available]
+  neumann_bc(x,y,z);
   collide_stream(x,y,z);
-}
-
-void FixLbMulticomponent::bounce_back() {
-  const double rho_w = 1.0;
-
-  if(update->ntimestep*dt_lb>timestep_movingBoundary_start){
-    movingBoundary = true;
-  }
-
-  if(comm->myloc[2] == comm->procgrid[2]-1) {
-    int z = subNbz-1-halo_extent[2]; // last fluid layer
-    for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
-      for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
-
-          // bounce back at top
-        fnew[x][y][z][6] = fnew[x][y][z+1][5];
-        fnew[x][y][z][14] = fnew[x+1][y][z+1][11];
-        fnew[x][y][z][12] = fnew[x-1][y][z+1][13];
-        fnew[x][y][z][16] = fnew[x][y-1][z+1][17];
-        fnew[x][y][z][18] = fnew[x][y+1][z+1][15];
-
-        gnew[x][y][z][6] = gnew[x][y][z+1][5];
-        gnew[x][y][z][14] = gnew[x+1][y][z+1][11];
-        gnew[x][y][z][12] = gnew[x-1][y][z+1][13];
-        gnew[x][y][z][16] = gnew[x][y-1][z+1][17];
-        gnew[x][y][z][18] = gnew[x][y+1][z+1][15];
-
-        knew[x][y][z][6] = knew[x][y][z+1][5];
-        knew[x][y][z][14] = knew[x+1][y][z+1][11];
-        knew[x][y][z][12] = knew[x-1][y][z+1][13];
-        knew[x][y][z][16] = knew[x][y-1][z+1][17];
-        knew[x][y][z][18] = knew[x][y+1][z+1][15];
-
-        if(movingBoundary == true){
-          std::vector<int> dir = {6, 14, 12, 16, 18};
-          for (int k=0; k<dir.size(); ++k) {
-              int i = dir[k];
-              double uc = e19[i][0] * u_x_top + e19[i][1] * u_y_top + e19[i][2] * u_z_top;
-              fnew[x][y][z][i] += 2*w_lb19[i]*rho_w*uc/cs2;
-              gnew[x][y][z][i] += 2*w_lb19[i]*rho_w*uc/cs2;
-              knew[x][y][z][i] += 2*w_lb19[i]*rho_w*uc/cs2;
-          }
-        }
-
-      }
-    }
-  }
-
-  if (comm->myloc[2] == 0) {
-    int z = halo_extent[2]; // first fluid layer
-    for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
-      for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
-
-        // bounce back at bottom
-        fnew[x][y][z][5] = fnew[x][y][z-1][6];
-        fnew[x][y][z][11] = fnew[x-1][y][z-1][14];
-        fnew[x][y][z][13] = fnew[x+1][y][z-1][12];
-        fnew[x][y][z][17] = fnew[x][y+1][z-1][16];
-        fnew[x][y][z][15] = fnew[x][y-1][z-1][18];
-
-        gnew[x][y][z][5] = gnew[x][y][z-1][6];
-        gnew[x][y][z][11] = gnew[x-1][y][z-1][14];
-        gnew[x][y][z][13] = gnew[x+1][y][z-1][12];
-        gnew[x][y][z][17] = gnew[x][y+1][z-1][16];
-        gnew[x][y][z][15] = gnew[x][y-1][z-1][18];
-
-        knew[x][y][z][5] = knew[x][y][z-1][6];
-        knew[x][y][z][11] = knew[x-1][y][z-1][14];
-        knew[x][y][z][13] = knew[x+1][y][z-1][12];
-        knew[x][y][z][17] = knew[x][y+1][z-1][16];
-        knew[x][y][z][15] = knew[x][y-1][z-1][18];
-
-        if(movingBoundary == true){
-          std::vector<int> dir = {5, 11, 13, 17, 15};
-          for (int k=0; k<dir.size(); ++k) {
-              int i = dir[k];
-              double uc = e19[i][0] * u_x_bot + e19[i][1] * u_y_bot + e19[i][2] * u_z_bot;
-              fnew[x][y][z][i] += 2*w_lb19[i]*rho_w*uc/cs2;
-              gnew[x][y][z][i] += 2*w_lb19[i]*rho_w*uc/cs2;
-              knew[x][y][z][i] += 2*w_lb19[i]*rho_w*uc/cs2;
-          }
-        }
-
-      }
-    }
-  }
-
-}
-
-void FixLbMulticomponent::neumann_bc(int x, int y, int z) {
-
-  if ((comm->myloc[2] == comm->procgrid[2]-1) && (z == subNbz-halo_extent[2]-1)) { // next to top z wall
-    // set fields in the wall (at z+1)
-    density_lb[x  ][y  ][z+1] = density_lb[x  ][y  ][z];
-    density_lb[x  ][y+1][z+1] = density_lb[x  ][y+1][z];
-    density_lb[x  ][y-1][z+1] = density_lb[x  ][y-1][z];
-    density_lb[x+1][y  ][z+1] = density_lb[x+1][y  ][z];
-    density_lb[x-1][y  ][z+1] = density_lb[x-1][y  ][z];
-    phi_lb[x  ][y  ][z+1] = phi_lb[x  ][y  ][z];
-    phi_lb[x  ][y+1][z+1] = phi_lb[x  ][y+1][z];
-    phi_lb[x  ][y-1][z+1] = phi_lb[x  ][y-1][z];
-    phi_lb[x+1][y  ][z+1] = phi_lb[x+1][y  ][z];
-    phi_lb[x-1][y  ][z+1] = phi_lb[x-1][y  ][z];
-    psi_lb[x  ][y  ][z+1] = psi_lb[x  ][y  ][z];
-    psi_lb[x  ][y+1][z+1] = psi_lb[x  ][y+1][z];
-    psi_lb[x  ][y-1][z+1] = psi_lb[x  ][y-1][z];
-    psi_lb[x+1][y  ][z+1] = psi_lb[x+1][y  ][z];
-    psi_lb[x-1][y  ][z+1] = psi_lb[x-1][y  ][z];
-  }
-
-  if((comm->myloc[2] == 0) && (z == halo_extent[2])) { // next to bottom z wall
-    density_lb[x  ][y  ][z-1] = density_lb[x  ][y  ][z];
-    density_lb[x  ][y+1][z-1] = density_lb[x  ][y+1][z];
-    density_lb[x  ][y-1][z-1] = density_lb[x  ][y-1][z];
-    density_lb[x+1][y  ][z-1] = density_lb[x+1][y  ][z];
-    density_lb[x-1][y  ][z-1] = density_lb[x-1][y  ][z];
-    phi_lb[x  ][y  ][z-1] = phi_lb[x  ][y  ][z];
-    phi_lb[x  ][y+1][z-1] = phi_lb[x  ][y+1][z];
-    phi_lb[x  ][y-1][z-1] = phi_lb[x  ][y-1][z];
-    phi_lb[x+1][y  ][z-1] = phi_lb[x+1][y  ][z];
-    phi_lb[x-1][y  ][z-1] = phi_lb[x-1][y  ][z];
-    psi_lb[x  ][y  ][z-1] = psi_lb[x  ][y  ][z];
-    psi_lb[x  ][y+1][z-1] = psi_lb[x  ][y+1][z];
-    psi_lb[x  ][y-1][z-1] = psi_lb[x  ][y-1][z];
-    psi_lb[x+1][y  ][z-1] = psi_lb[x+1][y  ][z];
-    psi_lb[x-1][y  ][z-1] = psi_lb[x-1][y  ][z];
-  }
-
 }
 
 void FixLbMulticomponent::collide_stream(int x, int y, int z) {
   int i, xnew, ynew, znew;
-  double f_w[19] = {0, 0.11111, 0.11111, 0.11111, 0.11111, 0.11111, 0.11111, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777, 0.02777};
-  double S_f_prefactor, S_g_prefactor, S_k_prefactor;
-  double S_f, S_g, S_k;
-  double forcing[3] = {force_x, force_y,force_z};
+  const double cs4 = cs2*cs2;
+  const double *u = u_lb[x][y][z];
+  const double f[3] = {force_x, force_y,force_z};
+
   calc_equilibrium(x,y,z);
   
   for (i=0; i<numvel; ++i) {
@@ -308,19 +183,19 @@ void FixLbMulticomponent::collide_stream(int x, int y, int z) {
     znew = z + e19[i][2];
     fnew[xnew][ynew][znew][i] = f_lb[x][y][z][i] - (f_lb[x][y][z][i] - feq[x][y][z][i])/tau_r;
     gnew[xnew][ynew][znew][i] = g_lb[x][y][z][i] - (g_lb[x][y][z][i] - geq[x][y][z][i])/tau_p;
-    knew[xnew][ynew][znew][i] = k_lb[x][y][ z][i] - (k_lb[x][y][z][i] - keq[x][y][z][i])/tau_s;
-    // adding force term
-    S_f_prefactor = (feq[x][y][z][i])/(density_lb[x][y][z]*cs2);
-    S_f = (S_f_prefactor)*((e19[i][0]-u_lb[x][y][z][0])*forcing[0] + (e19[i][1]-u_lb[x][y][z][1])*forcing[1] + (e19[i][2]-u_lb[x][y][z][2])*forcing[2]);
-    S_g_prefactor = (geq[x][y][z][i])/(density_lb[x][y][z]*cs2);
-    S_g = (S_g_prefactor)*((e19[i][0]-u_lb[x][y][z][0])*forcing[0] + (e19[i][1]-u_lb[x][y][z][1])*forcing[1] + (e19[i][2]-u_lb[x][y][z][2])*forcing[2]);
-    S_k_prefactor = (keq[x][y][z][i])/(density_lb[x][y][z]*cs2);
-    S_k = (S_k_prefactor)*((e19[i][0]-u_lb[x][y][z][0])*forcing[0] + (e19[i][1]-u_lb[x][y][z][1])*forcing[1] + (e19[i][2]-u_lb[x][y][z][2])*forcing[2]);
-    // S = f_w[i]*e19[i][0]*forcing[0] + f_w[i]*e19[i][1]*forcing[1] + f_w[i]*e19[i][2]*forcing[2];
-    fnew[xnew][ynew][znew][i] += S_f*(1-0.5/tau_r);
-    // gnew[xnew][ynew][znew][i] += S_g*(1-0.5/tau_p);
-    // knew[xnew][ynew][znew][i] += S_k*(1-0.5/tau_s);
+    knew[xnew][ynew][znew][i] = k_lb[x][y][z][i] - (k_lb[x][y][z][i] - keq[x][y][z][i])/tau_s;
+
+    // add external force
+    double F=0.0;
+    for (int a=0; a<3; ++a) {
+      F += (e19[i][a]*f[a] - u[a]*f[a])/cs2;
+      for (int b=0; b<3; ++b) {
+        F += e19[i][a]*e19[i][b]*u[b]*f[a]/cs4;
+      }
+    }
+    fnew[xnew][ynew][znew][i] += (1-0.5/tau_r)*w_lb19[i]*F;
   }
+
 }
 
 void FixLbMulticomponent::calc_moments(int x, int y, int z) {
@@ -342,12 +217,9 @@ void FixLbMulticomponent::calc_moments(int x, int y, int z) {
   density_lb[x][y][z] = rho;
   phi_lb[x][y][z] = phi;
   psi_lb[x][y][z] = psi;
-  u_lb[x][y][z][0] = j[0]/rho;
-  u_lb[x][y][z][1] = j[1]/rho;
-  u_lb[x][y][z][2] = j[2]/rho;
-  u_lb[x][y][z][0] += 0.5*forcing[0]/rho;
-  u_lb[x][y][z][1] += 0.5*forcing[1]/rho;
-  u_lb[x][y][z][2] += 0.5*forcing[2]/rho;
+  u_lb[x][y][z][0] = (j[0] + 0.5*force_x)/rho;
+  u_lb[x][y][z][1] = (j[1] + 0.5*force_y)/rho;
+  u_lb[x][y][z][2] = (j[2] + 0.5*force_z)/rho;
   pressure_lb[x][y][z] = pressure(rho,phi,psi);
 }
 
@@ -566,6 +438,136 @@ void FixLbMulticomponent::calc_keq(int x, int y, int z) {
     sumk += ki;
   }
   keq[x][y][z][0] = psi - sumk;
+}
+
+// Neumann boundary conditions
+void FixLbMulticomponent::neumann_bc(int x, int y, int z) {
+
+  if ((comm->myloc[2] == comm->procgrid[2]-1) && (z == subNbz-halo_extent[2]-1)) { // next to top z wall
+    // set fields in the wall (at z+1)
+    density_lb[x  ][y  ][z+1] = density_lb[x  ][y  ][z];
+    density_lb[x  ][y+1][z+1] = density_lb[x  ][y+1][z];
+    density_lb[x  ][y-1][z+1] = density_lb[x  ][y-1][z];
+    density_lb[x+1][y  ][z+1] = density_lb[x+1][y  ][z];
+    density_lb[x-1][y  ][z+1] = density_lb[x-1][y  ][z];
+    phi_lb[x  ][y  ][z+1] = phi_lb[x  ][y  ][z];
+    phi_lb[x  ][y+1][z+1] = phi_lb[x  ][y+1][z];
+    phi_lb[x  ][y-1][z+1] = phi_lb[x  ][y-1][z];
+    phi_lb[x+1][y  ][z+1] = phi_lb[x+1][y  ][z];
+    phi_lb[x-1][y  ][z+1] = phi_lb[x-1][y  ][z];
+    psi_lb[x  ][y  ][z+1] = psi_lb[x  ][y  ][z];
+    psi_lb[x  ][y+1][z+1] = psi_lb[x  ][y+1][z];
+    psi_lb[x  ][y-1][z+1] = psi_lb[x  ][y-1][z];
+    psi_lb[x+1][y  ][z+1] = psi_lb[x+1][y  ][z];
+    psi_lb[x-1][y  ][z+1] = psi_lb[x-1][y  ][z];
+  }
+
+  if((comm->myloc[2] == 0) && (z == halo_extent[2])) { // next to bottom z wall
+    density_lb[x  ][y  ][z-1] = density_lb[x  ][y  ][z];
+    density_lb[x  ][y+1][z-1] = density_lb[x  ][y+1][z];
+    density_lb[x  ][y-1][z-1] = density_lb[x  ][y-1][z];
+    density_lb[x+1][y  ][z-1] = density_lb[x+1][y  ][z];
+    density_lb[x-1][y  ][z-1] = density_lb[x-1][y  ][z];
+    phi_lb[x  ][y  ][z-1] = phi_lb[x  ][y  ][z];
+    phi_lb[x  ][y+1][z-1] = phi_lb[x  ][y+1][z];
+    phi_lb[x  ][y-1][z-1] = phi_lb[x  ][y-1][z];
+    phi_lb[x+1][y  ][z-1] = phi_lb[x+1][y  ][z];
+    phi_lb[x-1][y  ][z-1] = phi_lb[x-1][y  ][z];
+    psi_lb[x  ][y  ][z-1] = psi_lb[x  ][y  ][z];
+    psi_lb[x  ][y+1][z-1] = psi_lb[x  ][y+1][z];
+    psi_lb[x  ][y-1][z-1] = psi_lb[x  ][y-1][z];
+    psi_lb[x+1][y  ][z-1] = psi_lb[x+1][y  ][z];
+    psi_lb[x-1][y  ][z-1] = psi_lb[x-1][y  ][z];
+  }
+
+}
+
+// Moving bounce back boundary conditions
+void FixLbMulticomponent::bounce_back() {
+  const double rho_w = 1.0;
+
+  if(update->ntimestep*dt_lb>timestep_movingBoundary_start){
+    movingBoundary = true;
+  }
+
+  if(comm->myloc[2] == comm->procgrid[2]-1) {
+    int z = subNbz-1-halo_extent[2]; // last fluid layer
+    for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+      for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+
+          // bounce back at top
+        fnew[x][y][z][6] = fnew[x][y][z+1][5];
+        fnew[x][y][z][14] = fnew[x+1][y][z+1][11];
+        fnew[x][y][z][12] = fnew[x-1][y][z+1][13];
+        fnew[x][y][z][16] = fnew[x][y-1][z+1][17];
+        fnew[x][y][z][18] = fnew[x][y+1][z+1][15];
+
+        gnew[x][y][z][6] = gnew[x][y][z+1][5];
+        gnew[x][y][z][14] = gnew[x+1][y][z+1][11];
+        gnew[x][y][z][12] = gnew[x-1][y][z+1][13];
+        gnew[x][y][z][16] = gnew[x][y-1][z+1][17];
+        gnew[x][y][z][18] = gnew[x][y+1][z+1][15];
+
+        knew[x][y][z][6] = knew[x][y][z+1][5];
+        knew[x][y][z][14] = knew[x+1][y][z+1][11];
+        knew[x][y][z][12] = knew[x-1][y][z+1][13];
+        knew[x][y][z][16] = knew[x][y-1][z+1][17];
+        knew[x][y][z][18] = knew[x][y+1][z+1][15];
+
+        if(movingBoundary == true){
+          std::vector<int> dir = {6, 14, 12, 16, 18};
+          for (int k=0; k<dir.size(); ++k) {
+              int i = dir[k];
+              double uc = e19[i][0] * u_x_top + e19[i][1] * u_y_top + e19[i][2] * u_z_top;
+              fnew[x][y][z][i] += 2*w_lb19[i]*rho_w*uc/cs2;
+              gnew[x][y][z][i] += 2*w_lb19[i]*rho_w*uc/cs2;
+              knew[x][y][z][i] += 2*w_lb19[i]*rho_w*uc/cs2;
+          }
+        }
+
+      }
+    }
+  }
+
+  if (comm->myloc[2] == 0) {
+    int z = halo_extent[2]; // first fluid layer
+    for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+      for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+
+        // bounce back at bottom
+        fnew[x][y][z][5] = fnew[x][y][z-1][6];
+        fnew[x][y][z][11] = fnew[x-1][y][z-1][14];
+        fnew[x][y][z][13] = fnew[x+1][y][z-1][12];
+        fnew[x][y][z][17] = fnew[x][y+1][z-1][16];
+        fnew[x][y][z][15] = fnew[x][y-1][z-1][18];
+
+        gnew[x][y][z][5] = gnew[x][y][z-1][6];
+        gnew[x][y][z][11] = gnew[x-1][y][z-1][14];
+        gnew[x][y][z][13] = gnew[x+1][y][z-1][12];
+        gnew[x][y][z][17] = gnew[x][y+1][z-1][16];
+        gnew[x][y][z][15] = gnew[x][y-1][z-1][18];
+
+        knew[x][y][z][5] = knew[x][y][z-1][6];
+        knew[x][y][z][11] = knew[x-1][y][z-1][14];
+        knew[x][y][z][13] = knew[x+1][y][z-1][12];
+        knew[x][y][z][17] = knew[x][y+1][z-1][16];
+        knew[x][y][z][15] = knew[x][y-1][z-1][18];
+
+        if(movingBoundary == true){
+          std::vector<int> dir = {5, 11, 13, 17, 15};
+          for (int k=0; k<dir.size(); ++k) {
+              int i = dir[k];
+              double uc = e19[i][0] * u_x_bot + e19[i][1] * u_y_bot + e19[i][2] * u_z_bot;
+              fnew[x][y][z][i] += 2*w_lb19[i]*rho_w*uc/cs2;
+              gnew[x][y][z][i] += 2*w_lb19[i]*rho_w*uc/cs2;
+              knew[x][y][z][i] += 2*w_lb19[i]*rho_w*uc/cs2;
+          }
+        }
+
+      }
+    }
+  }
+
 }
 
 // homogeneous mixture of C1, C2, and C3 with random concentration fluctuations
