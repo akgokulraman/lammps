@@ -129,8 +129,6 @@ namespace LAMMPS_NS {
     void write_site(int x, int y, int z);
 
     void calc_moments(int x, int y, int z);
-    void bounce_back();
-    void Neumann_BC(int x, int y, int z);
     void calc_chemical_potentials(int x, int y, int z);
     void calc_equilibrium(int x, int y, int z);
     void calc_feq(int x, int y, int z);
@@ -141,6 +139,9 @@ namespace LAMMPS_NS {
     void calc_phi_gradients(int x, int y, int z);
     void calc_psi_gradients(int x, int y, int z);
     double pressure(double rho, double phi, double psi);
+
+    void bounce_back();
+    void neumann_bc(int x, int y, int z);
 
     static const int numrequests = 12;
     MPI_Request requests[numrequests];
