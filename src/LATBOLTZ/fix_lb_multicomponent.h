@@ -109,11 +109,11 @@ namespace LAMMPS_NS {
 
     void init_fluid();
     void init_mixture();
+    void init_three_regions();
     void init_droplet(double radius);
     void init_liquid_lens(double radius);
     void init_double_emulsion(double radius);
     void init_film(double thickness, double C1, double C2);
-    void init_three_regions();
     void init_semi_droplet(double radius, double C1, double C2, double C3, double C1_out, double C2_out, double C3_out);
     void init_mixed_droplet(double radius, double C1, double C2);
 

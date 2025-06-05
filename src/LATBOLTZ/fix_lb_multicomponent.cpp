@@ -777,6 +777,60 @@ void FixLbMulticomponent::init_mixture() {
   delete(random);
 }
 
+void FixLbMulticomponent::init_three_regions() {
+  double rho=1.0, phi, psi;
+  double C1tot=0., C2tot=0., C3tot=0.;
+  double C1tot_global=0., C2tot_global=0., C3tot_global=0.;
+  double pos[3];
+  int x, y, z, i;
+
+  domain->periodicity[0] = 0;
+  domain->periodicity[1] = 0;
+
+  for (x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+    pos[0] = domain->sublo[0] + (x-halo_extent[0])*dx_lb + 0.5;
+    for (y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+      pos[1] = domain->sublo[1] + (y-halo_extent[1])*dx_lb + 0.5;
+      for (z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
+        pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb + 0.5;
+        if (pos[1] < domain->boxlo[1] + (domain->boxhi[1]-domain->boxlo[1])/3) {
+          C3 = 1;
+          C1 = C2 = 0;
+        } else {
+          if (pos[0] < (domain->boxlo[0] + domain->boxhi[0])/2) {
+            C1 = 1;
+            C2 = C3 = 0;
+          } else {
+            C1 = C3 = 0;
+            C2 = 1;
+          }
+        }
+        rho = densityinit;
+        phi = densityinit*(C1-C2);
+        psi = densityinit*C3;
+        for (i=0; i<numvel; i++) {
+          f_lb[x][y][z][i] = w_lb19[i]*rho*densityinit;
+          g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
+          k_lb[x][y][z][i] = w_lb19[i]*psi*densityinit;
+        }
+        C1tot += C1;
+        C2tot += C2;
+        C3tot += C3;
+      }
+    }
+  }
+
+  MPI_Reduce(&C1tot,&C1tot_global,1,MPI_DOUBLE,MPI_SUM,0,world);
+  MPI_Reduce(&C2tot,&C2tot_global,1,MPI_DOUBLE,MPI_SUM,0,world);
+  MPI_Reduce(&C3tot,&C3tot_global,1,MPI_DOUBLE,MPI_SUM,0,world);
+
+  double vol = Nbx*Nby*Nbz;
+  if(comm->me==0){
+    error->message(FLERR,"Initialized three liquids with <C1> = {:f}, <C2> = {:f}, <C3> = {:f}",C1tot_global/vol,C2tot_global/vol,C3tot_global/vol);
+  }
+
+}
+
 // droplet composed of component C1 and C2 (C3=0)
 void FixLbMulticomponent::init_droplet(double radius) {
   double rho=1.0, phi, psi=0.0;
@@ -921,88 +975,6 @@ void FixLbMulticomponent::init_film(double thickness, double C1_film, double C2_
     error->message(FLERR,"Initialized ternary film with <C1> = {:f}, <C2> = {:f}, <C3> = {:f}",C1tot_global/vol,C2tot_global/vol,C3tot_global/vol);
   }
 
-  delete(random);
-}
-
-void FixLbMulticomponent::init_three_regions() {
-
-  double rho, phi, psi;
-  double C1_init, C2_init, C3_init;
-  double C1tot = 0., C2tot = 0., C3tot = 0.;
-  double pos[3];
-
-  int x, y, z, i;
-
-  RanMars *random = new RanMars(lmp, seed + comm->me);
-
-  int cut_dimension_long = 2;  // Cutting along z-axis (long)
-  int cut_dimension_short;
-
-  if (cut_dimension_long == 2) cut_dimension_short = 1;  // Cutting along y-axis (short)
-  else if (cut_dimension_long == 1) cut_dimension_short = 0;
-  else cut_dimension_short = 1;
-
-  double box_length_long, cut_point_long;
-  double box_length_short, cut_point_short;
-
-  // Get domain lengths
-  if (cut_dimension_long == 0) box_length_long = domain->xprd;
-  else if (cut_dimension_long == 1) box_length_long = domain->yprd;
-  else box_length_long = domain->zprd;
-
-  if (cut_dimension_short == 0) box_length_short = domain->xprd;
-  else if (cut_dimension_short == 1) box_length_short = domain->yprd;
-  else box_length_short = domain->zprd;
-
-  // Adjust cutting planes for equal volume:
-  cut_point_long = domain->boxlo[cut_dimension_long] + (1.0 / 3.0) * box_length_long; // Region 3 gets 1/3
-  cut_point_short = domain->boxlo[cut_dimension_short] + (0.5) * box_length_short; // Regions 1 and 2 split 50-50
-
-  for (x = halo_extent[0]; x < subNbx - halo_extent[0]; x++) {
-    for (y = halo_extent[1]; y < subNby - halo_extent[1]; y++) {
-      for (z = halo_extent[2]; z < subNbz - halo_extent[2]; z++) {
-
-        pos[0] = domain->sublo[0] + (x - halo_extent[0]) * dx_lb;
-        pos[1] = domain->sublo[1] + (y - halo_extent[1]) * dx_lb;
-        pos[2] = domain->sublo[2] + (z - halo_extent[2]) * dx_lb;
-
-        double pos_long, pos_short;
-
-        if (cut_dimension_long == 0) pos_long = pos[0];
-        else if (cut_dimension_long == 1) pos_long = pos[1];
-        else pos_long = pos[2];
-
-        if (cut_dimension_short == 0) pos_short = pos[0];
-        else if (cut_dimension_short == 1) pos_short = pos[1];
-        else pos_short = pos[2];
-
-        // Assign regions based on the new cutting points
-        if (pos_long < cut_point_long) {
-          C1_init = 1.0; C2_init = 0.0; C3_init = 0.0; // Region 1
-        } else {
-          if (pos_short < cut_point_short) {
-            C2_init = 1.0; C1_init = 0.0; C3_init = 0.0; // Region 2
-          } else {
-            C3_init = 1.0; C1_init = 0.0; C2_init = 0.0; // Region 3 (top 1/3)
-          }
-        }
-
-        rho = densityinit;
-        phi = densityinit * (C1_init - C2_init);
-        psi = densityinit * C3_init;
-
-        for (i = 0; i < numvel; i++) {
-          f_lb[x][y][z][i] = w_lb19[i] * rho;
-          g_lb[x][y][z][i] = w_lb19[i] * phi;
-          k_lb[x][y][z][i] = w_lb19[i] * psi;
-        }
-
-        C1tot += C1_init;
-        C2tot += C2_init;
-        C3tot += C3_init;
-      }
-    }
-  }
   delete(random);
 }
 
