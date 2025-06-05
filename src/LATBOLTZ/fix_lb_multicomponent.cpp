@@ -43,14 +43,14 @@
 using namespace LAMMPS_NS;
 
 static const char cite_fix_lbmulticomponent[] =
-    "fix lb/multicomponent command: doi:\n\n"
-    "@Article{Raman2023,\n"
-    "  author = {G. Raman, J.P. Andrews, U.D. Schiller},\n"
-    "  title = {Implementation of a Ternary Lattice Boltzmann Model in LAMMPS},\n"
-    "  journal = {Comp.~Phys.~Comm.},\n"
-    "  year =    2023,\n"
-    "  volume = ,\n"
-    "  pages = {}\n"
+    "fix lb/multicomponent command: doi:10.1016/j.cpc.2023.108898\n\n"
+    "@Article{arumugam_kumar_implementation_2024,\n"
+    "  author  = {Arumugam Kumar, Gokul Raman and Andrews, James P. and Schiller, Ulf D.},\n"
+    "  title   = {Implementation of a Ternary Lattice Boltzmann Model in LAMMPS},\n"
+    "  journal = {Comput.~Phys.~Commun.},\n"
+    "  year    = {2024},\n"
+    "  volume  = {294},\n"
+    "  pages   = {108898}\n"
     "}\n\n";
 
 int FixLbMulticomponent::setmask() {
