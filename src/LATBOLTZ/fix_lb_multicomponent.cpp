@@ -162,10 +162,10 @@ void FixLbMulticomponent::read_column(int x, int y, int zmin, int zmax) {
 
 void FixLbMulticomponent::read_site(int x, int y, int z) {
   calc_moments(x,y,z);
+  neumann_bc(x,y,z);
 }
 
 void FixLbMulticomponent::write_site(int x, int y, int z) {
-  neumann_bc(x,y,z);
   collide_stream(x,y,z);
 }
 
@@ -443,41 +443,18 @@ void FixLbMulticomponent::calc_keq(int x, int y, int z) {
 // Neumann boundary conditions
 void FixLbMulticomponent::neumann_bc(int x, int y, int z) {
 
-  if ((comm->myloc[2] == comm->procgrid[2]-1) && (z == subNbz-halo_extent[2]-1)) { // next to top z wall
-    // set fields in the wall (at z+1)
-    density_lb[x  ][y  ][z+1] = density_lb[x  ][y  ][z];
-    density_lb[x  ][y+1][z+1] = density_lb[x  ][y+1][z];
-    density_lb[x  ][y-1][z+1] = density_lb[x  ][y-1][z];
-    density_lb[x+1][y  ][z+1] = density_lb[x+1][y  ][z];
-    density_lb[x-1][y  ][z+1] = density_lb[x-1][y  ][z];
-    phi_lb[x  ][y  ][z+1] = phi_lb[x  ][y  ][z];
-    phi_lb[x  ][y+1][z+1] = phi_lb[x  ][y+1][z];
-    phi_lb[x  ][y-1][z+1] = phi_lb[x  ][y-1][z];
-    phi_lb[x+1][y  ][z+1] = phi_lb[x+1][y  ][z];
-    phi_lb[x-1][y  ][z+1] = phi_lb[x-1][y  ][z];
-    psi_lb[x  ][y  ][z+1] = psi_lb[x  ][y  ][z];
-    psi_lb[x  ][y+1][z+1] = psi_lb[x  ][y+1][z];
-    psi_lb[x  ][y-1][z+1] = psi_lb[x  ][y-1][z];
-    psi_lb[x+1][y  ][z+1] = psi_lb[x+1][y  ][z];
-    psi_lb[x-1][y  ][z+1] = psi_lb[x-1][y  ][z];
+  /* at top wall, fetch fields from previous fluid layer */
+  if ((comm->myloc[2] == comm->procgrid[2]-1) && (z == subNbz-halo_extent[2])) { // top z wall layer
+    density_lb[x][y][z] = density_lb[x][y][z-1];
+    phi_lb[x][y][z] = phi_lb[x][y][z-1];
+    psi_lb[x][y][z] = psi_lb[x][y][z-1];
   }
 
+  /* at bottom wall, push fields into previous wall layer */
   if((comm->myloc[2] == 0) && (z == halo_extent[2])) { // next to bottom z wall
-    density_lb[x  ][y  ][z-1] = density_lb[x  ][y  ][z];
-    density_lb[x  ][y+1][z-1] = density_lb[x  ][y+1][z];
-    density_lb[x  ][y-1][z-1] = density_lb[x  ][y-1][z];
-    density_lb[x+1][y  ][z-1] = density_lb[x+1][y  ][z];
-    density_lb[x-1][y  ][z-1] = density_lb[x-1][y  ][z];
-    phi_lb[x  ][y  ][z-1] = phi_lb[x  ][y  ][z];
-    phi_lb[x  ][y+1][z-1] = phi_lb[x  ][y+1][z];
-    phi_lb[x  ][y-1][z-1] = phi_lb[x  ][y-1][z];
-    phi_lb[x+1][y  ][z-1] = phi_lb[x+1][y  ][z];
-    phi_lb[x-1][y  ][z-1] = phi_lb[x-1][y  ][z];
-    psi_lb[x  ][y  ][z-1] = psi_lb[x  ][y  ][z];
-    psi_lb[x  ][y+1][z-1] = psi_lb[x  ][y+1][z];
-    psi_lb[x  ][y-1][z-1] = psi_lb[x  ][y-1][z];
-    psi_lb[x+1][y  ][z-1] = psi_lb[x+1][y  ][z];
-    psi_lb[x-1][y  ][z-1] = psi_lb[x-1][y  ][z];
+    density_lb[x][y][z-1] = density_lb[x][y][z];
+    phi_lb[x][y][z-1] = phi_lb[x][y][z];
+    psi_lb[x][y][z-1] = psi_lb[x][y][z];
   }
 
 }
