@@ -986,8 +986,6 @@ void FixLbMulticomponent::init_semi_droplet(double radius, double C1, double C2,
   int x, y, z, i;
   double cent_pos[3] = {double((domain->boxlo[0]+domain->boxhi[0])/2), double((domain->boxlo[1]+domain->boxhi[1])/2), double(domain->boxhi[2])};
 
-  RanMars *random = new RanMars(lmp,seed + comm->me);
-
   for (x=0; x<subNbx; x++) {
     pos[0] = domain->sublo[0] + (x-halo_extent[0])*dx_lb;
     for (y=0; y<subNby; y++) {
@@ -996,7 +994,7 @@ void FixLbMulticomponent::init_semi_droplet(double radius, double C1, double C2,
         pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb;
         r2 = ((pos[0]-cent_pos[0])*(pos[0]-cent_pos[0]))+((pos[1]-cent_pos[1])*(pos[1]-cent_pos[1]))+((pos[2]-cent_pos[2])*(pos[2]-cent_pos[2]));
         if (r2 < radius*radius) {
-            C1_init = C1 + 0.01*random->gaussian();
+            C1_init = C1;
             C2_init = C2;
             C3_init = C3;
         } else {
