@@ -140,8 +140,14 @@ namespace LAMMPS_NS {
     void calc_psi_gradients(int x, int y, int z);
     double pressure(double rho, double phi, double psi);
 
-    void bounce_back();
     void neumann_bc(int x, int y, int z);
+    void bounce_back();
+    void bounce_back_x_bottom();
+    void bounce_back_x_top();
+    void bounce_back_y_bottom();
+    void bounce_back_y_top();
+    void bounce_back_z_bottom();
+    void bounce_back_z_top();
 
     static const int numrequests = 12;
     MPI_Request requests[numrequests];

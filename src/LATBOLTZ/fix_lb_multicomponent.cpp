@@ -477,57 +477,180 @@ void FixLbMulticomponent::neumann_bc(int x, int y, int z) {
 }
 
 void FixLbMulticomponent::bounce_back() {
-
-  if (comm->myloc[2] == comm->procgrid[2]-1) {
-    int z = subNbz-1-halo_extent[2]; // last fluid layer
-    for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
-      for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
-        fnew[x][y][z][6] = fnew[x][y][z + 1][5];
-        fnew[x][y][z][14] = fnew[x + 1][y][z + 1][11];
-        fnew[x][y][z][12] = fnew[x - 1][y][z + 1][13];
-        fnew[x][y][z][16] = fnew[x][y - 1][z + 1][17];
-        fnew[x][y][z][18] = fnew[x][y + 1][z + 1][15];
-
-        gnew[x][y][z][6] = gnew[x][y][z + 1][5];
-        gnew[x][y][z][14] = gnew[x + 1][y][z + 1][11];
-        gnew[x][y][z][12] = gnew[x - 1][y][z + 1][13];
-        gnew[x][y][z][16] = gnew[x][y - 1][z + 1][17];
-        gnew[x][y][z][18] = gnew[x][y + 1][z + 1][15];
-
-        knew[x][y][z][6] = knew[x][y][z + 1][5];
-        knew[x][y][z][14] = knew[x + 1][y][z + 1][11];
-        knew[x][y][z][12] = knew[x - 1][y][z + 1][13];
-        knew[x][y][z][16] = knew[x][y - 1][z + 1][17];
-        knew[x][y][z][18] = knew[x][y + 1][z + 1][15];
-      }
+  if (!domain->periodicity[0]) {
+    if (comm->myloc[0] == 0) {
+      bounce_back_x_bottom();
+    }
+    if (comm->myloc[0] == comm->procgrid[0] - 1) {
+      bounce_back_x_top();
     }
   }
-
-  if (comm->myloc[2] == 0) {
-    int z = halo_extent[2]; // first fluid layer
-    for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
-      for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
-        fnew[x][y][z][5] = fnew[x][y][z - 1][6];
-        fnew[x][y][z][11] = fnew[x - 1][y][z - 1][14];
-        fnew[x][y][z][13] = fnew[x + 1][y][z - 1][12];
-        fnew[x][y][z][17] = fnew[x][y + 1][z - 1][16];
-        fnew[x][y][z][15] = fnew[x][y - 1][z - 1][18];
-
-        gnew[x][y][z][5] = gnew[x][y][z - 1][6];
-        gnew[x][y][z][11] = gnew[x - 1][y][z - 1][14];
-        gnew[x][y][z][13] = gnew[x + 1][y][z - 1][12];
-        gnew[x][y][z][17] = gnew[x][y + 1][z - 1][16];
-        gnew[x][y][z][15] = gnew[x][y - 1][z - 1][18];
-
-        knew[x][y][z][5] = knew[x][y][z - 1][6];
-        knew[x][y][z][11] = knew[x - 1][y][z - 1][14];
-        knew[x][y][z][13] = knew[x + 1][y][z - 1][12];
-        knew[x][y][z][17] = knew[x][y + 1][z - 1][16];
-        knew[x][y][z][15] = knew[x][y - 1][z - 1][18];
-      }
+  if (!domain->periodicity[1]) {
+    if (comm->myloc[1] == 0) {
+      bounce_back_y_bottom();
+    }
+    if (comm->myloc[1] == comm->procgrid[1] - 1) {
+      bounce_back_y_top();
     }
   }
+  if (domain->periodicity[2]) {
+    if (comm->myloc[2] == 0) {
+      bounce_back_z_bottom();
+    }
+    if (comm->myloc[2] == comm->procgrid[2] - 1) {
+      bounce_back_z_top();
+    }
+  }
+}
 
+void FixLbMulticomponent::bounce_back_x_bottom() {
+  int x = halo_extent[0];
+  for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+    for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
+      fnew[x][y][z][1]  = fnew[x-1][y][z][3];
+      fnew[x][y][z][7]  = fnew[x-1][y-1][z][10];
+      fnew[x][y][z][8]  = fnew[x-1][y+1][z][9];
+      fnew[x][y][z][11] = fnew[x-1][y][z-1][14];
+      fnew[x][y][z][12] = fnew[x-1][y][z+1][13];
+
+      gnew[x][y][z][1]  = gnew[x-1][y][z][3];
+      gnew[x][y][z][7]  = gnew[x-1][y-1][z][10];
+      gnew[x][y][z][8]  = gnew[x-1][y+1][z][9];
+      gnew[x][y][z][11] = gnew[x-1][y][z-1][14];
+      gnew[x][y][z][12] = gnew[x-1][y][z+1][13];
+
+      knew[x][y][z][1]  = knew[x-1][y][z][3];
+      knew[x][y][z][7]  = knew[x-1][y-1][z][10];
+      knew[x][y][z][8]  = knew[x-1][y+1][z][9];
+      knew[x][y][z][11] = knew[x-1][y][z-1][14];
+      knew[x][y][z][12] = knew[x-1][y][z+1][13];
+    }
+  }
+}
+
+void FixLbMulticomponent::bounce_back_x_top() {
+  int x = subNbx - halo_extent[0] - 1;
+  for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+    for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
+      fnew[x][y][z][3]  = fnew[x+1][y][z][1];
+      fnew[x][y][z][9]  = fnew[x+1][y-1][z][8];
+      fnew[x][y][z][10] = fnew[x+1][y+1][z][7];
+      fnew[x][y][z][13] = fnew[x+1][y][z-1][12];
+      fnew[x][y][z][14] = fnew[x+1][y][z+1][11];
+
+      gnew[x][y][z][3]  = gnew[x+1][y][z][1];
+      gnew[x][y][z][9]  = gnew[x+1][y-1][z][8];
+      gnew[x][y][z][10] = gnew[x+1][y+1][z][7];
+      gnew[x][y][z][13] = gnew[x+1][y][z-1][12];
+      gnew[x][y][z][14] = gnew[x+1][y][z+1][11];
+
+      knew[x][y][z][3]  = knew[x+1][y][z][1];
+      knew[x][y][z][9]  = knew[x+1][y-1][z][8];
+      knew[x][y][z][10] = knew[x+1][y+1][z][7];
+      knew[x][y][z][13] = knew[x+1][y][z-1][12];
+      knew[x][y][z][14] = knew[x+1][y][z+1][11];
+    }
+  }
+}
+
+void FixLbMulticomponent::bounce_back_y_bottom() {
+  int y = halo_extent[1];
+  for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+    for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
+      fnew[x][y][z][2]  = fnew[x][y-1][z][4];
+      fnew[x][y][z][7]  = fnew[x-1][y-1][z][10];
+      fnew[x][y][z][9]  = fnew[x+1][y-1][z][8];
+      fnew[x][y][z][15] = fnew[x][y-1][z-1][18];
+      fnew[x][y][z][16] = fnew[x][y-1][z+1][17];
+
+      gnew[x][y][z][2]  = gnew[x][y-1][z][4];
+      gnew[x][y][z][7]  = gnew[x-1][y-1][z][10];
+      gnew[x][y][z][9]  = gnew[x+1][y-1][z][8];
+      gnew[x][y][z][15] = gnew[x][y-1][z-1][18];
+      gnew[x][y][z][16] = gnew[x][y-1][z+1][17];
+
+      knew[x][y][z][2]  = knew[x][y-1][z][4];
+      knew[x][y][z][7]  = knew[x-1][y-1][z][10];
+      knew[x][y][z][9]  = knew[x+1][y-1][z][8];
+      knew[x][y][z][15] = knew[x][y-1][z-1][18];
+      knew[x][y][z][16] = knew[x][y-1][z+1][17];
+    }
+  }
+}
+
+void FixLbMulticomponent::bounce_back_y_top() {
+  int y = subNby - halo_extent[1] - 1;
+  for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+    for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
+      fnew[x][y][z][4]  = fnew[x][y+1][z][2];
+      fnew[x][y][z][8]  = fnew[x-1][y+1][z][9];
+      fnew[x][y][z][10] = fnew[x+1][y+1][z][7];
+      fnew[x][y][z][17] = fnew[x][y+1][z-1][16];
+      fnew[x][y][z][18] = fnew[x][y+1][z+1][15];
+
+      gnew[x][y][z][4]  = gnew[x][y+1][z][2];
+      gnew[x][y][z][8]  = gnew[x-1][y+1][z][9];
+      gnew[x][y][z][10] = gnew[x+1][y+1][z][7];
+      gnew[x][y][z][17] = gnew[x][y+1][z-1][16];
+      gnew[x][y][z][18] = gnew[x][y+1][z+1][15];
+
+      knew[x][y][z][4]  = knew[x][y+1][z][2];
+      knew[x][y][z][8]  = knew[x-1][y+1][z][9];
+      knew[x][y][z][10] = knew[x+1][y+1][z][7];
+      knew[x][y][z][17] = knew[x][y+1][z-1][16];
+      knew[x][y][z][18] = knew[x][y+1][z+1][15];
+    }
+  }
+}
+
+void FixLbMulticomponent::bounce_back_z_bottom() {
+  int z = halo_extent[2];
+  for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+    for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+      fnew[x][y][z][5]  = fnew[x][y][z-1][5];
+      fnew[x][y][z][11] = fnew[x-1][y][z-1][14];
+      fnew[x][y][z][13] = fnew[x+1][y][z-1][12];
+      fnew[x][y][z][15] = fnew[x][y-1][z-1][18];
+      fnew[x][y][z][17] = fnew[x][y+1][z-1][16];
+
+      gnew[x][y][z][5]  = gnew[x][y][z-1][5];
+      gnew[x][y][z][11] = gnew[x-1][y][z-1][14];
+      gnew[x][y][z][13] = gnew[x+1][y][z-1][12];
+      gnew[x][y][z][15] = gnew[x][y-1][z-1][18];
+      gnew[x][y][z][17] = gnew[x][y+1][z-1][16];
+
+      knew[x][y][z][5]  = knew[x][y][z-1][5];
+      knew[x][y][z][11] = knew[x-1][y][z-1][14];
+      knew[x][y][z][13] = knew[x+1][y][z-1][12];
+      knew[x][y][z][15] = knew[x][y-1][z-1][18];
+      knew[x][y][z][17] = knew[x][y+1][z-1][16];
+    }
+  }
+}
+
+void FixLbMulticomponent::bounce_back_z_top() {
+  int z = subNbz-halo_extent[2] - 1;
+  for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+    for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+      fnew[x][y][z][6]  = fnew[x][y][z+1][5];
+      fnew[x][y][z][12] = fnew[x-1][y][z+1][13];
+      fnew[x][y][z][14] = fnew[x+1][y][z+1][11];
+      fnew[x][y][z][16] = fnew[x][y-1][z+1][17];
+      fnew[x][y][z][18] = fnew[x][y+1][z+1][15];
+
+      gnew[x][y][z][6]  = gnew[x][y][z+1][5];
+      gnew[x][y][z][12] = gnew[x-1][y][z+1][13];
+      gnew[x][y][z][14] = gnew[x+1][y][z+1][11];
+      gnew[x][y][z][16] = gnew[x][y-1][z+1][17];
+      gnew[x][y][z][18] = gnew[x][y+1][z+1][15];
+
+      knew[x][y][z][6]  = knew[x][y][z+1][5];
+      knew[x][y][z][12] = knew[x-1][y][z+1][13];
+      knew[x][y][z][14] = knew[x+1][y][z+1][11];
+      knew[x][y][z][16] = knew[x][y-1][z+1][17];
+      knew[x][y][z][18] = knew[x][y+1][z+1][15];
+    }
+  }
 }
 
 // homogeneous mixture of C1, C2, and C3 with random concentration fluctuations
