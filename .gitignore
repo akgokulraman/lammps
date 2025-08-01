@@ -63,3 +63,8 @@ src/LATBOLTZ/.ipynb_checkpoints/
 
 # cache files
 .nfs*
+
+# output files
+*.xdmf
+*.raw
+log.lammps

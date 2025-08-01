@@ -643,11 +643,11 @@ FixLbFluid::~FixLbFluid()
 
   // Close off output
   if (dump_interval) {
-    if (me == 0) {
-      fprintf(dump_file_handle_xdmf, "    </Grid>\n  </Domain>\n</Xdmf>\n");
-      if (fclose(dump_file_handle_xdmf))
-        error->one(FLERR, "Unable to close \"{}\": {}", dump_file_name_xdmf, utils::getsyserror());
-    }
+    // if (me == 0) {
+    //   fprintf(dump_file_handle_xdmf, "    </Grid>\n  </Domain>\n</Xdmf>\n");
+    //   if (fclose(dump_file_handle_xdmf))
+    //     error->one(FLERR, "Unable to close \"{}\": {}", dump_file_name_xdmf, utils::getsyserror());
+    // }
     MPI_File_close(&dump_file_handle_raw);
   }
   MPI_Type_free(&realType3_mpitype);

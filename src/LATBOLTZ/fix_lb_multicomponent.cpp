@@ -1252,8 +1252,25 @@ void FixLbMulticomponent::calc_moments_full() {
 void FixLbMulticomponent::dump_xdmf(const int step) {
   if ( dump_interval && step % dump_interval == 0 ) {
     calc_moments_full();
+    std::string dump_file_name_raw_new = dump_file_name_raw + "_t-" + std::to_string(step) + std::string(".raw");
+    MPI_File_open(world, const_cast<char*>(dump_file_name_raw_new.c_str()),
+                  MPI_MODE_CREATE | MPI_MODE_WRONLY,
+                  MPI_INFO_NULL, &dump_file_handle_raw);
+    MPI_File_set_size(dump_file_handle_raw, 0);
+    MPI_File_set_view(dump_file_handle_raw, 0, MPI_DOUBLE, fluid_scalar_field_mpitype, "native", MPI_INFO_NULL);
     // Write XDMF grid entry for time step
     if ( me == 0 ) {
+      std::string dump_file_name_xdmf_new = dump_file_name_xdmf + "_t-" + std::to_string(step) + std::string(".xdmf");
+      dump_file_handle_xdmf = fopen( dump_file_name_xdmf_new.c_str(), "w");
+      if (!dump_file_handle_xdmf) {
+        error->one(FLERR, "Unable to truncate/create \"{}\": {}", dump_file_name_xdmf, utils::getsyserror());
+      }
+      fprintf(dump_file_handle_xdmf,
+              "<?xml version=\"1.0\" ?>\n"
+              "<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\" []>\n"
+              "<Xdmf Version=\"2.0\">\n"
+              "  <Domain>\n"
+              "    <Grid Name=\"fluid\" GridType=\"Collection\" CollectionType=\"Temporal\">\n\n");
       long int block = (long int)fluid_global_n0[0]*fluid_global_n0[1]*fluid_global_n0[2]*sizeof(MPI_DOUBLE);
       long int offset = (step/dump_interval)*block*(4+3);  /* This should be changed to account for dumps actually written.  This offset could malfunction on a restart. */
       double time = update->ntimestep*dt_lb;
@@ -1274,19 +1291,19 @@ void FixLbMulticomponent::dump_xdmf(const int step) {
               fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
               domain->boxlo[2], domain->boxlo[1], domain->boxlo[0],
               dx_lb, dx_lb, dx_lb);
-      fprintf(dump_file_handle_xdmf,
-              "        <Attribute Name=\"density\">\n"
-              "          <DataItem ItemType=\"Function\" Function=\"$0 * %f\" Dimensions=\"%d %d %d\">\n"
-              "            <DataItem Precision=\"%zd\" Format=\"Binary\" Seek=\"%ld\" Dimensions=\"%d %d %d\">\n"
-              "              %s\n"
-              "            </DataItem>\n"
-              "          </DataItem>\n"
-              "        </Attribute>\n\n",
-              dm_lb/(dx_lb*dx_lb*dx_lb),
-              fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
-              sizeof(MPI_DOUBLE), offset,
-              fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
-              dump_file_name_raw.c_str());
+      // fprintf(dump_file_handle_xdmf,
+      //         "        <Attribute Name=\"density\">\n"
+      //         "          <DataItem ItemType=\"Function\" Function=\"$0 * %f\" Dimensions=\"%d %d %d\">\n"
+      //         "            <DataItem Precision=\"%zd\" Format=\"Binary\" Seek=\"%ld\" Dimensions=\"%d %d %d\">\n"
+      //         "              %s\n"
+      //         "            </DataItem>\n"
+      //         "          </DataItem>\n"
+      //         "        </Attribute>\n\n",
+      //         dm_lb/(dx_lb*dx_lb*dx_lb),
+      //         fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
+      //         sizeof(MPI_DOUBLE), offset,
+      //         fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
+      //         dump_file_name_raw_new.c_str());
       fprintf(dump_file_handle_xdmf,
               "        <Attribute Name=\"phi\">\n"
               "          <DataItem ItemType=\"Function\" Function=\"$0 * %f\" Dimensions=\"%d %d %d\">\n"
@@ -1299,48 +1316,49 @@ void FixLbMulticomponent::dump_xdmf(const int step) {
               fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
               sizeof(MPI_DOUBLE), offset+block*1,
               fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
-              dump_file_name_raw.c_str());
-      fprintf(dump_file_handle_xdmf,
-              "        <Attribute Name=\"psi\">\n"
-              "          <DataItem ItemType=\"Function\" Function=\"$0 * %f\" Dimensions=\"%d %d %d\">\n"
-              "            <DataItem Precision=\"%zd\" Format=\"Binary\" Seek=\"%ld\" Dimensions=\"%d %d %d\">\n"
-              "              %s\n"
-              "            </DataItem>\n"
-              "          </DataItem>\n"
-              "        </Attribute>\n\n",
-              dm_lb/(dx_lb*dx_lb*dx_lb),
-              fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
-              sizeof(MPI_DOUBLE), offset+block*2,
-              fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
-              dump_file_name_raw.c_str());
-      fprintf(dump_file_handle_xdmf,
-              "        <Attribute Name=\"pressure\">\n"
-              "          <DataItem ItemType=\"Function\" Function=\"$0 * %f\" Dimensions=\"%d %d %d\">\n"
-              "            <DataItem Precision=\"%zd\" Format=\"Binary\" Seek=\"%ld\" Dimensions=\"%d %d %d\">\n"
-              "              %s\n"
-              "            </DataItem>\n"
-              "          </DataItem>\n"
-              "        </Attribute>\n\n",
-              dm_lb/(dx_lb*dx_lb*dx_lb),
-              fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
-              sizeof(MPI_DOUBLE), offset+block*3,
-              fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
-              dump_file_name_raw.c_str());
-      fprintf(dump_file_handle_xdmf,
-              "        <Attribute Name=\"velocity\" AttributeType=\"Vector\">\n"
-              "          <DataItem ItemType=\"Function\" Function=\"$0 * %f\" Dimensions=\"%d %d %d 3\">\n"
-              "            <DataItem Precision=\"%zd\" Format=\"Binary\" Seek=\"%ld\" Dimensions=\"%d %d %d 3\">\n"
-              "              %s\n"
-              "            </DataItem>\n"
-              "          </DataItem>\n"
-              "        </Attribute>\n\n",
-              dx_lb/dt_lb,
-              fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
-              sizeof(MPI_DOUBLE), offset+block*4,
-              fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
-              dump_file_name_raw.c_str());
+              dump_file_name_raw_new.c_str());
+      // fprintf(dump_file_handle_xdmf,
+      //         "        <Attribute Name=\"psi\">\n"
+      //         "          <DataItem ItemType=\"Function\" Function=\"$0 * %f\" Dimensions=\"%d %d %d\">\n"
+      //         "            <DataItem Precision=\"%zd\" Format=\"Binary\" Seek=\"%ld\" Dimensions=\"%d %d %d\">\n"
+      //         "              %s\n"
+      //         "            </DataItem>\n"
+      //         "          </DataItem>\n"
+      //         "        </Attribute>\n\n",
+      //         dm_lb/(dx_lb*dx_lb*dx_lb),
+      //         fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
+      //         sizeof(MPI_DOUBLE), offset+block*2,
+      //         fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
+      //         dump_file_name_raw_new.c_str());
+      // fprintf(dump_file_handle_xdmf,
+      //         "        <Attribute Name=\"pressure\">\n"
+      //         "          <DataItem ItemType=\"Function\" Function=\"$0 * %f\" Dimensions=\"%d %d %d\">\n"
+      //         "            <DataItem Precision=\"%zd\" Format=\"Binary\" Seek=\"%ld\" Dimensions=\"%d %d %d\">\n"
+      //         "              %s\n"
+      //         "            </DataItem>\n"
+      //         "          </DataItem>\n"
+      //         "        </Attribute>\n\n",
+      //         dm_lb/(dx_lb*dx_lb*dx_lb),
+      //         fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
+      //         sizeof(MPI_DOUBLE), offset+block*3,
+      //         fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
+      //         dump_file_name_raw_new.c_str());
+      // fprintf(dump_file_handle_xdmf,
+      //         "        <Attribute Name=\"velocity\" AttributeType=\"Vector\">\n"
+      //         "          <DataItem ItemType=\"Function\" Function=\"$0 * %f\" Dimensions=\"%d %d %d 3\">\n"
+      //         "            <DataItem Precision=\"%zd\" Format=\"Binary\" Seek=\"%ld\" Dimensions=\"%d %d %d 3\">\n"
+      //         "              %s\n"
+      //         "            </DataItem>\n"
+      //         "          </DataItem>\n"
+      //         "        </Attribute>\n\n",
+      //         dx_lb/dt_lb,
+      //         fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
+      //         sizeof(MPI_DOUBLE), offset+block*4,
+      //         fluid_global_n0[2], fluid_global_n0[1], fluid_global_n0[0],
+      //         dump_file_name_raw_new.c_str());
       fprintf(dump_file_handle_xdmf,
               "      </Grid>\n\n");
+      fprintf(dump_file_handle_xdmf, "    </Grid>\n  </Domain>\n</Xdmf>\n");
     }
 
     // Write raw data
@@ -1374,11 +1392,33 @@ void FixLbMulticomponent::dump_xdmf(const int step) {
 	      }
       }
 
-      MPI_File_write_all(dump_file_handle_raw, &density_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
-      MPI_File_write_all(dump_file_handle_raw, &phi_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
-      MPI_File_write_all(dump_file_handle_raw, &psi_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
-      MPI_File_write_all(dump_file_handle_raw, &pressure_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
-      MPI_File_write_all(dump_file_handle_raw, &velocity_2_fort[0], 1, fluid_vector_field_mpitype, MPI_STATUS_IGNORE);
+    // // 0. Set view and write density
+    // MPI_File_set_view(dump_file_handle_raw, block * 0, MPI_DOUBLE, fluid_scalar_field_mpitype, "native", MPI_INFO_NULL);
+    // MPI_File_write_all(dump_file_handle_raw, &density_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
+
+    // // Write the flattened local buffer
+    // MPI_File_set_view(dump_file_handle_raw, offset, MPI_DOUBLE, MPI_DOUBLE, "native", MPI_INFO_NULL);
+    // MPI_File_write_all(dump_file_handle_raw, &density_2_fort[0], lvol, MPI_DOUBLE, MPI_STATUS_IGNORE);
+    // 1. Set view and write phi
+    // MPI_File_set_view(dump_file_handle_raw, block * 0, MPI_DOUBLE, fluid_scalar_field_mpitype, "native", MPI_INFO_NULL);
+    MPI_File_write_all(dump_file_handle_raw, &phi_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
+    
+    // // 1. Set view and write phi
+    // MPI_File_set_view(dump_file_handle_raw, block * 1, MPI_DOUBLE, fluid_scalar_field_mpitype, "native", MPI_INFO_NULL);
+    // MPI_File_write_all(dump_file_handle_raw, &phi_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
+
+    // // 2. Set view and write psi
+    // MPI_File_set_view(dump_file_handle_raw, block * 2, MPI_DOUBLE, fluid_scalar_field_mpitype, "native", MPI_INFO_NULL);
+    // MPI_File_write_all(dump_file_handle_raw, &psi_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
+
+    // // 3. Set view and write pressure
+    // MPI_File_set_view(dump_file_handle_raw, block * 3, MPI_DOUBLE, fluid_scalar_field_mpitype, "native", MPI_INFO_NULL);
+    // MPI_File_write_all(dump_file_handle_raw, &pressure_2_fort[0], 1, fluid_scalar_field_mpitype, MPI_STATUS_IGNORE);
+
+    // // 4. Set view and write velocity
+    // MPI_File_set_view(dump_file_handle_raw, block * 4, MPI_DOUBLE, fluid_vector_field_mpitype, "native", MPI_INFO_NULL);
+    // MPI_File_write_all(dump_file_handle_raw, &velocity_2_fort[0], 1, fluid_vector_field_mpitype, MPI_STATUS_IGNORE);
+
       
     }
   }
@@ -1478,11 +1518,11 @@ static MPI_Datatype mpiTypeDumpGlobal_ternary(const int *local_size,
       MPI_Aint lb, extent;
       MPI_Type_get_extent(scalar_mpitype, &lb, &extent);
 
-      int blocklengths[] = { 1, 1, 1, 1, 1 };
-      MPI_Aint displacements[] = { 0, lb+extent, 2*(lb+extent), 3*(lb+extent),  4*(lb+extent) };
-      MPI_Datatype datatypes[] = { scalar_mpitype, scalar_mpitype, scalar_mpitype, scalar_mpitype, vector_mpitype };
+      int blocklengths[] = { 1};
+      MPI_Aint displacements[] = { 0};
+      MPI_Datatype datatypes[] = { scalar_mpitype};
 
-      MPI_Type_create_struct(5, blocklengths, displacements, datatypes, &dump_ternary);
+      MPI_Type_create_struct(1, blocklengths, displacements, datatypes, &dump_ternary);
     }
 
     // Free local MPI types
@@ -1519,29 +1559,29 @@ void FixLbMulticomponent::init_output(void)
   MPI_Type_commit(&fluid_vector_field_mpitype);
   MPI_Type_commit(&dump_file_mpitype);
 
-  // Output
+  // // Output
   if ( dump_interval ) {
-    // FILE *fptr;
-    // fptr = fopen("dump_interval.txt", "a");
-    // fprintf(fptr, "%d\n", dump_interval);
-    // fclose(fptr);
-    if ( me == 0 ) {
-      dump_file_handle_xdmf = fopen( dump_file_name_xdmf.c_str(), "w");
-      if (!dump_file_handle_xdmf) {
-        error->one(FLERR, "Unable to truncate/create \"{}\": {}", dump_file_name_xdmf, utils::getsyserror());
-      }
-      fprintf(dump_file_handle_xdmf,
-              "<?xml version=\"1.0\" ?>\n"
-              "<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\" []>\n"
-              "<Xdmf Version=\"2.0\">\n"
-              "  <Domain>\n"
-              "    <Grid Name=\"fluid\" GridType=\"Collection\" CollectionType=\"Temporal\">\n\n");
-    }
-    MPI_File_open(world, const_cast<char*>(dump_file_name_raw.c_str()),
-                  MPI_MODE_CREATE | MPI_MODE_WRONLY,
-                  MPI_INFO_NULL, &dump_file_handle_raw);
-    MPI_File_set_size(dump_file_handle_raw, 0);
-    MPI_File_set_view(dump_file_handle_raw, 0, MPI_DOUBLE, dump_file_mpitype, "native", MPI_INFO_NULL);
+  //   // FILE *fptr;
+  //   // fptr = fopen("dump_interval.txt", "a");
+  //   // fprintf(fptr, "%d\n", dump_interval);
+  //   // fclose(fptr);
+  //   if ( me == 0 ) {
+  //     dump_file_handle_xdmf = fopen( dump_file_name_xdmf.c_str(), "w");
+  //     if (!dump_file_handle_xdmf) {
+  //       error->one(FLERR, "Unable to truncate/create \"{}\": {}", dump_file_name_xdmf, utils::getsyserror());
+  //     }
+  //     fprintf(dump_file_handle_xdmf,
+  //             "<?xml version=\"1.0\" ?>\n"
+  //             "<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\" []>\n"
+  //             "<Xdmf Version=\"2.0\">\n"
+  //             "  <Domain>\n"
+  //             "    <Grid Name=\"fluid\" GridType=\"Collection\" CollectionType=\"Temporal\">\n\n");
+  //   }
+  //   MPI_File_open(world, const_cast<char*>(dump_file_name_raw.c_str()),
+  //                 MPI_MODE_CREATE | MPI_MODE_WRONLY,
+  //                 MPI_INFO_NULL, &dump_file_handle_raw);
+  //   MPI_File_set_size(dump_file_handle_raw, 0);
+  //   MPI_File_set_view(dump_file_handle_raw, 0, MPI_DOUBLE, dump_file_mpitype, "native", MPI_INFO_NULL);
   }
 }
 
@@ -1706,8 +1746,8 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
     else if(strcmp(argv[argi],"dumpxdmf")==0){
       if (argi+3 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
       dump_interval = utils::inumeric(FLERR, argv[argi+1], false, lmp);
-      dump_file_name_xdmf = std::string(argv[argi+2]) + std::string(".xdmf");
-      dump_file_name_raw = std::string(argv[argi+2]) + std::string(".raw");
+      dump_file_name_xdmf = std::string(argv[argi+2]);
+      dump_file_name_raw = std::string(argv[argi+2]);
       argi += 3;
     }
     else if (strcmp(argv[argi],"seed")==0){
