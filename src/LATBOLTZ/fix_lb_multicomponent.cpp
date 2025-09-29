@@ -985,6 +985,7 @@ void FixLbMulticomponent::init_semi_droplet(double radius, double C1, double C2,
   double r2;
   int x, y, z, i;
   double cent_pos[3] = {double((domain->boxlo[0]+domain->boxhi[0])/2), double((domain->boxlo[1]+domain->boxhi[1])/2), double(domain->boxhi[2])};
+  RanMars *random = new RanMars(lmp,seed + comm->me);
 
   for (x=0; x<subNbx; x++) {
     pos[0] = domain->sublo[0] + (x-halo_extent[0])*dx_lb;
