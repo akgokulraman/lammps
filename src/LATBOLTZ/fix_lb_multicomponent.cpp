@@ -42,14 +42,14 @@
 using namespace LAMMPS_NS;
 
 static const char cite_fix_lbmulticomponent[] =
-    "fix lb/multicomponent command: doi:\n\n"
-    "@Article{Raman2023,\n"
-    "  author = {G. Raman, J.P. Andrews, U.D. Schiller},\n"
-    "  title = {Implementation of a Ternary Lattice Boltzmann Model in LAMMPS},\n"
-    "  journal = {Comp.~Phys.~Comm.},\n"
-    "  year =    2024,\n"
-    "  volume = 294,\n"
-    "  pages = {108898}\n"
+    "fix lb/multicomponent command: doi:10.1016/j.cpc.2023.108898\n\n"
+    "@Article{arumugam_kumar_implementation_2024,\n"
+    "  author  = {Arumugam Kumar, Gokul Raman and Andrews, James P. and Schiller, Ulf D.},\n"
+    "  title   = {Implementation of a Ternary Lattice Boltzmann Model in LAMMPS},\n"
+    "  journal = {Comput.~Phys.~Commun.},\n"
+    "  year    = {2024},\n"
+    "  volume  = {294},\n"
+    "  pages   = {108898}\n"
     "}\n\n";
 
 int time_g = -1;
@@ -166,6 +166,7 @@ void FixLbMulticomponent::read_site(int x, int y, int z) {
 }
 
 void FixLbMulticomponent::write_site(int x, int y, int z) {
+  neumann_bc(x,y,z);
   collide_stream(x,y,z);
 }
 
@@ -547,6 +548,320 @@ void FixLbMulticomponent::bounce_back() {
 
 }
 
+
+void FixLbMulticomponent::neumann_bc(int x, int y, int z) {
+
+  // writes fields into the wall to satisfy Neumann boundary conditions
+  // corners are not needed for D3Q19
+  // edges are covered through "hops"
+
+  double drho = (- h1/kappa1 - h2/kappa2 - h3/kappa3)/(alpha*alpha);
+  double dphi = (- h1/kappa1 + h2/kappa2)/(alpha*alpha);
+  double dpsi = (- h3/kappa3)/(alpha*alpha);
+
+  if (!domain->periodicity[2]) {
+    if ((comm->myloc[2] == 0) && (z == halo_extent[2])) { // next to bottom z wall
+      density_lb[x  ][y  ][z-1] = density_lb[x  ][y  ][z] - drho;
+      density_lb[x  ][y+1][z-1] = density_lb[x  ][y+1][z] - drho;
+      density_lb[x  ][y-1][z-1] = density_lb[x  ][y-1][z] - drho;
+      density_lb[x+1][y  ][z-1] = density_lb[x+1][y  ][z] - drho;
+      density_lb[x-1][y  ][z-1] = density_lb[x-1][y  ][z] - drho;
+
+      phi_lb[x  ][y  ][z-1] = phi_lb[x  ][y  ][z] - dphi;
+      phi_lb[x  ][y+1][z-1] = phi_lb[x  ][y+1][z] - dphi;
+      phi_lb[x  ][y-1][z-1] = phi_lb[x  ][y-1][z] - dphi;
+      phi_lb[x+1][y  ][z-1] = phi_lb[x+1][y  ][z] - dphi;
+      phi_lb[x-1][y  ][z-1] = phi_lb[x-1][y  ][z] - dphi;
+
+      psi_lb[x  ][y  ][z-1] = psi_lb[x  ][y  ][z] - dpsi;
+      psi_lb[x  ][y+1][z-1] = psi_lb[x  ][y+1][z] - dpsi;
+      psi_lb[x  ][y-1][z-1] = psi_lb[x  ][y-1][z] - dpsi;
+      psi_lb[x+1][y  ][z-1] = psi_lb[x+1][y  ][z] - dpsi;
+      psi_lb[x-1][y  ][z-1] = psi_lb[x-1][y  ][z] - dpsi;
+    }
+    if ((comm->myloc[2] == comm->procgrid[2]-1) && (z == subNbz-halo_extent[2]-1)) { // next to top z wall
+      density_lb[x  ][y  ][z+1] = density_lb[x  ][y  ][z] - drho;
+      density_lb[x  ][y+1][z+1] = density_lb[x  ][y+1][z] - drho;
+      density_lb[x  ][y-1][z+1] = density_lb[x  ][y-1][z] - drho;
+      density_lb[x+1][y  ][z+1] = density_lb[x+1][y  ][z] - drho;
+      density_lb[x-1][y  ][z+1] = density_lb[x-1][y  ][z] - drho;
+
+      phi_lb[x  ][y  ][z+1] = phi_lb[x  ][y  ][z] - dphi;
+      phi_lb[x  ][y+1][z+1] = phi_lb[x  ][y+1][z] - dphi;
+      phi_lb[x  ][y-1][z+1] = phi_lb[x  ][y-1][z] - dphi;
+      phi_lb[x+1][y  ][z+1] = phi_lb[x+1][y  ][z] - dphi;
+      phi_lb[x-1][y  ][z+1] = phi_lb[x-1][y  ][z] - dphi;
+
+      psi_lb[x  ][y  ][z+1] = psi_lb[x  ][y  ][z] - dpsi;
+      psi_lb[x  ][y+1][z+1] = psi_lb[x  ][y+1][z] - dpsi;
+      psi_lb[x  ][y-1][z+1] = psi_lb[x  ][y-1][z] - dpsi;
+      psi_lb[x+1][y  ][z+1] = psi_lb[x+1][y  ][z] - dpsi;
+      psi_lb[x-1][y  ][z+1] = psi_lb[x-1][y  ][z] - dpsi;
+    }
+  }
+
+  if (!domain->periodicity[1]) {
+    if ((comm->myloc[1] == 0) && (y == halo_extent[1])) { // next to bottom y wall
+      density_lb[x  ][y-1][z  ] = density_lb[x  ][y][z  ] - drho;
+      density_lb[x  ][y-1][z+1] = density_lb[x  ][y][z+1] - drho; // covers edges with z
+      density_lb[x  ][y-1][z-1] = density_lb[x  ][y][z-1] - drho; // covers edges with z
+      density_lb[x+1][y-1][z  ] = density_lb[x+1][y][z  ] - drho;
+      density_lb[x-1][y-1][z  ] = density_lb[x-1][y][z  ] - drho;
+
+      phi_lb[x  ][y-1][z  ] = phi_lb[x  ][y][z  ] - dphi;
+      phi_lb[x  ][y-1][z+1] = phi_lb[x  ][y][z+1] - dphi; // covers edges with z
+      phi_lb[x  ][y-1][z-1] = phi_lb[x  ][y][z-1] - dphi; // covers edges with z
+      phi_lb[x+1][y-1][z  ] = phi_lb[x+1][y][z  ] - dphi;
+      phi_lb[x-1][y-1][z  ] = phi_lb[x-1][y][z  ] - dphi;
+
+      psi_lb[x  ][y-1][z  ] = psi_lb[x  ][y][z  ] - dpsi;
+      psi_lb[x  ][y-1][z+1] = psi_lb[x  ][y][z+1] - dpsi; // covers edges with z
+      psi_lb[x  ][y-1][z-1] = psi_lb[x  ][y][z-1] - dpsi; // covers edges with z
+      psi_lb[x+1][y-1][z  ] = psi_lb[x+1][y][z  ] - dpsi;
+      psi_lb[x-1][y-1][z  ] = psi_lb[x-1][y][z  ] - dpsi;
+    }
+    if ((comm->myloc[1] == comm->procgrid[1]-1) && (y == subNby-halo_extent[1]-1)) { // next to top y wall
+      density_lb[x  ][y+1][z  ] = density_lb[x  ][y][z  ] - drho;
+      density_lb[x  ][y+1][z+1] = density_lb[x  ][y][z+1] - drho; // covers edges with z
+      density_lb[x  ][y+1][z-1] = density_lb[x  ][y][z-1] - drho; // covers edges with z
+      density_lb[x+1][y+1][z  ] = density_lb[x+1][y][z  ] - drho;
+      density_lb[x-1][y+1][z  ] = density_lb[x-1][y][z  ] - drho;
+
+      phi_lb[x  ][y+1][z  ] = phi_lb[x  ][y][z  ] - dphi;
+      phi_lb[x  ][y+1][z+1] = phi_lb[x  ][y][z+1] - dphi; // covers edges with z
+      phi_lb[x  ][y+1][z-1] = phi_lb[x  ][y][z-1] - dphi; // covers edges with z
+      phi_lb[x+1][y+1][z  ] = phi_lb[x+1][y][z  ] - dphi;
+      phi_lb[x-1][y+1][z  ] = phi_lb[x-1][y][z  ] - dphi;
+
+      psi_lb[x  ][y+1][z  ] = psi_lb[x  ][y][z  ] - dpsi;
+      psi_lb[x  ][y+1][z+1] = psi_lb[x  ][y][z+1] - dpsi; // covers edges with z
+      psi_lb[x  ][y+1][z-1] = psi_lb[x  ][y][z-1] - dpsi; // covers edges with z
+      psi_lb[x+1][y+1][z  ] = psi_lb[x+1][y][z  ] - dpsi;
+      psi_lb[x-1][y+1][z  ] = psi_lb[x-1][y][z  ] - dpsi;
+    }
+  }
+
+  if (!domain->periodicity[0]) {
+    if ((comm->myloc[0] == 0) && (x == halo_extent[0])) { // next to bottom x wall
+      density_lb[x-1][y  ][z  ] = density_lb[x][y  ][z  ] - drho;
+      density_lb[x-1][y  ][z+1] = density_lb[x][y  ][z+1] - drho; // covers edges with z
+      density_lb[x-1][y  ][z-1] = density_lb[x][y  ][z-1] - drho; // covers edges with z
+      density_lb[x-1][y+1][z  ] = density_lb[x][y+1][z  ] - drho; // covers edges with y
+      density_lb[x-1][y-1][z  ] = density_lb[x][y-1][z  ] - drho; // covers edges with y
+
+      phi_lb[x-1][y  ][z  ] = phi_lb[x][y  ][z  ] - dphi;
+      phi_lb[x-1][y  ][z+1] = phi_lb[x][y  ][z+1] - dphi; // covers edges with z
+      phi_lb[x-1][y  ][z-1] = phi_lb[x][y  ][z-1] - dphi; // covers edges with z
+      phi_lb[x-1][y+1][z  ] = phi_lb[x][y+1][z  ] - dphi; // covers edges with y
+      phi_lb[x-1][y-1][z  ] = phi_lb[x][y-1][z  ] - dphi; // covers edges with y
+
+      psi_lb[x-1][y  ][z  ] = psi_lb[x][y  ][z  ] - dpsi;
+      psi_lb[x-1][y  ][z+1] = psi_lb[x][y  ][z+1] - dpsi; // covers edges with z
+      psi_lb[x-1][y  ][z-1] = psi_lb[x][y  ][z-1] - dpsi; // covers edges with z
+      psi_lb[x-1][y+1][z  ] = psi_lb[x][y+1][z  ] - dpsi; // covers edges with y
+      psi_lb[x-1][y-1][z  ] = psi_lb[x][y-1][z  ] - dpsi; // covers edges with y
+    }
+    if ((comm->myloc[0] == comm->procgrid[0]-1) && (x == subNbx-halo_extent[0]-1)) { // next to top x wall
+      density_lb[x+1][y  ][z  ] = density_lb[x][y  ][z  ] - drho;
+      density_lb[x+1][y  ][z+1] = density_lb[x][y  ][z+1] - drho; // covers edges with z
+      density_lb[x+1][y  ][z-1] = density_lb[x][y  ][z-1] - drho; // covers edges with z
+      density_lb[x+1][y+1][z  ] = density_lb[x][y+1][z  ] - drho; // covers edges with y
+      density_lb[x+1][y-1][z  ] = density_lb[x][y-1][z  ] - drho; // covers edges with y
+
+      phi_lb[x+1][y  ][z  ] = phi_lb[x][y  ][z  ] - dphi;
+      phi_lb[x+1][y  ][z+1] = phi_lb[x][y  ][z+1] - dphi; // covers edges with z
+      phi_lb[x+1][y  ][z-1] = phi_lb[x][y  ][z-1] - dphi; // covers edges with z
+      phi_lb[x+1][y+1][z  ] = phi_lb[x][y+1][z  ] - dphi; // covers edges with y
+      phi_lb[x+1][y-1][z  ] = phi_lb[x][y-1][z  ] - dphi; // covers edges with y
+
+      psi_lb[x+1][y  ][z  ] = psi_lb[x][y  ][z  ] - dpsi;
+      psi_lb[x+1][y  ][z+1] = psi_lb[x][y  ][z+1] - dpsi; // covers edges with z
+      psi_lb[x+1][y  ][z-1] = psi_lb[x][y  ][z-1] - dpsi; // covers edges with z
+      psi_lb[x+1][y+1][z  ] = psi_lb[x][y+1][z  ] - dpsi; // covers edges with y
+      psi_lb[x+1][y-1][z  ] = psi_lb[x][y-1][z  ] - dpsi; // covers edges with y
+    }
+  }
+
+}
+
+
+void FixLbMulticomponent::bounce_back() {
+  if (!domain->periodicity[0]) {
+    if (comm->myloc[0] == 0) {
+      bounce_back_x_bottom();
+    }
+    if (comm->myloc[0] == comm->procgrid[0] - 1) {
+      bounce_back_x_top();
+    }
+  }
+  if (!domain->periodicity[1]) {
+    if (comm->myloc[1] == 0) {
+      bounce_back_y_bottom();
+    }
+    if (comm->myloc[1] == comm->procgrid[1] - 1) {
+      bounce_back_y_top();
+    }
+  }
+  if (domain->periodicity[2]) {
+    if (comm->myloc[2] == 0) {
+      bounce_back_z_bottom();
+    }
+    if (comm->myloc[2] == comm->procgrid[2] - 1) {
+      bounce_back_z_top();
+    }
+  }
+}
+
+void FixLbMulticomponent::bounce_back_x_bottom() {
+  int x = halo_extent[0];
+  for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+    for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
+      fnew[x][y][z][1]  = fnew[x-1][y][z][3];
+      fnew[x][y][z][7]  = fnew[x-1][y-1][z][10];
+      fnew[x][y][z][8]  = fnew[x-1][y+1][z][9];
+      fnew[x][y][z][11] = fnew[x-1][y][z-1][14];
+      fnew[x][y][z][12] = fnew[x-1][y][z+1][13];
+
+      gnew[x][y][z][1]  = gnew[x-1][y][z][3];
+      gnew[x][y][z][7]  = gnew[x-1][y-1][z][10];
+      gnew[x][y][z][8]  = gnew[x-1][y+1][z][9];
+      gnew[x][y][z][11] = gnew[x-1][y][z-1][14];
+      gnew[x][y][z][12] = gnew[x-1][y][z+1][13];
+
+      knew[x][y][z][1]  = knew[x-1][y][z][3];
+      knew[x][y][z][7]  = knew[x-1][y-1][z][10];
+      knew[x][y][z][8]  = knew[x-1][y+1][z][9];
+      knew[x][y][z][11] = knew[x-1][y][z-1][14];
+      knew[x][y][z][12] = knew[x-1][y][z+1][13];
+    }
+  }  
+}
+
+void FixLbMulticomponent::bounce_back_x_top() {
+  int x = subNbx - halo_extent[0] - 1;
+  for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+    for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
+      fnew[x][y][z][3]  = fnew[x+1][y][z][1];
+      fnew[x][y][z][9]  = fnew[x+1][y-1][z][8];
+      fnew[x][y][z][10] = fnew[x+1][y+1][z][7];
+      fnew[x][y][z][13] = fnew[x+1][y][z-1][12];
+      fnew[x][y][z][14] = fnew[x+1][y][z+1][11];
+
+      gnew[x][y][z][3]  = gnew[x+1][y][z][1];
+      gnew[x][y][z][9]  = gnew[x+1][y-1][z][8];
+      gnew[x][y][z][10] = gnew[x+1][y+1][z][7];
+      gnew[x][y][z][13] = gnew[x+1][y][z-1][12];
+      gnew[x][y][z][14] = gnew[x+1][y][z+1][11];
+
+      knew[x][y][z][3]  = knew[x+1][y][z][1];
+      knew[x][y][z][9]  = knew[x+1][y-1][z][8];
+      knew[x][y][z][10] = knew[x+1][y+1][z][7];
+      knew[x][y][z][13] = knew[x+1][y][z-1][12];
+      knew[x][y][z][14] = knew[x+1][y][z+1][11];
+    }
+  }  
+}
+
+void FixLbMulticomponent::bounce_back_y_bottom() {
+  int y = halo_extent[1];
+  for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+    for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
+      fnew[x][y][z][2]  = fnew[x][y-1][z][4];
+      fnew[x][y][z][7]  = fnew[x-1][y-1][z][10];
+      fnew[x][y][z][9]  = fnew[x+1][y-1][z][8];
+      fnew[x][y][z][15] = fnew[x][y-1][z-1][18];
+      fnew[x][y][z][16] = fnew[x][y-1][z+1][17];
+
+      gnew[x][y][z][2]  = gnew[x][y-1][z][4];
+      gnew[x][y][z][7]  = gnew[x-1][y-1][z][10];
+      gnew[x][y][z][9]  = gnew[x+1][y-1][z][8];
+      gnew[x][y][z][15] = gnew[x][y-1][z-1][18];
+      gnew[x][y][z][16] = gnew[x][y-1][z+1][17];
+
+      knew[x][y][z][2]  = knew[x][y-1][z][4];
+      knew[x][y][z][7]  = knew[x-1][y-1][z][10];
+      knew[x][y][z][9]  = knew[x+1][y-1][z][8];
+      knew[x][y][z][15] = knew[x][y-1][z-1][18];
+      knew[x][y][z][16] = knew[x][y-1][z+1][17];
+    }
+  }  
+}
+
+void FixLbMulticomponent::bounce_back_y_top() {
+  int y = subNby - halo_extent[1] - 1;
+  for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+    for (int z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
+      fnew[x][y][z][4]  = fnew[x][y+1][z][2];
+      fnew[x][y][z][8]  = fnew[x-1][y+1][z][9];
+      fnew[x][y][z][10] = fnew[x+1][y+1][z][7];
+      fnew[x][y][z][17] = fnew[x][y+1][z-1][16];
+      fnew[x][y][z][18] = fnew[x][y+1][z+1][15];
+
+      gnew[x][y][z][4]  = gnew[x][y+1][z][2];
+      gnew[x][y][z][8]  = gnew[x-1][y+1][z][9];
+      gnew[x][y][z][10] = gnew[x+1][y+1][z][7];
+      gnew[x][y][z][17] = gnew[x][y+1][z-1][16];
+      gnew[x][y][z][18] = gnew[x][y+1][z+1][15];
+
+      knew[x][y][z][4]  = knew[x][y+1][z][2];
+      knew[x][y][z][8]  = knew[x-1][y+1][z][9];
+      knew[x][y][z][10] = knew[x+1][y+1][z][7];
+      knew[x][y][z][17] = knew[x][y+1][z-1][16];
+      knew[x][y][z][18] = knew[x][y+1][z+1][15];
+    }
+  }  
+}
+
+void FixLbMulticomponent::bounce_back_z_bottom() {
+  int z = halo_extent[2];
+  for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+    for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+      fnew[x][y][z][5]  = fnew[x][y][z-1][5];
+      fnew[x][y][z][11] = fnew[x-1][y][z-1][14];
+      fnew[x][y][z][13] = fnew[x+1][y][z-1][12];
+      fnew[x][y][z][15] = fnew[x][y-1][z-1][18];
+      fnew[x][y][z][17] = fnew[x][y+1][z-1][16];
+
+      gnew[x][y][z][5]  = gnew[x][y][z-1][5];
+      gnew[x][y][z][11] = gnew[x-1][y][z-1][14];
+      gnew[x][y][z][13] = gnew[x+1][y][z-1][12];
+      gnew[x][y][z][15] = gnew[x][y-1][z-1][18];
+      gnew[x][y][z][17] = gnew[x][y+1][z-1][16];
+
+      knew[x][y][z][5]  = knew[x][y][z-1][5];
+      knew[x][y][z][11] = knew[x-1][y][z-1][14];
+      knew[x][y][z][13] = knew[x+1][y][z-1][12];
+      knew[x][y][z][15] = knew[x][y-1][z-1][18];
+      knew[x][y][z][17] = knew[x][y+1][z-1][16];
+    }
+  }
+}
+
+void FixLbMulticomponent::bounce_back_z_top() {
+  int z = subNbz-halo_extent[2] - 1;
+  for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+    for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+      fnew[x][y][z][6]  = fnew[x][y][z+1][5];
+      fnew[x][y][z][12] = fnew[x-1][y][z+1][13];
+      fnew[x][y][z][14] = fnew[x+1][y][z+1][11];
+      fnew[x][y][z][16] = fnew[x][y-1][z+1][17];
+      fnew[x][y][z][18] = fnew[x][y+1][z+1][15];
+
+      gnew[x][y][z][6]  = gnew[x][y][z+1][5];
+      gnew[x][y][z][12] = gnew[x-1][y][z+1][13];
+      gnew[x][y][z][14] = gnew[x+1][y][z+1][11];
+      gnew[x][y][z][16] = gnew[x][y-1][z+1][17];
+      gnew[x][y][z][18] = gnew[x][y+1][z+1][15];
+
+      knew[x][y][z][6]  = knew[x][y][z+1][5];
+      knew[x][y][z][12] = knew[x-1][y][z+1][13];
+      knew[x][y][z][14] = knew[x+1][y][z+1][11];
+      knew[x][y][z][16] = knew[x][y-1][z+1][17];
+      knew[x][y][z][18] = knew[x][y+1][z+1][15];
+    }
+  }
+}
+
 // homogeneous mixture of C1, C2, and C3 with random concentration fluctuations
 void FixLbMulticomponent::init_mixture() {
   double rho, phi, psi;
@@ -694,6 +1009,60 @@ void FixLbMulticomponent::init_binary_separated() {
   }
 
   delete(random);
+}
+
+void FixLbMulticomponent::init_three_liquids() {
+  double rho=1.0, phi, psi;
+  double C1tot=0., C2tot=0., C3tot=0.;
+  double C1tot_global=0., C2tot_global=0., C3tot_global=0.;
+  double pos[3];
+  int x, y, z, i;
+
+  domain->periodicity[0] = 0;
+  domain->periodicity[1] = 0;
+
+  for (x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
+    pos[0] = domain->sublo[0] + (x-halo_extent[0])*dx_lb + 0.5;
+    for (y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
+      pos[1] = domain->sublo[1] + (y-halo_extent[1])*dx_lb + 0.5;
+      for (z=halo_extent[2]; z<subNbz-halo_extent[2]; z++) {
+        pos[2] = domain->sublo[2] + (z-halo_extent[2])*dx_lb + 0.5;
+        if (pos[1] < domain->boxlo[1] + (domain->boxhi[1]-domain->boxlo[1])/3) {
+          C3 = 1;
+          C1 = C2 = 0;
+        } else {
+          if (pos[0] < (domain->boxlo[0] + domain->boxhi[0])/2) {
+            C1 = 1;
+            C2 = C3 = 0;
+          } else {
+            C1 = C3 = 0;
+            C2 = 1;
+          }
+        }
+	      rho = densityinit;
+	      phi = densityinit*(C1-C2);
+	      psi = densityinit*C3;
+	      for (i=0; i<numvel; i++) {
+	        f_lb[x][y][z][i] = w_lb19[i]*rho*densityinit;
+	        g_lb[x][y][z][i] = w_lb19[i]*phi*densityinit;
+	        k_lb[x][y][z][i] = w_lb19[i]*psi*densityinit;
+	      }
+	      C1tot += C1;
+	      C2tot += C2;
+	      C3tot += C3;
+      }
+    }
+  }
+
+  MPI_Reduce(&C1tot,&C1tot_global,1,MPI_DOUBLE,MPI_SUM,0,world);
+  MPI_Reduce(&C2tot,&C2tot_global,1,MPI_DOUBLE,MPI_SUM,0,world);
+  MPI_Reduce(&C3tot,&C3tot_global,1,MPI_DOUBLE,MPI_SUM,0,world);
+
+  double vol = Nbx*Nby*Nbz;
+  if(comm->me==0){
+    error->message(FLERR,"Initialized three liquids with <C1> = {:f}, <C2> = {:f}, <C3> = {:f}",C1tot_global/vol,C2tot_global/vol,C3tot_global/vol);
+  }
+
 }
 
 // droplet composed of component C1 and C2 (C3=0)
@@ -993,6 +1362,8 @@ void FixLbMulticomponent::init_fluid() {
       break;
     case BINARY_SEPARATED:
       init_binary_separated();
+    case THREE_LIQUIDS:
+      init_three_liquids();
       break;
     case DROPLET:
       init_droplet(radius*dx_lb);
@@ -1517,6 +1888,7 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
   alpha = 1.0;
   C1 = 0.333333; C2 = 0.333333; C3 = 0.333334; // concentrations
   kappa1 = 0.01; kappa2 = 0.01, kappa3 = 0.01; // surface tensions
+  h1 = -0.002; h2 = 0.002; h3 = 0.0;           // comtact angles
   tau_r = 1.0; tau_p = 1.0; tau_s = 0.666667;  // relaxation times
   gamma_p = 1.0; gamma_s = 1.0;                // mobility coefficients
   init_method = MIXTURE;                       // initialization
@@ -1657,6 +2029,9 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
       else if(strcmp(argv[argi],"binary-separated")==0) {
         if (argi+1 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {} {}", argv[argi-1], argv[argi]);
         init_method = BINARY_SEPARATED;
+      else if(strcmp(argv[argi],"three_liquids")==0) {
+        if (argi+1 > argc) error->all(FLERR, "Illegal fix/lbmulticomponent command: {} {}", argv[argi-1], argv[argi]);
+        init_method = THREE_LIQUIDS;
         argi += 1;
       }
       else if(strcmp(argv[argi],"droplet")==0) {
