@@ -1623,6 +1623,21 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
       C3 = utils::numeric(FLERR, argv[argi+1], false, lmp);
       argi += 2;
     }
+    else if (strcmp(argv[argi],"h1")==0) {
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      h1 = utils::numeric(FLERR, argv[argi+1], false, lmp);
+      argi += 2;
+    }
+    else if (strcmp(argv[argi],"h2")==0) {
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      h2 = utils::numeric(FLERR, argv[argi+1], false, lmp);
+      argi += 2;
+    }
+    else if (strcmp(argv[argi],"h3")==0) {
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      h3 = utils::numeric(FLERR, argv[argi+1], false, lmp);
+      argi += 2;
+    }
     else if(strcmp(argv[argi],"dumpxdmf")==0){
       if (argi+3 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
       dump_interval = utils::inumeric(FLERR, argv[argi+1], false, lmp);
