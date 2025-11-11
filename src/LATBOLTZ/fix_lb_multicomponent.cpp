@@ -695,19 +695,19 @@ void FixLbMulticomponent::bounce_back_z_bottom() {
   int z = halo_extent[2];
   for (int x=halo_extent[0]; x<subNbx-halo_extent[0]; x++) {
     for (int y=halo_extent[1]; y<subNby-halo_extent[1]; y++) {
-      fnew[x][y][z][5]  = fnew[x][y][z-1][5];
+      fnew[x][y][z][5]  = fnew[x][y][z-1][6];
       fnew[x][y][z][11] = fnew[x-1][y][z-1][14];
       fnew[x][y][z][13] = fnew[x+1][y][z-1][12];
       fnew[x][y][z][15] = fnew[x][y-1][z-1][18];
       fnew[x][y][z][17] = fnew[x][y+1][z-1][16];
 
-      gnew[x][y][z][5]  = gnew[x][y][z-1][5];
+      gnew[x][y][z][5]  = gnew[x][y][z-1][6];
       gnew[x][y][z][11] = gnew[x-1][y][z-1][14];
       gnew[x][y][z][13] = gnew[x+1][y][z-1][12];
       gnew[x][y][z][15] = gnew[x][y-1][z-1][18];
       gnew[x][y][z][17] = gnew[x][y+1][z-1][16];
 
-      knew[x][y][z][5]  = knew[x][y][z-1][5];
+      knew[x][y][z][5]  = knew[x][y][z-1][6];
       knew[x][y][z][11] = knew[x-1][y][z-1][14];
       knew[x][y][z][13] = knew[x+1][y][z-1][12];
       knew[x][y][z][15] = knew[x][y-1][z-1][18];
