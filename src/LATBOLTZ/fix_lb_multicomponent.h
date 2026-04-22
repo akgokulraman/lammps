@@ -19,7 +19,7 @@
 ------------------------------------------------------------------------- */
 
 #ifdef FIX_CLASS
-FixStyle(lb / multicomponent, FixLbMulticomponent)
+FixStyle(lb/multicomponent, FixLbMulticomponent)
 #else
 
 #ifndef LMP_FIX_LB_MULTICOMPONENT_H
