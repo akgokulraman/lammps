@@ -14,43 +14,43 @@ Syntax
 * lb/multicomponent = style name of this fix command
 * nevery = update the lattice-Boltzmann fluid every this many timesteps (should normally be 1)
 * viscosity = the fluid viscosity (units of mass/(time\*length))
-* density = the fluid density
+* density = the fluid density is always fixed to 1.0
 * D3Q19 = the only velocity vector set used in this fix (mandatory to mention)
 * dx = keyword for lattice spacing
 * dx_value = keyword value for dx, the lattice-Boltzmann grid spacing
 * zero or more other keyword/value pairs may be appended
-* keyword = ``tau_r`` or ``tau_p`` or ``tau_s`` or ``kappa1`` or ``kappa2`` or ``kappa3`` or ``alpha`` or ``gamma_p`` or ``gamma_s`` or ``C1`` or ``C2`` or ``C3`` or ``dumpxdmf`` or ``seed`` or ``init mixture`` or ``init droplet`` or ``init liquid_lens`` or ``init double_emulsion`` or ``init film`` or ``init mixed_droplet``
+* keyword = *tau_r* or *tau_p* or *tau_s* or *kappa1* or *kappa2* or *kappa3* or *alpha* or *gamma_p* or *gamma_s* or *C1* or *C2* or *C3* or *dumpxdmf* or *seed* or *init mixture* or *init droplet* or *init liquid_lens* or *init double_emulsion* or *init film* or *init mixed_droplet*
+   
+   .. parsed-literal::
 
-
-- ``tau_r`` value                   = relaxation time constant for the population distribution ``f`` 
-- ``tau_p`` value                   = relaxation time constant for the population distribution ``g`` 
-- ``tau_s`` value                   = relaxation time constant for the population distribution ``k`` 
-- ``kappa1`` value                  = energy gradient parameter for fluid 1
-- ``kappa2`` value                  = energy gradient parameter for fluid 2
-- ``kappa3`` value                  = energy gradient parameter for fluid 3
-- ``alpha`` value                   = parameter related to the interface width measurement
-- ``gamma_p`` value                 = mobility coefficient for order parameter :math:`\phi`
-- ``gamma_s`` value                 = mobility coefficient for order parameter :math:`\psi`
-- ``C1`` value                      = initial bulk composition of fluid component 1
-- ``C2`` value                      = initial bulk composition of fluid component 2
-- ``C3`` value                      = initial bulk composition of fluid component 3 (note: C1 + C2 + C3 = 1)
-- ``dumpxdmf`` values               = dump_interval filename
-- ``dump_interval``                 = output fluid fields every dump_interval timesteps
-- ``filename``                      = base name for output files with extensions .xdmf and .raw
-- ``seed`` value                    = seed random number generator seed (positive integer) used to create a random number following a Gaussian distribution.
-- ``init mixture`` value            = none (initialize a well-mixed fluid mixture with compositions specified for ``C1``, ``C2``, ``C3``) 
-- ``init droplet`` value            = radius = radius of the sphere made of pure fluid component 1.
-- ``init liquid_lens`` value        = radius = radius of the upper and lower radius of curvature used to model the ternary liquid lens.
-- ``init double_emulsion`` value    = radius = radius of the hemispheres of fluid components  1 and 2 which makes a janus droplet.
-- ``init film`` values              = thickness C1_film C2_film 
-- ``thickness`` value               = thickness of the film (given as the ratio with respect to the length along y-direction)
-- ``C1_film`` value                 = fluid component 1 composition in the film
-- ``C2_film`` value                 = fluid component 2 composition in the film
-- ``init mixed_droplet`` value      = radius C1_drop C2_drop 
-- ``radius``                        = radius of the mixed droplet
-- ``C1_drop``                       = fluid component 1 composition in the mixed droplet
-- ``C2_drop``                       = fluid component 2 composition in the mixed droplet
-
+      *tau_r* value = relaxation time constant for the population distribution :math:`f` 
+      *tau_p* value = relaxation time constant for the population distribution :math:`g`
+      *tau_s* value = relaxation time constant for the population distribution :math:`k` 
+      *kappa1* value = energy gradient parameter for fluid 1
+      *kappa2* value = energy gradient parameter for fluid 2
+      *kappa3* value = energy gradient parameter for fluid 3
+      *alpha* value = parameter related to the interface width measurement
+      *gamma_p* value = mobility coefficient for order parameter :math:`\phi`
+      *gamma_s* value = mobility coefficient for order parameter :math:`\psi`
+      *C1* value = initial bulk composition of fluid component 1
+      *C2* value = initial bulk composition of fluid component 2
+      *C3* value = initial bulk composition of fluid component 3 (note: *C1* + *C2* + *C3* = 1)
+      *dumpxdmf* values = ``dump_interval`` ``filename``
+         ``dump_interval`` = output fluid fields every dump_interval timesteps
+         ``filename`` = base name for output files with extensions .xdmf and .raw
+      *seed* value = seed random number generator seed (positive integer) used to create a random number following a Gaussian distribution.
+      *init mixture* value = none (initialize a well-mixed fluid mixture with compositions specified for *C1*, *C2*, *C3*) 
+      *init droplet* value = ``radius`` = radius (lattice units) of the sphere made of pure fluid component 1.
+      *init liquid_lens* value = ``radius`` = radius (lattice units) of the upper and lower radius of curvature used to model the ternary liquid lens.
+      *init double_emulsion* value = ``radius`` = radius (lattice units) of the hemispheres of fluid components  1 and 2 which makes a janus droplet.
+      *init film* values = ``thickness`` ``C1_film`` ``C2_film`` 
+         ``thickness`` value = thickness of the film (represented as ratio with respect to the length of the box along y-direction)
+         ``C1_film`` value = fluid component 1 composition in the film
+         ``C2_film`` value = fluid component 2 composition in the film
+      *init mixed_droplet* value = ``radius`` ``C1_drop`` ``C2_drop`` 
+         ``radius`` = radius (lattice units) of the mixed droplet
+         ``C1_drop`` = fluid component 1 composition in the mixed droplet
+         ``C2_drop`` = fluid component 2 composition in the mixed droplet
 
 Examples
 """"""""
@@ -94,7 +94,7 @@ The mass composition fields of the three fluid components 1, 2, 3 (:math:`C_1, C
    \phi &= C_1 - C_2 \\
    \psi &= C_3
 
-where :math:`\rho` is the fluid density (fixed to 1), :math:`\phi` and :math:`\psi` are order parameters that distinguish the three components. 
+where :math:`\rho` (is the fluid density, fixed to 1), :math:`\phi` and :math:`\psi` are the order parameters that distinguish the three components. 
 
 The fluid motion of the ternary fluids is governed by Cahn-Hilliard-Navier-Stokes equations,
 
@@ -133,7 +133,7 @@ The full details of the lattice-Boltzmann algorithm formulated and implemented c
 
 ----------
 
-The *init* keyword specifies how the ternary fluid is initialized:
+The *init* keyword specifies how the ternary fluid is initialized. Currently the implementation supports five initialized models: mixture, droplet in solvent (binary system), liquid lens, double emulsion (janus emulsion), film, mixed droplet.
 
 * *init mixture*: Initializes a fluid mixture with initial bulk compositions for the three components (given as value entries to the keywords *C1*, *C2*, and *C3*) with small random fluctuations (of the order of 0.01) to initiate phase separation. This is the default initialization if no *init* keyword is specified.
 
@@ -143,28 +143,28 @@ The *init* keyword specifies how the ternary fluid is initialized:
 
 * *init double_emulsion*: Initializes a droplet of specified radius with component 1 occupying the left hemisphere and component 2 occupying the right hemisphere. The model portrays a janus-type double emulsion. The droplet's center is located at the box center, surrounded by component 3 in bulk.
 
-* *init film*: Initializes a film of specified thickness. The thickness is defined as a fraction with respect to the box height along y-axis and covers around the center region of the simulation box. The film is composed of the three fluid components with the composition C1_film, C2_film, 1 - C1_film - C2_film. C1_film, C2_film are user defined input to this initialization method. The film is surrounded by a bulk fluid mixture of composition, given as value entries to *C1*, *C2*, *C3*.
+* *init film*: Initializes a film of specified thickness. The thickness is defined as a fraction with respect to the box height along y-axis and covers around the center region of the simulation box. The film is composed of the three fluid components with the composition ``C1_film``, ``C2_film``, 1 - ``C1_film`` - ``C2_film``. ``C1_film``, ``C2_film`` are user defined input to this initialization method. The film is surrounded by a bulk fluid mixture of composition, given as value entries to *C1*, *C2*, *C3*.
 
-* *init mixed_droplet*: Initializes a ternary droplet with specified radius and composition (C1_drop, C2_drop, 1 - C1_drop - C2_drop) surrounded by fluid component 3. Small random fluctuations (of the order of 0.01) are added within the droplet.
+* *init mixed_droplet*: Initializes a ternary droplet with specified radius and composition ``C1_drop``, ``C2_drop``, 1 - ``C1_drop`` - ``C2_drop``, surrounded by fluid component 3. Small random fluctuations (of the order of 0.01) are added within the droplet.
 
 ----------
 
 This *fix* accepts several internal parameters that control the thermodynamic and transport properties:
 
-* ``tau_r``, ``tau_p``, ``tau_s``: Values to these parameters controls the relaxation times :math:`\tau_\rho`, :math:`\tau_\phi`, and :math:`\tau_\psi`. By default, the values are set to 1.
+* *tau_r*, *tau_p*, *tau_s*: Values to these parameters controls the relaxation times :math:`\tau_\rho`, :math:`\tau_\phi`, and :math:`\tau_\psi`. By default, the values of *tau_r*, *tau_p* are set to 1 and *tau_s* to 0.666667. The default values enables all the three fluids to have same mobility.
 
-* ``gamma_p``, ``gamma_s``: Values to these parameters controls the constants :math:`\Gamma_\phi, \Gamma_\psi`. By default, the values are set to 1.
+* *gamma_p*, *gamma_s*: Values to these parameters controls the constants :math:`\Gamma_\phi, \Gamma_\psi`.
 
-* ``kappa1``, ``kappa2``, ``kappa3``: Values to these parameters controls the constants :math:`\kappa_i, i=1,2,3`
+* *kappa1*, *kappa2*, *kappa3*: Values to these parameters controls the constants :math:`\kappa_i, i=1,2,3`.
 
-* ``alpha``: Value to this parameter controls :math:`\alpha`.
+* *alpha*: Value to this parameter controls :math:`\alpha`.
 
-* ``C1``, ``C2``, ``C3``: Initial compositions of the three fluid components. Used in the following initial configurations: *init mixture* and *init film*.
+* *C1*, *C2*, *C3*: Initial compositions of the three fluid components. Used in the following initial configurations: *init mixture* and *init film*.
 
 
 ----------
 
-The ``dumpxdmf`` keyword enables output of the fluid fields to files that can be visualized using Paraview or other XDMF-compatible visualization software. The output includes the followig in LB units:
+The *dumpxdmf* keyword enables output of the fluid fields to files that can be visualized using Paraview or other XDMF-compatible visualization software. The output includes the followig in LB units:
 
 * Density field :math:`\rho`
 * Order parameters :math:`\phi` and :math:`\psi`
@@ -176,7 +176,7 @@ Two files are created:
 * A text .xdmf file containing metadata and grid structure
 * A binary .raw file containing the actual field data
 
-The concentration fields can be recovered from the output using:
+The concentration fields can be recovered from the output through
 
 .. math::
 
@@ -200,7 +200,7 @@ This fix is part of the LATBOLTZ package. It is only enabled if LAMMPS was built
 * The boundary conditions must be periodic (p p p) in all three directions.
 * Shrink-wrapped boundary conditions are not permitted.
 * This fix requires MPI and cannot be compiled with MPI_STUBS.
-* Currently does not support coupling to molecular dynamics particles**. Particle-fluid interactions available in :doc:`lb/viscous <fix_lb_viscous>` are not yet implemented for the multicomponent case.
+* Currently does not support coupling to molecular dynamics particles. Particle-fluid interactions available in :doc:`lb/viscous <fix_lb_viscous>` are not yet implemented for the multicomponent case.
 
 Related commands
 """"""""""""""""
