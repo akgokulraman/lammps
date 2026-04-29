@@ -74,7 +74,7 @@ The thermodynamics of the ternary fluid system is specified in terms of a free e
 
     \frac{F}{\rho k_B T} = \int_V \left[\sum_{i = 1}^{3}\frac{\lambda_i}{2}C_i^2(1-C_i)^2+\frac{\kappa_i}{2}(\nabla C_i)^2\right] dV 
 
-where :math:`C_i` is the mass composition of the ternary fluid mixture. The energy penalty for the formation of interaces is dicated through :math:`\nabla C_i^2`. This leads to the surface tension :math:`\gamma_{mn}`  given by,
+where :math:`C_i` is the mass composition of the ternary fluid mixture. The energy penalty for the formation of interaces is dicated through :math:`(\nabla C_i)^2`. This leads to the surface tension :math:`\gamma_{mn}`  given by,
 
 The stationary solution for the free energy in thermal equilibrium provides a diffuse interfacial profile, from which we can determine the interface width (between the fluid components :math:`m` and :math:`n`) and is propotional to :math:`\alpha = \sqrt{\frac{\lambda_m+\lambda_n}{\kappa_m + \kappa_n}}`. Assuming :math:`\lambda_i = \alpha^2\kappa`, the surface tension of the two fluids is given by 
 
@@ -101,7 +101,7 @@ The fluid motion of the ternary fluids is governed by Cahn-Hilliard-Navier-Stoke
     \frac{\partial \phi}{\partial t} + \nabla \cdot (\phi \vec{u}) &= M_\phi \nabla^2\mu_\phi , \\
     \frac{\partial \psi}{\partial t} + \nabla \cdot (\psi \vec{u}) &= M_\psi \nabla^2\mu_\psi
 
-where :math:`\eta` is the dynamic viscosity, :math:`u` is the local
+where :math:`\eta` is the dynamic viscosity, :math:`\vec{u}` is the local
 fluid velocity, :math:`p_\text{id}` is the ideal gas pressure and :math:`M_\phi` and :math:`M_\psi` are mobility parameters. The chemical potentials of the order parameters are the variational derivatives of the free energy (:math:`\mu_i = \partial F/\partial C_i`). The gradients of the chemical potential are the driving forces that give rise to phase segregation and diffusion.
 
 The lattice-Boltzmann algorithm solves for the fluid motion governed by
@@ -118,9 +118,9 @@ with :math:`\tau_\rho, \tau_\phi, \tau_\psi` denoting the user-defined time cons
 
 .. math::
 
-   \eta = \rho_s^2\left(\tau_\rho - \frac{1}{2}\right)\\
-   D_\phi = \Gamma_\phi\left(\tau_\phi - \frac{1}{2}\right)\\
-   D_\psi = \Gamma_\psi\left(\tau_\psi - \frac{1}{2}\right)
+   \eta = \rho c_s^2\left(\tau_\rho - \frac{1}{2}\right)\\
+   M_\phi = \Gamma_\phi\left(\tau_\phi - \frac{1}{2}\right)\\
+   M_\psi = \Gamma_\psi\left(\tau_\psi - \frac{1}{2}\right)
 
 where :math:`\Gamma_\phi, \Gamma_\psi` are user controlled constants. The algorithm evolves the three distribution functions over a D3Q19 velocity set (three-dimensional 19 velocity model).
 
@@ -165,7 +165,7 @@ The ``dumpxdmf`` keyword enables output of the fluid fields to files that can be
 * Density field :math:`\rho`
 * Order parameters :math:`\phi` and :math:`\psi`
 * Pressure field :math:`p`
-* Velocity field :math:`u`
+* Velocity field :math:`\vec{u} = u_x, u_y, u_z`
 
 Two files are created:
 
