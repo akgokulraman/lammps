@@ -19,7 +19,9 @@
 ------------------------------------------------------------------------- */
 
 #ifdef FIX_CLASS
+// clang-format off
 FixStyle(lb/multicomponent, FixLbMulticomponent)
+// clang-format on
 #else
 
 #ifndef LMP_FIX_LB_MULTICOMPONENT_H
