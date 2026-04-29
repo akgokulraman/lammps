@@ -57,9 +57,13 @@ Examples
 
 .. code-block:: LAMMPS
 
-   fix 1 all lb/multicomponent 1 0.166667 1.0 D3Q19 dx 1.0 init mixture
-   fix 2 fluid lb/multicomponent 1 0.166667 1.0 D3Q19 dx 1.0 init droplet 10.0
-   fix 3 all lb/multicomponent 1 0.166667 1.0 D3Q19 dx 1.0 C1 0.333333 C2 0.333333 C3 0.333334 kappa1 0.01 kappa2 0.02 kappa3 0.05 init mixture dumpxdmf 1000 output 0
+   fix 1 all lb/multicomponent 1 0.166667 1.0 D3Q19 dx 1.0 dumpxdmf 1000 mixture_data init mixture
+   fix 2 all lb/multicomponent 1 0.166667 1.0 D3Q19 dx 1.0 dumpxdmf 2000 droplet_data_C1-0.5_C2-0.3_C3-0.2 C1 0.5 C2 0.3 C3 0.2 kappa1 0.02 kappa2 0.02 kappa3 0.05 init mixture
+   fix 3 all lb/multicomponent 1 0.166667 1.0 D3Q19 dx 1.0 dumpxdmf 1000 lens_data init liquid_lens 10
+   fix 4 all lb/multicomponent 1 0.166667 1.0 D3Q19 dx 1.0 dumpxdmf 1000 emulsion_data init double_emulsion 10 kappa1 0.01 kappa2 0.02 kappa3 0.05
+   fix 5 all lb/multicomponent 1 0.166667 1.0 D3Q19 dx 1.0 dumpxdmf 1000 mixedDroplet_data init mixed_droplet 10 0.1 0.5 kappa1 0.02 kappa2 0.01 kappa3 0.04
+   fix 6 all lb/multicomponent 1 0.166667 1.0 D3Q19 dx 1.0 dumpxdmf 5000 droplet_data init droplet 10.0
+   fix 7 all lb/multicomponent 1 0.166667 1.0 D3Q19 dx 1.0 dumpxdmf 1000 film_data C1 0.5 C2 0.3 C3 0.2 init film 0.4 0.3 0.2
 
 Description
 """""""""""
@@ -191,7 +195,8 @@ Restrictions
 This fix is part of the LATBOLTZ package. It is only enabled if LAMMPS was built with that package. See the :doc:`Build package <Build_package>` page for more info.
 
 * This fix can only be used with an orthogonal simulation domain.
-* Only the D3Q19 velocity lattice is currently supported.
+* Minimum box length along any direction is 6 lattice units.
+* Only D3Q19 velocity lattice is currently supported.
 * The boundary conditions must be periodic (p p p) in all three directions.
 * Shrink-wrapped boundary conditions are not permitted.
 * This fix requires MPI and cannot be compiled with MPI_STUBS.
