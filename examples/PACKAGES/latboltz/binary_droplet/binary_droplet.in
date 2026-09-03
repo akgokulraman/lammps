@@ -1,0 +1,22 @@
+#===========================================================================#
+# Ternary double emulsion droplet                                           #
+#===========================================================================#
+variable L equal 16
+
+region fluid   block -$L $L -3 3 -$L $L
+create_box     0 fluid
+
+timestep        1.0
+
+#---------------------------------------------------------------------------
+# Create a multicomponent lattice Boltzmann mixture in the simulation domain
+# Use D3Q19 lattice with standard parameters
+#   fluid density = 1.0, fluid viscosity = 1/6, lattice spacing dx=1.0
+#----------------------------------------------------------------------------
+variable radius equal 10
+variable tag string binary_droplet_radius=${radius}
+variable nsteps equal 10000
+
+fix mcmp all lb/multicomponent 1 0.166667 1.0 D3Q19 dx 1 dumpxdmf 100 ${tag} kappa1 0.01 kappa2 0.01 kappa3 0.05 init droplet ${radius}
+
+run ${nsteps}
