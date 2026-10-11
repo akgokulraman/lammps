@@ -243,6 +243,9 @@ void FixLbMulticomponent::final_bounce_back() {
   if(update->ntimestep*dt_lb>timestep_movingBoundary_start){
     movingBoundary = true;
   }
+  if(update->ntimestep*dt_lb>=timestep_movingBoundary_stop){
+    movingBoundary = false;
+  }
   int z_top = domain->boxhi[2]-1;
   int z_bot = domain->boxlo[2];
   int x_top = domain->boxhi[0]-1;
@@ -1763,6 +1766,11 @@ void FixLbMulticomponent::init_parameters(int argc, char **argv) {
     else if (strcmp(argv[argi],"timestep_movingBoundary_start")==0) {
       if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
       timestep_movingBoundary_start = utils::numeric(FLERR, argv[argi+1], false, lmp);
+      argi += 2;
+    }
+    else if (strcmp(argv[argi],"timestep_movingBoundary_stop")==0) {
+      if (argi+2 > argc) error->all(FLERR, "Illegal fix lb/multicomponent command: {}", argv[argi]);
+      timestep_movingBoundary_stop = utils::numeric(FLERR, argv[argi+1], false, lmp);
       argi += 2;
     }
     else if(strcmp(argv[argi],"init")==0){

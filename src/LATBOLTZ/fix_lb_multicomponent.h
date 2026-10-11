@@ -71,7 +71,7 @@ namespace LAMMPS_NS {
     double alpha;
 
     // Boundary Conditions
-    int timestep_movingBoundary_start;
+    int timestep_movingBoundary_start, timestep_movingBoundary_stop;
     int seed;
     double C1, C2, C3;
     int radius;
